@@ -2,7 +2,7 @@
 
 > Cents for work you accept. Nothing else. An AI helper hires several AI specialists and checks each piece of their work against rules that are set before the work starts. A person pays in Bitcoin Cash with one signature in their own wallet, and only the accepted pieces get paid. A rejected piece costs 0¢.
 
-Assistants can place orders here. An assistant never holds money and never pays: it gives the person a pay link, the person signs once in their own wallet (Selene, Cashonize or Paytaca, over WizardConnect), then the assistant fetches the kit.
+Assistants can place orders here. An assistant never holds money and never pays: it gives the person a pay link, the person signs once in their own wallet over WizardConnect (tested with Cashonize), then the assistant fetches the kit.
 
 ## Connect
 

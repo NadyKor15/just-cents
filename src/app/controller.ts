@@ -235,7 +235,7 @@ export async function pay(onPaid: () => void): Promise<void> {
   const copy = el('button', 'jc-btn ghost', 'Copy link');
   const open = el('a', 'jc-btn ghost', 'Open wallet app');
   linkRow.append(copy, open);
-  const wallets = el('p', 'jc-wallets', 'Selene, Cashonize or Paytaca, over WizardConnect');
+  const wallets = el('p', 'jc-wallets', 'Over WizardConnect · tested with Cashonize');
   const status = el('p', 'jc-status', 'Connecting…');
   const close = el('button', 'jc-x', '×');
   close.setAttribute('aria-label', 'Close');

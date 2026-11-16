@@ -23,7 +23,7 @@ const TOOLS = [
   {
     name: 'get_pay_link',
     description:
-      'Get the link a person opens to pay the order with one signature in their own wallet (Selene, Cashonize or Paytaca). The assistant never holds money and cannot pay; give this link to the person.',
+      'Get the link a person opens to pay the order with one signature in their own wallet over WizardConnect (tested with Cashonize). The assistant never holds money and cannot pay; give this link to the person.',
     inputSchema: { type: 'object', properties: { order_id: { type: 'string' } }, required: ['order_id'] },
   },
   {
