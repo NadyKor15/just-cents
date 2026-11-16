@@ -132,13 +132,39 @@ export function toast(text: string, ms = 6000) {
   (t as unknown as { _h: number })._h = window.setTimeout(() => t!.classList.remove('on'), ms);
 }
 
-/** Start pressed: the helper splits the order and asks the specialists for previews; checks run as they arrive. */
-export function start(careless: Who = 'sam'): void {
-  preloadOcr();
-  if (FIXED) careless = FIXED.careless;
-  order = new Order(NET, careless, FIXED?.id);
-  paid = false;
-  const o = order;
+// ------------------------------------------------------------------ who orders: the person, or their assistant
+export type Orderer = 'you' | 'assistant';
+/** A link from an assistant (?order=…) opens in assistant mode; ?who=assistant does the same for a fresh order. */
+export let WHO: Orderer = FIXED || Q.get('who') === 'assistant' ? 'assistant' : 'you';
+export const ASSISTANT_ASK = 'Asking for: a kit to list my game.';
+export const ASSISTANT_PAY = 'Your assistant asked for this; you sign once in your own wallet';
+export const ASSISTANT_KIT = 'Your assistant can now fetch the kit';
+let youText = '';
+
+/** The switch above the order field. Locked once the order has started. */
+export function setWho(w: Orderer): void {
+  if (gates) return;
+  WHO = w;
+  all('.who button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.who === w)));
+  all('.order-in').forEach((i) => {
+    const input = i as HTMLInputElement;
+    if (!youText) youText = input.value;
+    input.value = w === 'assistant' ? ASSISTANT_ASK : youText;
+    input.readOnly = w === 'assistant';
+  });
+}
+
+/** The assistant's side: the order is created through the public API, exactly as an assistant would do it. */
+async function createByAssistant(careless: Who): Promise<Order> {
+  const r = await fetch('/api/orders', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ network: NET, careless }) });
+  const j = (await r.json().catch(() => ({}))) as { id?: string; reason?: string };
+  if (!r.ok || !j.id) throw new Error(j.reason ?? `the order API answered ${r.status}`);
+  const meta = readOrderId(j.id);
+  if (!meta || meta.net !== NET || meta.careless !== careless) throw new Error('the order API returned an order for another network or specialist');
+  return new Order(NET, careless, j.id);
+}
+
+function runChecks(o: Order, careless: Who) {
   const other: Who = careless === 'sam' ? 'lena' : 'sam';
   if (Q.get('choice') === 'b') o.iconChoice = 'b';
   const icons = [o.checkIcon('a'), o.checkIcon('b')] as const;
@@ -150,7 +176,32 @@ export function start(careless: Who = 'sam'): void {
   descBad.then((c) => { showDescPreview(c); if (!c.verdict.ok) setTagReason(careless, c.verdict.reason); }).catch((e) => fail('Description', e));
   descGood.catch((e) => fail('Description', e));
   voice.catch((e) => fail('Voice-over', e));
-  gates = { icon, descBad, descGood, voice };
+  return { icon, descBad, descGood, voice };
+}
+
+/** Start pressed: the helper splits the order and asks the specialists for previews; checks run as they arrive. */
+export function start(careless: Who = 'sam'): void {
+  preloadOcr();
+  if (FIXED) careless = FIXED.careless;
+  paid = false;
+  all('.who button').forEach((b) => ((b as HTMLButtonElement).disabled = true));
+  if (WHO === 'assistant' && !FIXED) {
+    // same scene, same checks; only the order comes from the API
+    const made = createByAssistant(careless).catch((e) => {
+      toast(`The order API did not answer (${e instanceof Error ? e.message : e}); this page made the order itself.`, 9000);
+      return new Order(NET, careless);
+    });
+    const checks = made.then((o) => {
+      order = o;
+      renderReceiptPrices();
+      return runChecks(o, careless);
+    });
+    gates = { icon: checks.then((g) => g.icon), descBad: checks.then((g) => g.descBad), descGood: checks.then((g) => g.descGood), voice: checks.then((g) => g.voice) };
+    return;
+  }
+  order = new Order(NET, careless, FIXED?.id);
+  const o = order;
+  gates = runChecks(o, careless);
   renderReceiptPrices();
 }
 
@@ -183,13 +234,14 @@ export async function switchCareless(who: Who): Promise<boolean> {
   if (paid) {
     toast('A new order starts, so you can pay again.');
     resetPayment();
-    // a new order with its own id; icon and voice checks carry over (same offers), descriptions are checked again below
-    const prev = order;
-    order = new Order(NET, who);
-    order.iconChoice = prev.iconChoice;
-    for (const k of Object.keys(prev.results)) if (k.startsWith('icon') || k === 'voice') order.results[k] = prev.results[k]!;
   }
-  order.careless = who;
+  // the careless specialist is part of the order id, so another choice is another order (new id);
+  // icon and voice checks carry over (same offers), descriptions are checked again below
+  const prev = order;
+  const fresh = WHO === 'assistant' ? await createByAssistant(who).catch(() => new Order(NET, who)) : new Order(NET, who);
+  fresh.iconChoice = prev.iconChoice;
+  for (const k of Object.keys(prev.results)) if (k.startsWith('icon') || k === 'voice') fresh.results[k] = prev.results[k]!;
+  order = fresh;
   const other: Who = who === 'sam' ? 'lena' : 'sam';
   try {
     const [bad, good] = await Promise.all([order.checkDescription(who), order.checkDescription(other)]);
@@ -273,7 +325,7 @@ export async function pay(onPaid: () => void): Promise<void> {
   modal.setAttribute('aria-label', 'Pay once');
   const card = el('div', 'jc-card');
   const h = el('h2', '', `Pay ${o.totalCents()}¢ once`);
-  const sub = el('p', 'jc-sub', 'Bitcoin Cash · one signature in your own wallet');
+  const sub = el('p', 'jc-sub', WHO === 'assistant' ? ASSISTANT_PAY : 'Bitcoin Cash · one signature in your own wallet');
   const qr = el('div', 'jc-qr');
   const linkRow = el('div', 'jc-linkrow');
   const copy = el('button', 'jc-btn ghost', 'Copy link');
@@ -323,7 +375,8 @@ export async function pay(onPaid: () => void): Promise<void> {
       status.textContent = 'Paid. Specialists are handing over the files.';
       setTx(o.net, r.txid);
       // tell the order API, so an assistant waiting on this order can fetch the kit (the server checks the note on chain)
-      void reportPaid(o.id, r.txid);
+      const reported = reportPaid(o.id, r.txid);
+      if (WHO === 'assistant') void reported.then((ok) => showAssistantKit(o.id, ok));
       setTimeout(closeModal, 900);
       onPaid();
       void deliver(o);
@@ -349,15 +402,48 @@ export async function pay(onPaid: () => void): Promise<void> {
   status.textContent = 'Scan with your wallet, or copy the link into it';
 }
 
-async function reportPaid(id: string, txid: string) {
+/** Tell the order API about the payment; true once the server has checked it on chain and recorded it. */
+async function reportPaid(id: string, txid: string): Promise<boolean> {
   for (let i = 0; i < 5; i++) {
     try {
       const r = await fetch(`/api/orders/${id}/paid`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ txid }) });
-      if (r.ok || r.status === 409) return;
+      if (r.ok) return true;
+      if (r.status === 409 || r.status === 400) return false;
     } catch {
       /* retry */
     }
     await new Promise((res) => setTimeout(res, 2000 * (i + 1)));
+  }
+  return false;
+}
+
+/** Assistant mode: show what the assistant gets now from GET /api/orders/{id}/kit (the same call it makes). */
+async function showAssistantKit(id: string, recorded: boolean) {
+  const kit = document.querySelector<HTMLElement>('#kit');
+  if (!kit) return;
+  let box = kit.querySelector<HTMLElement>('.kit-assistant');
+  if (!box) {
+    box = el('div', 'kit-assistant');
+    kit.insertBefore(box, kit.querySelector('.kit-files'));
+  }
+  box.innerHTML = '';
+  const h = el('h3', '', ASSISTANT_KIT);
+  const call = el('p', 'kit-call');
+  call.append(el('code', '', `GET /api/orders/${id.slice(0, 8)}…/kit`));
+  box.append(h, call);
+  if (!recorded) {
+    box.append(el('p', 'kit-wait', 'The server has not recorded the payment yet; the assistant will see it once the network has the transaction.'));
+    return;
+  }
+  try {
+    const r = await fetch(`/api/orders/${id}/kit`);
+    const j = (await r.json()) as { files?: { part: string; name: string; sha256: string }[]; rejected?: unknown; reason?: string };
+    if (!r.ok || !j.files) throw new Error(j.reason ?? String(r.status));
+    const ul = el('ul', 'kit-api');
+    for (const f of j.files) ul.append(el('li', '', `${f.part}: ${f.name} · sha256 ${f.sha256.slice(0, 12)}…`));
+    box.append(ul);
+  } catch (e) {
+    box.append(el('p', 'kit-wait', `The kit call answered: ${e instanceof Error ? e.message : e}`));
   }
 }
 

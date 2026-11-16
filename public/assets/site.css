@@ -119,3 +119,21 @@
   padding:12px 16px;border-radius:14px;background:#231a2b;color:#fff;font:600 14px "Figtree",sans-serif;transition:.3s}
 .jc-toast.on{opacity:1;transform:translate(-50%,0)}
 @media (max-width:899px){.sec h2{font-size:24px}}
+
+/* ---------- who orders: You / Your assistant (above the order field; under it on the phone) ---------- */
+.who{position:absolute;z-index:6;display:flex;gap:6px;padding:3px;border-radius:99px;background:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.9)}
+.who button{font-family:inherit;font-weight:700;cursor:pointer;border:0;background:transparent;color:#5d5258;border-radius:99px}
+.who button[aria-pressed="true"]{background:#fff;color:var(--orchid-lo);box-shadow:0 1px 0 #e2d9dc,0 4px 10px rgba(90,60,60,.08)}
+.who button:hover:not(:disabled){box-shadow:0 0 0 3px rgba(214,246,74,.6)}
+.who button:disabled{cursor:default}
+.who button:disabled[aria-pressed="false"]{opacity:.45}
+.stage-d .who{left:343px;top:354px;padding:2px}
+.stage-d .who button{height:22px;padding:0 12px;font-size:13px}
+.stage-m .who{left:30px;top:195px;padding:2px;gap:3px;margin-top:calc(var(--ex) * .14)}
+.stage-m .who button{height:18px;padding:0 9px;font-size:9.5px}
+.order-in[readonly]{color:#4b3f45;font-style:italic}
+.kit-assistant{margin:0 0 14px;padding:12px 14px;border-radius:12px;background:#fff;border:1.5px solid rgba(168,102,164,.35)}
+.kit-assistant h3{font-size:16px;margin-bottom:6px}
+.kit-assistant code{font-size:13px;background:#f6eff3;padding:2px 6px;border-radius:6px}
+.kit-api{list-style:none;margin-top:8px;display:grid;gap:4px;font-size:13px}
+.kit-wait{margin-top:6px;font-size:13px;color:#6c5f66}
