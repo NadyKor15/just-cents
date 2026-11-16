@@ -10,11 +10,11 @@ import { rpc, type Net } from './fulcrum';
 type OfferEntry = { signed: { offer: { priceSats: string } }; file: string; payToLockingHex: string; offerHashHex: string };
 const OFFERS = offers as unknown as Record<Net, Record<string, OfferEntry>>;
 
-interface Env {
+export interface Env {
   ASSETS: { fetch(req: Request | string): Promise<Response> };
 }
 
-const json = (body: unknown, status = 200) =>
+export const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json', 'cache-control': 'no-store' } });
 
 async function rawTx(net: Net, txid: string): Promise<string | null> {
@@ -30,7 +30,7 @@ async function rawTx(net: Net, txid: string): Promise<string | null> {
   return null;
 }
 
-async function release(url: URL, env: Env): Promise<Response> {
+export async function release(url: URL, env: Env): Promise<Response> {
   // /full/<entry>   e.g. /full/icon, /full/lena:good
   const entryKey = decodeURIComponent(url.pathname.slice('/full/'.length));
   const net = url.searchParams.get('net') as Net | null;
@@ -43,7 +43,9 @@ async function release(url: URL, env: Env): Promise<Response> {
   try {
     raw = await rawTx(net, txid);
   } catch (e) {
-    return json({ ok: false, reason: `could not read the transaction from the network: ${e instanceof Error ? e.message : e}` }, 502);
+    const msg = e instanceof Error ? e.message : String(e);
+    if (/No such mempool|not found/i.test(msg)) return json({ ok: false, reason: 'the network does not know this transaction (yet)' }, 404);
+    return json({ ok: false, reason: `could not read the transaction from the network: ${msg}` }, 502);
   }
   if (!raw) return json({ ok: false, reason: 'transaction not found' }, 404);
   const paid = checkPaidRaw(raw, { payToLockingHex: entry.payToLockingHex, minSats: BigInt(entry.signed.offer.priceSats), offerHashHex: entry.offerHashHex });
