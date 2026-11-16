@@ -23,7 +23,7 @@
 .desc-bar .dl.wrong{color:#8a1f2c;text-decoration:line-through;text-decoration-color:rgba(228,70,93,.7)}
 .desc-bar .dl.wrong b{color:var(--pink)}
 /* receipt with the icon choice: one more row ("Icon (B) not chosen 0¢"), the rest moves down */
-.stage-d .rw{height:404px}
+.stage-d .rw{height:404px;top:447px} /* grew by the "not chosen" row: lifted so it ends above "Become a specialist" (866) */
 .stage-d .r1b{top:54px;height:36px}
 .stage-d .r2{top:90px}
 .stage-d .r3{top:145px}
