@@ -4,7 +4,8 @@ import { RULES } from './core/rules';
 import { explorerTx } from './core/chain';
 
 type Live = { id: 'icon' | 'sam' | 'lena' | 'voice'; title: string; who: string; offerKey: string; example: () => HTMLElement; rule: string; extra?: string };
-type Section = { title: string; rule: string; live: Live[] };
+/** main: what the live specialists here do, with their rule; also: the example job from the home page, no specialist yet. */
+type Section = { title: string; main?: string; rule: string; live: Live[] };
 
 const el = <K extends keyof HTMLElementTagNameMap>(t: K, cls?: string, text?: string) => {
   const e = document.createElement(t);
@@ -36,6 +37,7 @@ function lines(key: string) {
 const SECTIONS: Section[] = [
   {
     title: '3D and games',
+    main: 'A game icon. Rule: 1024×1024, no letters.',
     rule: 'A 3D model for printing. Rule: the model is watertight and fits your printer bed.',
     live: [
       {
@@ -56,6 +58,7 @@ const SECTIONS: Section[] = [
   { title: 'Documents', rule: 'A receipt photo turned into a table. Rule: the rows add up to the receipt total.', live: [] },
   {
     title: 'Texts',
+    main: 'A store description. Rule: about 100 words, in Spanish, French and German.',
     rule: 'A product description. Rule: under 300 characters, in the language you asked for.',
     live: [
       { id: 'lena', title: 'Store description in three languages', who: 'Lena (demo specialist)', offerKey: 'lena:good', rule: RULES.description.text, example: () => { const d = el('div', 'c-ex'); d.appendChild(lines('lena:good')); return d; } },
@@ -72,6 +75,7 @@ const SECTIONS: Section[] = [
   },
   {
     title: 'Sound',
+    main: 'A voice-over. Rule: 10 to 15 seconds.',
     rule: 'Music for a clip. Rule: exactly 15 seconds.',
     live: [
       {
@@ -84,7 +88,7 @@ const SECTIONS: Section[] = [
           const d = el('div', 'c-ex');
           const a = el('audio');
           a.controls = true;
-          a.preload = 'none';
+          a.preload = 'metadata';
           a.src = OFFERS[NET]['voice']!.preview as string;
           d.appendChild(a);
           return d;
@@ -125,10 +129,18 @@ const root = document.getElementById('sections')!;
 for (const s of SECTIONS) {
   const sec = el('section', 'c-sect');
   sec.appendChild(el('h2', '', s.title));
-  const [card, rule] = s.rule.split(' Rule: ');
-  const r = el('p', 'c-rule');
-  r.append(document.createTextNode(`${card} `), el('b', '', 'Rule:'), document.createTextNode(` ${rule}`));
-  sec.appendChild(r);
+  const ruleLine = (text: string, prefix = '', suffix = '') => {
+    const [card, rule] = text.split(' Rule: ');
+    const r = el('p', 'c-rule');
+    r.append(document.createTextNode(`${prefix}${card} `), el('b', '', 'Rule:'), document.createTextNode(` ${rule}${suffix}`));
+    return r;
+  };
+  if (s.main) {
+    sec.appendChild(ruleLine(s.main));
+    const also = ruleLine(s.rule, 'Also here: ', ' No specialist yet.');
+    also.classList.add('c-also');
+    sec.appendChild(also);
+  } else sec.appendChild(ruleLine(s.rule));
   if (!s.live.length) {
     const e = el('div', 'c-empty');
     e.append(document.createTextNode('No specialists yet — be the first. '));
