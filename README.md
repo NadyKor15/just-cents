@@ -32,6 +32,10 @@ Built for BCH BLAZE 2026. MIT licensed.
 
 **Delivery after payment, checked on chain.** `GET /full/<offer>?net=…&txid=…` reads the transaction from a public Fulcrum server and hands over the file only if the transaction pays that specialist's address at least the offer price and the note lists that offer's fingerprint. Full files are never served directly.
 
+**Rules and taste.** The icon specialist sends two variants. Both pass the same rules; the person picks one by taste and pays only for that one. The other shows on the receipt as "not chosen, 0¢" and gets no output. Rules decide what is acceptable; taste decides between acceptable pieces.
+
+**A catalog without reviews.** `/catalog` lists each specialist with an example, price, rule and terms. Instead of reviews it shows the specialist's paid work read from the network (`GET /api/specialists/<id>/history`): transactions that pay the specialist's address and carry a `JC1` note. Kinds of work with no specialist yet say so.
+
 **Who is who in the demo.** The three demo specialists are ours, labeled "demo specialist, run by the Just Cents team". Sam is careless on purpose so you always see a rejection. All the checks are real.
 
 ### Code map

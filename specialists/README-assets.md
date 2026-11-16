@@ -12,7 +12,7 @@ Files marked TEST ONLY are deliberately wrong and are used only in tests.
 - `bash specialists/scripts/make-icon.sh` rasterizes it with Chrome for Testing 154 (headless shell from the
   Playwright cache, not the installed Google Chrome) to `icon-1024.png`, then uses ImageMagick 7.1.2 to build
   - `icon-preview-128.png`: Lanczos downscale to 128 px, 4 thin diagonal lines, and the brand mark
-    `docs/ui/2026-11-16-image-first-justcents/html-v2/assets/sym/s5-icon.png` at 40 % opacity (one 84 px copy in the centre,
+    `public/assets/sym/s5-icon.png` at 40 % opacity (one 84 px copy in the centre,
     two 40 px copies in opposite corners). The mark contains a cent-sign glyph; no other letters or digits.
   - `icon-bad-512-with-text.png` (TEST ONLY): 512 px with the word PLAY.
 
