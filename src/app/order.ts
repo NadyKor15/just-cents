@@ -12,7 +12,7 @@ export type Who = 'sam' | 'lena';
 export type IconChoice = 'a' | 'b';
 /** Offer keys of the two icon variants (variant A keeps the original key). */
 export const ICON_KEY: Record<IconChoice, string> = { a: 'icon', b: 'icon:b' };
-export const HELPER = { cents: 1, sats: 4756n }; // 1¢ at $210.27/BCH (CoinGecko, 16.11.2026 22:19Z), fixed with the offers
+export const SERVICE = { cents: 1, sats: 4756n }; // Just Cents' own 1¢ for matching and checks; at $210.27/BCH (CoinGecko, 16.11.2026 22:19Z), fixed with the offers
 
 export type Checked = { key: string; who?: Who; verdict: Verdict; offer: SignedOffer; detail: string };
 
@@ -106,7 +106,7 @@ export class Order {
   }
 
   totalCents(): number {
-    return this.accepted().reduce((s, c) => s + c.offer.offer.priceCents, 0) + (this.accepted().length ? HELPER.cents : 0);
+    return this.accepted().reduce((s, c) => s + c.offer.offer.priceCents, 0) + (this.accepted().length ? SERVICE.cents : 0);
   }
 
   /** The transaction the wallet signed; kept so a retry sends THIS one again instead of paying twice. */
@@ -120,11 +120,11 @@ export class Order {
       const coins = await link.coins(this.net);
       if (!coins.length) throw new Error('Your wallet has no coins on the addresses it shared.');
       const payouts = acc.map((c) => ({ label: c.key, address: c.offer.offer.payTo, sats: BigInt(c.offer.offer.priceSats) }));
-      payouts.push({ label: 'helper', address: PAYOUT.helper[this.net], sats: HELPER.sats });
+      payouts.push({ label: 'service', address: PAYOUT.service[this.net], sats: SERVICE.sats });
       const p = buildPayment({ utxos: coins, payouts, note: noteText(this.id, acc.map((c) => offerHashHex(c.offer.offer))) });
       this.payment = p;
       step('Confirm in your wallet');
-      const signed = await link.sign(p, `Just Cents: pay ${acc.length} specialist${acc.length > 1 ? 's' : ''} + helper`);
+      const signed = await link.sign(p, `Just Cents: pay ${acc.length} specialist${acc.length > 1 ? 's' : ''} + service`);
       if (!signed.ok) throw new Error(`Wallet: ${signed.error}`);
       // the wallet must sign exactly what was built: same outputs, same inputs
       const got = decodeTransaction(hexToBin(signed.signedHex));

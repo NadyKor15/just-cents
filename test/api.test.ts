@@ -46,7 +46,7 @@ describe('order API', () => {
     expect((await call('GET', `/api/orders/${id}`)).j.id).toBe(id);
     const pay = await call('GET', `/api/orders/${id}/pay`);
     expect(pay.j.pay_url).toContain(id);
-    expect(pay.j.wallet_prompt).toBe('Just Cents: pay 3 specialists + helper');
+    expect(pay.j.wallet_prompt).toBe('Just Cents: pay 3 specialists + service');
     const kit = await call('GET', `/api/orders/${id}/kit`);
     expect(kit.status).toBe(409);
   });

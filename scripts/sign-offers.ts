@@ -75,4 +75,4 @@ for (const net of ['mainnet', 'chipnet'] as const) {
   }
 }
 writeFileSync('src/data/offers.json', JSON.stringify({ ...book, _meta: { rateUsd: RATE, rateAt: '2026-11-16T22:19:45Z', source: 'CoinGecko simple/price' } }, null, 2) + '\n');
-console.log('offers:', Object.keys(book.mainnet!).join(', '), '| helper 1¢ =', sats(1), 'sat | check:', binToHex(sha256.hash(utf8ToBin(JSON.stringify(book)))).slice(0, 12));
+console.log('offers:', Object.keys(book.mainnet!).join(', '), '| service 1¢ =', sats(1), 'sat | check:', binToHex(sha256.hash(utf8ToBin(JSON.stringify(book)))).slice(0, 12));

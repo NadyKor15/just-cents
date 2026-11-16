@@ -10,7 +10,7 @@ Built for BCH BLAZE 2026. MIT licensed.
 
 1. The order is filled in: "Make me a kit to list my game." Press **Start**.
 2. Three parts appear: an icon, a description in three languages, a voice-over. Previews arrive: a 128 px watermarked icon, the first sentence in each language, the first three seconds of the voice.
-3. Every preview is checked by code against the published rules. The demo specialist Sam is careless on purpose and delivers Portuguese where Spanish was asked: rejected, 0¢. The helper calls Lena, her text passes. **Break it yourself** lets you make Lena the careless one instead; both texts are checked again.
+3. Every preview is checked by code against the published rules. The demo specialist Sam is careless on purpose and delivers Portuguese where Spanish was asked: rejected, 0¢. Just Cents then asks Lena, and her text passes. **Break it yourself** lets you make Lena the careless one instead; both texts are checked again.
 4. **Pay 8¢ once**: connect a wallet over WizardConnect (tested with Cashonize, on mainnet and chipnet) and sign one transaction.
 5. Each specialist sees its own output on chain and hands over the full file. The page checks every file's fingerprint against the signed offer, runs the rules again on the full files, puts a short clip together from the accepted parts, and gives you the kit and a receipt with the transaction link.
 

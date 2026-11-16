@@ -4,12 +4,12 @@ import type { Net } from './core/chain';
 type ByNet = Record<Net, string>;
 
 /** Payout addresses of the demo specialists and the service. The keys stay offline. */
-export const PAYOUT: Record<'icon' | 'sam' | 'lena' | 'voice' | 'helper', ByNet> = {
+export const PAYOUT: Record<'icon' | 'sam' | 'lena' | 'voice' | 'service', ByNet> = {
   icon: { mainnet: 'bitcoincash:qplw5l88wxt2chzufr3rm22pfxkgaeu3vscyy08d82', chipnet: 'bchtest:qplw5l88wxt2chzufr3rm22pfxkgaeu3vsukqg96qk' },
   sam: { mainnet: 'bitcoincash:qpdsappf99xzval2l6ps8x29204y8uyasyjfhv2frv', chipnet: 'bchtest:qpdsappf99xzval2l6ps8x29204y8uyasykmntg7ys' },
   lena: { mainnet: 'bitcoincash:qrzvk9ujc48fylttn48f3tkkjnmetpx6vqf95pw6pd', chipnet: 'bchtest:qrzvk9ujc48fylttn48f3tkkjnmetpx6vqdhsxvdx3' },
   voice: { mainnet: 'bitcoincash:qz7t9gc3y9m89wzmj3x7zderx2e9f72lrcusk940hk', chipnet: 'bchtest:qz7t9gc3y9m89wzmj3x7zderx2e9f72lrcczjzhcs2' },
-  helper: { mainnet: 'bitcoincash:qqczcf6dcqm62u0prm2qnre4655w5236qy0mrh6734', chipnet: 'bchtest:qqczcf6dcqm62u0prm2qnre4655w5236qytf8scfkf' },
+  service: { mainnet: 'bitcoincash:qqczcf6dcqm62u0prm2qnre4655w5236qy0mrh6734', chipnet: 'bchtest:qqczcf6dcqm62u0prm2qnre4655w5236qytf8scfkf' },
 };
 
 /** BLAZE banner links. Empty until they exist; the banner then shows the link as not ready yet. */

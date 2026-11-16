@@ -1,7 +1,7 @@
 // Glue between the animated scene (ui/app.js) and the real order: the scene waits at gates until
 // the real preview has arrived and the real check has run, and its texts come from the real verdicts.
 import qrcode from 'qrcode-generator';
-import { Order, descKey, HELPER, ICON_KEY, type Checked, type Who } from './order';
+import { Order, descKey, SERVICE, ICON_KEY, type Checked, type Who } from './order';
 import { preloadOcr } from './measure';
 import { checkLanguage, detectLanguage } from '../core/rules';
 import { readOrderId } from '../core/orderid';
@@ -180,7 +180,7 @@ function runChecks(o: Order, careless: Who) {
   return { icon, descBad, descGood, voice };
 }
 
-/** Start pressed: the helper splits the order and asks the specialists for previews; checks run as they arrive. */
+/** Start pressed: Just Cents splits the order and asks the specialists for previews; checks run as they arrive. */
 export function start(careless: Who = 'sam'): void {
   preloadOcr();
   if (FIXED) careless = FIXED.careless;
@@ -225,7 +225,7 @@ function renderReceiptPrices() {
   const good = order.careless === 'sam' ? 'lena' : 'sam';
   // once every check has answered, the total counts only accepted pieces; before that, the planned total
   const settled = order.chosenIcon() && order.results[good] && order.results.voice;
-  const total = settled ? order.totalCents() : cents('icon') + cents(descKey(good, order.careless)) + cents('voice') + HELPER.cents;
+  const total = settled ? order.totalCents() : cents('icon') + cents(descKey(good, order.careless)) + cents('voice') + SERVICE.cents;
   all('.btn-pay').forEach((b) => (b.textContent = `Pay ${total}¢ once`));
 }
 
@@ -276,7 +276,7 @@ function payTable(o: Order): HTMLElement {
   const t = el('table', 'jc-paytable');
   // the 4th field is the row's kind: '' paid, 'taste' not chosen (grey, as in the receipt), 'rejected' broke a rule (pink)
   const rows: [string, string, string, string][] = o.accepted().map((c) => [label(c), short(c.offer.offer.payTo), `${c.offer.offer.priceCents}¢`, '']);
-  rows.push(['Helper', short(helperAddr(o.net)), `${HELPER.cents}¢`, '']);
+  rows.push(['Just Cents service', short(serviceAddr(o.net)), `${SERVICE.cents}¢`, '']);
   const rej = o.results[o.careless];
   if (rej && !rej.verdict.ok) rows.splice(1, 0, [`Description (${o.careless === 'sam' ? 'Sam' : 'Lena'}) rejected`, 'no output', '0¢', 'rejected']);
   const other = o.notChosenIcon();
@@ -290,8 +290,8 @@ function payTable(o: Order): HTMLElement {
   return t;
 }
 
-function helperAddr(net: Net): string {
-  return PAYOUT.helper[net];
+function serviceAddr(net: Net): string {
+  return PAYOUT.service[net];
 }
 
 export function resetPayment() {
@@ -513,7 +513,7 @@ async function deliver(o: Order) {
       offerFingerprint: offerHashHex(c.offer.offer), // as listed (first 16 bytes) in the OP_RETURN note
       fileSha256: c.offer.offer.fileSha256,
     })),
-    helper: { cents: HELPER.cents, sats: HELPER.sats.toString() },
+    service: { cents: SERVICE.cents, sats: SERVICE.sats.toString() },
     networkFeeSats: o.payment ? o.payment.fee.toString() : null,
     outputs: o.payment ? o.payment.transaction.outputs.map((x) => x.valueSatoshis.toString()) : null,
     rejected: rej && !rej.verdict.ok ? { part: 'description', specialist: o.careless, cents: 0, reason: rej.verdict.reason } : null,
@@ -521,13 +521,13 @@ async function deliver(o: Order) {
   };
   files.push({ name: 'receipt.json', data: new TextEncoder().encode(JSON.stringify(receipt, null, 2)) });
   if (icon && voice && texts) {
-    const li = el('li', 'pending', 'Clip: the helper is putting it together');
+    const li = el('li', 'pending', 'Clip: Just Cents is putting it together');
     list.appendChild(li);
     try {
       const t = texts as Record<string, string>;
       const clip = await makeClip(
         { icon, voice, lines: ['es', 'fr', 'de'].map((lang) => ({ lang, text: (t[lang] ?? '').split(/(?<=[.!?])\s/)[0]! })) },
-        (p) => (li.textContent = `Clip: the helper is putting it together (${Math.round(p * 100)}%)`),
+        (p) => (li.textContent = `Clip: Just Cents is putting it together (${Math.round(p * 100)}%)`),
       );
       files.push({ name: `clip.${clip.ext}`, data: new Uint8Array(await clip.blob.arrayBuffer()) });
       li.className = 'ok';

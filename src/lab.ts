@@ -37,12 +37,12 @@ $('pay').onclick = async () => {
       { label: 'Icon', address: PAYOUT.icon[net], sats: 1500n },
       { label: 'Description (Lena)', address: PAYOUT.lena[net], sats: 1000n },
       { label: 'Voice-over', address: PAYOUT.voice[net], sats: 1000n },
-      { label: 'Helper', address: PAYOUT.helper[net], sats: 600n },
+      { label: 'Service', address: PAYOUT.service[net], sats: 600n },
     ],
     note: noteText(orderId, hashes),
   });
   log(`built: ${p.transaction.inputs.length} in, ${p.transaction.outputs.length} out, fee ${p.fee}, size ${p.size}, note ${p.noteHex}`);
-  const r = await link.sign(p, 'Just Cents: pay 3 specialists + helper');
+  const r = await link.sign(p, 'Just Cents: pay 3 specialists + service');
   if (!r.ok) return log(`wallet said: ${r.error}`);
   log(`signed: ${r.signedHex.length / 2} bytes`);
   if (!($('send') as HTMLInputElement).checked) return log('not broadcast (checkbox off)');

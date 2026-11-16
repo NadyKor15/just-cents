@@ -31,7 +31,7 @@ The specialists in the demo are ours, each labeled "demo specialist, run by the 
 
 - `POST /api/orders` with JSON `{"network": "mainnet" | "chipnet", "careless": "sam" | "lena"}` (both optional) → the order: id, rules, prices in cents and satoshis, previews, signed offers, checks, the rejected piece, `pay_url`.
 - `GET /api/orders/{id}` → the same, with `status` = `awaiting_payment` or `paid` and the `txid`.
-- `GET /api/orders/{id}/pay` → `pay_url` for the person. The wallet shows "Just Cents: pay 3 specialists + helper".
+- `GET /api/orders/{id}/pay` → `pay_url` for the person. The wallet shows "Just Cents: pay 3 specialists + service".
 - `GET /api/orders/{id}/kit` → after payment: a link and a sha256 fingerprint for each file. Before payment: HTTP 409, `awaiting_payment`.
 - Order creation is limited per address; nothing is stored until an order is paid.
 

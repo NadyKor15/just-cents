@@ -303,7 +303,7 @@ function buildWorld(st, key, W, H, ex = 0) {
     clearTimeout(backTimer); backTimer = setTimeout(() => { if (ch.follow) { sayLive(null); goHome(); } }, 4000);
   };
   const onLeave = () => { pointer.tx = 0; pointer.ty = 0; if (ch.follow && ch.cur !== 'help' && ch.cur !== 'spec') sayLive(null); };
-  if (!STATIC && !CAPTURE) st.addEventListener('pointerdown', (e) => { // touch: tap a tile → the helper walks there
+  if (!STATIC && !CAPTURE) st.addEventListener('pointerdown', (e) => { // touch: tap a tile → the character walks there
     if (!ch.follow) return; const r = st.getBoundingClientRect(); const [k, x] = hoverAt((e.clientX - r.left) / r.width * W, (e.clientY - r.top) / r.height * H);
     if (k) { if (ch.homeW > .5) goOut(); ch.px = x; sayLive(k); clearTimeout(backTimer); backTimer = setTimeout(() => { sayLive(null); goHome(); }, 4000); } });
   if (!STATIC && !CAPTURE) { st.addEventListener('pointermove', onMove); st.addEventListener('pointerleave', onLeave); }

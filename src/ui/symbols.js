@@ -116,7 +116,7 @@ export function buildSymbols(st, key, gsap, sh = 0) {
           .to(q('.fx-star'), { opacity: 0, duration: .4 }, .7);
         break;
       }
-      case 's3': // the route lights node by node: helper → three specialists → one payment
+      case 's3': // the route lights node by node: order → three specialists → one payment
         [0, 1, 2].forEach((r) => tl.fromTo(q(`.fx-n${r}`), { opacity: 0 }, { opacity: 1, duration: .16, yoyo: true, repeat: 1 }, .05 + r * .22));
         break;
       case 's4':

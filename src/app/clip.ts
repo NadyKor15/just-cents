@@ -1,4 +1,4 @@
-// The helper puts a short clip together from the accepted parts and the game's own material:
+// Just Cents puts a short clip together from the accepted parts and the game's own material:
 // a few seconds of gameplay (no sound), stills of the game, then the new icon with the first line of each
 // description; the accepted voice-over plays across the whole clip. Drawn on a canvas and recorded in the
 // browser in real time. Hard cuts and a slow push-in only: no blur, no still moments.

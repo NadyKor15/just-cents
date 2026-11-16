@@ -1,6 +1,6 @@
 // Live chipnet check of the whole payment path, minus the screen:
 // site pairs with a wallet over the real WizardConnect relay → finds its coins → builds one payment
-// (accepted specialists + helper + change + note) → wallet signs → we broadcast → each specialist's
+// (accepted specialists + service + change + note) → wallet signs → we broadcast → each specialist's
 // release check accepts it, and the rejected one has nothing.
 // Run: LIVE=1 TEST_MNEMONIC_FILE=<file with the test phrase> npx vitest run test/live
 import { describe, expect, it } from 'vitest';
@@ -17,7 +17,7 @@ const PAYEES = {
   icon: 'bchtest:qplw5l88wxt2chzufr3rm22pfxkgaeu3vsukqg96qk',
   lena: 'bchtest:qrzvk9ujc48fylttn48f3tkkjnmetpx6vqdhsxvdx3',
   voice: 'bchtest:qz7t9gc3y9m89wzmj3x7zderx2e9f72lrcczjzhcs2',
-  helper: 'bchtest:qqczcf6dcqm62u0prm2qnre4655w5236qytf8scfkf',
+  service: 'bchtest:qqczcf6dcqm62u0prm2qnre4655w5236qytf8scfkf',
   sam: 'bchtest:qpdsappf99xzval2l6ps8x29204y8uyasykmntg7ys',
 };
 
@@ -34,7 +34,7 @@ function waitFor(get: () => WalletState, kind: WalletState['kind'], ms: number):
 }
 
 describe.skipIf(!LIVE)('chipnet: pair, sign, broadcast, release', () => {
-  it('pays three accepted specialists and the helper in one transaction', { timeout: 120_000 }, async () => {
+  it('pays three accepted specialists and the service in one transaction', { timeout: 120_000 }, async () => {
     const mnemonic = readFileSync(process.env.TEST_MNEMONIC_FILE!, 'utf8').trim();
     const logs: SignLog[] = [];
     const w = headlessWallet(mnemonic, 'testnet', (l) => logs.push(l));
@@ -55,14 +55,14 @@ describe.skipIf(!LIVE)('chipnet: pair, sign, broadcast, release', () => {
         { label: 'Icon', address: PAYEES.icon, sats: 1500n },
         { label: 'Description (Lena)', address: PAYEES.lena, sats: 1000n },
         { label: 'Voice-over', address: PAYEES.voice, sats: 1000n },
-        { label: 'Helper', address: PAYEES.helper, sats: 600n },
+        { label: 'Service', address: PAYEES.service, sats: 600n },
       ],
       note: noteText(orderId, offerHashes),
     });
-    const signed = await site.sign(p, 'Just Cents: pay 3 specialists + helper');
+    const signed = await site.sign(p, 'Just Cents: pay 3 specialists + service');
     expect(signed.ok, signed.ok ? '' : signed.error).toBe(true);
     if (!signed.ok) return;
-    expect(logs[0]).toMatchObject({ rawTxType: 'string', broadcast: false, userPrompt: 'Just Cents: pay 3 specialists + helper', outputs: 6 });
+    expect(logs[0]).toMatchObject({ rawTxType: 'string', broadcast: false, userPrompt: 'Just Cents: pay 3 specialists + service', outputs: 6 });
 
     const vm = createVirtualMachineBch2026(true);
     const tx = decodeTransaction(hexToBin(signed.signedHex));

@@ -24,7 +24,7 @@ export interface ApiEnv {
 }
 
 export const REQUEST = 'Make me a kit to list my game.';
-const HELPER_CENTS = 1;
+const SERVICE_CENTS = 1; // Just Cents' own 1¢ for matching and checks
 const RATE_PER_MINUTE = 20;
 
 /** Per-IP limit on order creation, in the edge cache (no storage writes). */
@@ -78,7 +78,7 @@ function describe(meta: OrderMeta, origin: string, txid: string | null, choice: 
     part('description', `${name(good)} (demo specialist)`, ok, okCheck, 'language detection (franc) on the first sentence of each language, here'),
     part('voice', 'voice (demo specialist)', voice, voiceCheck, 'length from the signed offer here, measured again on the full file after payment'),
   ];
-  const total = accepted.reduce((s, p) => s + p.price_cents, 0) + HELPER_CENTS;
+  const total = accepted.reduce((s, p) => s + p.price_cents, 0) + SERVICE_CENTS;
   return {
     id: meta.id,
     network: net,
@@ -100,7 +100,7 @@ function describe(meta: OrderMeta, origin: string, txid: string | null, choice: 
         replaced_by: `${name(good)} (demo specialist)`,
       },
     ],
-    helper: { cents: HELPER_CENTS, pay_to: PAYOUT.helper[net] },
+    service: { cents: SERVICE_CENTS, pay_to: PAYOUT.service[net], note: 'Just Cents itself: matching and checks' },
     total_cents: total,
     status: txid ? 'paid' : 'awaiting_payment',
     txid,
@@ -156,7 +156,7 @@ export async function api(request: Request, env: ApiEnv): Promise<Response> {
   if (action === 'pay' && request.method === 'GET') {
     const p = await paidTx(env, meta.id);
     const d = describe(meta, origin, p?.txid ?? null, p?.choice ?? askChoice(url));
-    return json({ id: meta.id, status: d.status, pay_url: d.pay_url, total_cents: d.total_cents, pay_note: d.pay_note, wallet_prompt: 'Just Cents: pay 3 specialists + helper' });
+    return json({ id: meta.id, status: d.status, pay_url: d.pay_url, total_cents: d.total_cents, pay_note: d.pay_note, wallet_prompt: 'Just Cents: pay 3 specialists + service' });
   }
 
   if (action === 'paid' && request.method === 'POST') {

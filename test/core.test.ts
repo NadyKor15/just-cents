@@ -59,7 +59,7 @@ describe('payment transaction', () => {
     { label: 'Icon', address: payees[0]!.address, sats: 14000n },
     { label: 'Description (Lena)', address: payees[1]!.address, sats: 9500n },
     { label: 'Voice-over', address: payees[2]!.address, sats: 9500n },
-    { label: 'Helper', address: payees[3]!.address, sats: 4800n },
+    { label: 'Service', address: payees[3]!.address, sats: 4800n },
   ];
   const note = noteText(ORDER, [1, 2, 3].map((i) => binToHex(sha256.hash(utf8ToBin(`o${i}`)))));
 
