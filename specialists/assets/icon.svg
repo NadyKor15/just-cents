@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#27B7E8"/>
+      <stop offset="0.6" stop-color="#7EDCF0"/>
+      <stop offset="1" stop-color="#FFE7A8"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#FFF3B0" stop-opacity="0.95"/>
+      <stop offset="0.55" stop-color="#FFD35A" stop-opacity="0.45"/>
+      <stop offset="1" stop-color="#FFD35A" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="sun" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFE066"/>
+      <stop offset="1" stop-color="#FF9B3D"/>
+    </linearGradient>
+    <linearGradient id="sea1" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#18A9C9"/>
+      <stop offset="1" stop-color="#0B6FA6"/>
+    </linearGradient>
+    <linearGradient id="sea2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0E86B8"/>
+      <stop offset="1" stop-color="#0A4F86"/>
+    </linearGradient>
+    <linearGradient id="wingA" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#EAF7FB"/>
+    </linearGradient>
+    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="14"/>
+    </filter>
+  </defs>
+
+  <!-- sky -->
+  <rect width="1024" height="1024" fill="url(#sky)"/>
+
+  <!-- sun glow + sun -->
+  <circle cx="690" cy="300" r="330" fill="url(#glow)"/>
+  <circle cx="690" cy="300" r="215" fill="#FFF0B8" opacity="0.6"/>
+  <circle cx="690" cy="300" r="185" fill="url(#sun)"/>
+
+  <!-- sea back wave -->
+  <path d="M0 700 C 120 650 230 650 340 700 C 450 750 560 750 670 700 C 780 650 890 650 1024 700 L1024 1024 L0 1024 Z" fill="url(#sea1)"/>
+  <!-- sea front wave -->
+  <path d="M0 800 C 130 745 250 745 370 800 C 490 855 610 855 730 800 C 850 745 940 750 1024 790 L1024 1024 L0 1024 Z" fill="url(#sea2)"/>
+  <!-- wave highlights -->
+  <path d="M60 880 C 150 850 230 850 320 880" fill="none" stroke="#7EDCF0" stroke-width="16" stroke-linecap="round" opacity="0.7"/>
+  <path d="M560 930 C 650 900 740 900 830 930" fill="none" stroke="#7EDCF0" stroke-width="16" stroke-linecap="round" opacity="0.7"/>
+
+  <!-- route dots -->
+  <path d="M130 860 C 190 700 290 730 390 600 C 440 535 490 505 535 488" fill="none" stroke="#FFFFFF" stroke-width="30" stroke-linecap="round" stroke-dasharray="1 62" opacity="0.95"/>
+
+  <!-- plane shadow -->
+  <g filter="url(#soft)" opacity="0.35" transform="translate(18 34)">
+    <polygon points="760,290 400,440 510,486 565,672" fill="#0A4F86"/>
+  </g>
+
+  <!-- paper plane -->
+  <polygon points="760,290 400,440 510,486" fill="url(#wingA)"/>
+  <polygon points="760,290 510,486 565,672" fill="#BFE4F2"/>
+  <polygon points="510,486 565,672 548,520" fill="#8CC9E0"/>
+  <polyline points="760,290 510,486" fill="none" stroke="#FFFFFF" stroke-width="8" stroke-linejoin="round" opacity="0.9"/>
+
+  <!-- small second sparkle sun-rays dots -->
+  <circle cx="905" cy="140" r="14" fill="#FFFFFF" opacity="0.85"/>
+  <circle cx="955" cy="215" r="9" fill="#FFFFFF" opacity="0.7"/>
+  <circle cx="470" cy="190" r="11" fill="#FFFFFF" opacity="0.7"/>
+</svg>

@@ -11,7 +11,7 @@ import {
   utf8ToBin,
 } from '@bitauth/libauth';
 import { buildPayment, DUST_SATS, estimateSize, lockingFor, noteText, opReturnBytecode, parseNote, MAX_OP_RETURN_BYTES, type Utxo } from '../src/core/tx';
-import { offerHashHex, signOffer, verifyOffer, type Offer } from '../src/core/offer';
+import { ANY_ORDER, offerHashHex, signOffer, verifyOffer, type Offer } from '../src/core/offer';
 import { checkPaid, txidOf } from '../src/core/release';
 import { signLocally } from './helpers/signer';
 import { checkDescription, checkIcon, checkLanguage, checkVoice, countLetters, detectLanguage } from '../src/core/rules';
@@ -129,6 +129,7 @@ describe('offers', () => {
   const offer: Offer = {
     v: 1,
     orderId: ORDER,
+    facts: 'es,fr,de',
     specialist: 'lena',
     part: 'description',
     priceCents: 2,
@@ -148,13 +149,18 @@ describe('offers', () => {
     expect(verifyOffer(s, { orderId: 'ff'.repeat(16), nowSec: 0 }).ok).toBe(false);
     expect(verifyOffer(s, { orderId: ORDER, nowSec: 2_000_000_001 }).ok).toBe(false);
     expect(verifyOffer(s, { orderId: ORDER, nowSec: 0, pubkey: '02' + '11'.repeat(32) }).ok).toBe(false);
+    expect(verifyOffer({ ...s, offer: { ...offer, facts: 'pt,fr,de' } }, { orderId: ORDER, nowSec: 0 }).ok).toBe(false);
+  });
+  it('a standing offer (any order) verifies for every order id', () => {
+    const s = signOffer({ ...offer, orderId: ANY_ORDER }, spec.priv);
+    expect(verifyOffer(s, { orderId: 'ab'.repeat(16), nowSec: 0 }).ok).toBe(true);
   });
 });
 
 describe('release on chain', () => {
   const spec = keyAddr(8);
   const offer: Offer = {
-    v: 1, orderId: ORDER, specialist: 'icon-studio', part: 'icon', priceCents: 3, priceSats: '14000',
+    v: 1, orderId: ORDER, facts: '1024x1024', specialist: 'icon-studio', part: 'icon', priceCents: 3, priceSats: '14000',
     fileSha256: '11'.repeat(32), expires: 2_000_000_000, payTo: spec.address, pubkey: binToHex(spec.pub),
   };
   const h = offerHashHex(offer);
@@ -186,9 +192,10 @@ describe('rules', () => {
     expect(checkIcon({ width: 1024, height: 1024, letters: 0, preview: false }).ok).toBe(true);
     expect(checkIcon({ width: 512, height: 512, letters: 0, preview: false })).toEqual({ ok: false, reason: 'asked for 1024×1024, got 512×512' });
     expect(checkIcon({ width: 128, height: 128, letters: 4, preview: true })).toEqual({ ok: false, reason: 'asked for no text, the icon has letters' });
-    expect(countLetters('PLAY', 90)).toBe(4);
-    expect(countLetters('PLAY', 30)).toBe(0);
-    expect(countLetters('— ~ ·', 95)).toBe(0);
+    expect(countLetters([{ text: 'PLAY', confidence: 77 }])).toBe(4);
+    expect(countLetters([{ text: 'PLAY', confidence: 30 }])).toBe(0);
+    expect(countLetters([{ text: 'LJ', confidence: 73 }, { text: 'i', confidence: 88 }, { text: 'RZ', confidence: 25 }])).toBe(0); // shapes in a clean icon
+    expect(countLetters([{ text: '—~·', confidence: 95 }])).toBe(0);
   });
   it('voice: length', () => {
     expect(checkVoice({ seconds: 12.4, preview: false })).toEqual({ ok: true, note: '12.4 s' });

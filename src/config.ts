@@ -12,6 +12,13 @@ export const PAYOUT: Record<'icon' | 'sam' | 'lena' | 'voice' | 'helper', ByNet>
   helper: { mainnet: 'bitcoincash:qqczcf6dcqm62u0prm2qnre4655w5236qy0mrh6734', chipnet: 'bchtest:qqczcf6dcqm62u0prm2qnre4655w5236qytf8scfkf' },
 };
 
+/** BLAZE banner links. Empty until they exist; the banner then shows the link as not ready yet. */
+export const BANNER = {
+  slides: '', // Widget Factory slides
+  repo: '', // public repo, after the owner's go-ahead
+  readme: '',
+};
+
 /** Public keys that sign each specialist's offers. */
 export const OFFER_PUBKEY: Record<'icon' | 'sam' | 'lena' | 'voice', string> = {
   icon: '039fbd87348d91f9e0689e1e011ddf406dccbf832238df7b514ae711ae53f6826b',

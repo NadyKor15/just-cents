@@ -1,0 +1,12 @@
+{
+  "name": "just-cents",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-06-01",
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "not_found_handling": "404-page",
+    "run_worker_first": ["/full/*", "/files/*"]
+  },
+  "observability": { "enabled": true }
+}

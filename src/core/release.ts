@@ -10,6 +10,16 @@ export function txidOf(rawHex: string): string {
   return binToHex(hash256(hexToBin(rawHex)).slice().reverse());
 }
 
+/** Reads the order id from the transaction's own note, then runs checkPaid against it (standing offers). */
+export function checkPaidStanding(rawHex: string, want: { payTo: string; minSats: bigint; offerHashHex: string }): PaymentCheck & { orderIdHex?: string } {
+  const decoded = decodeTransaction(hexToBin(rawHex));
+  if (typeof decoded === 'string') return { ok: false, reason: `cannot read transaction: ${decoded}` };
+  const notes = decoded.outputs.map((o) => parseNote(o.lockingBytecode)).filter((n) => n !== null);
+  if (notes.length !== 1) return { ok: false, reason: notes.length ? 'more than one Just Cents note' : 'no Just Cents note in this transaction' };
+  const orderIdHex = notes[0]!.orderIdHex;
+  return { ...checkPaid(rawHex, { ...want, orderIdHex }), orderIdHex };
+}
+
 export function checkPaid(rawHex: string, want: { payTo: string; minSats: bigint; orderIdHex: string; offerHashHex: string }): PaymentCheck {
   const decoded = decodeTransaction(hexToBin(rawHex));
   if (typeof decoded === 'string') return { ok: false, reason: `cannot read transaction: ${decoded}` };

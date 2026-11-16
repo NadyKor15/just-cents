@@ -1,0 +1,307 @@
+{
+  "mainnet": {
+    "icon": {
+      "signed": {
+        "offer": {
+          "v": 1,
+          "orderId": "*",
+          "facts": "1024x1024",
+          "specialist": "icon (demo specialist)",
+          "part": "icon",
+          "priceCents": 3,
+          "priceSats": "14267",
+          "fileSha256": "027652c4f6a067cf2aee218298adef7d6726201c4bb385a37641db53e4839c05",
+          "expires": 1798761599,
+          "payTo": "bitcoincash:qplw5l88wxt2chzufr3rm22pfxkgaeu3vscyy08d82",
+          "pubkey": "039fbd87348d91f9e0689e1e011ddf406dccbf832238df7b514ae711ae53f6826b"
+        },
+        "sig": "0a06423c004480fb1dbcc299f4c6c3ca09c3a69e724b13f7a32c727d82a3473d6399b157a06e9cd8c65d52f6e0de8f0a829e263e8de13bef3dcc29911208e3c2"
+      },
+      "file": "icon-1024.png",
+      "preview": "/previews/icon-128.png",
+      "payToLockingHex": "76a9147eea7ce77196ac5c5c48e23da94149ac8ee7916488ac",
+      "offerHashHex": "2ba9c77d59e5da36a953072c88fed0195dcf3811676b25c75bab9f9fd9b4d316"
+    },
+    "sam:good": {
+      "signed": {
+        "offer": {
+          "v": 1,
+          "orderId": "*",
+          "facts": "es,fr,de",
+          "specialist": "Sam (demo specialist)",
+          "part": "description",
+          "priceCents": 2,
+          "priceSats": "9512",
+          "fileSha256": "9036b0db0af8da14a9df9e580075277443a815898ec23d15a486aa549e25d108",
+          "expires": 1798761599,
+          "payTo": "bitcoincash:qpdsappf99xzval2l6ps8x29204y8uyasyjfhv2frv",
+          "pubkey": "0214ffd7211c47baeafbfd82f7f4c7da11c7e9931d8c95fceb97ebd0d9a5dff6ef"
+        },
+        "sig": "c51462210db10bb724f284d5ebe9a9e2b732904c82b3cc8fe218e73837f30587682b0c59fead2ebe745c92d8049f108f73361ca61857e0c37f0102790f539cfb"
+      },
+      "file": "description-good.json",
+      "preview": {
+        "es": "Un agente gestiona el dinero de una adolescente de trece años siguiendo estrictamente las reglas que tú mismo hayas escrito.",
+        "fr": "Déléguez la gestion de l'argent de votre adolescent à un agent qui applique strictement les règles que vous aurez écrites.",
+        "de": "Ein Agent verwaltet das Geld eines Teenagers strikt nach den Regeln, die du selbst in diesem Spiel festlegst."
+      },
+      "payToLockingHex": "76a9145b0e8429294c2677eafe8303994553ea43f09d8188ac",
+      "offerHashHex": "cebfa1d6321a8a4c6185b48fd29ebf54ca24e14a8dc8676329e9434dbcc988f2"
+    },
+    "sam:careless": {
+      "signed": {
+        "offer": {
+          "v": 1,
+          "orderId": "*",
+          "facts": "es,fr,de",
+          "specialist": "Sam (demo specialist)",
+          "part": "description",
+          "priceCents": 2,
+          "priceSats": "9512",
+          "fileSha256": "67836af2e239ca0040ee41e187300ba37ad0f56e2da883d34a64f7a178102136",
+          "expires": 1798761599,
+          "payTo": "bitcoincash:qpdsappf99xzval2l6ps8x29204y8uyasyjfhv2frv",
+          "pubkey": "0214ffd7211c47baeafbfd82f7f4c7da11c7e9931d8c95fceb97ebd0d9a5dff6ef"
+        },
+        "sig": "aa0be419197652f134e7bd77f90502d73077669c46d12834647429478082e929e2fca7cec505af40aeedca3cd01a396c3978a8f90ff69b700b24a5d9c09c256b"
+      },
+      "file": "description-careless.json",
+      "preview": {
+        "es": "Um agente gerencia o dinheiro de uma adolescente de 13 anos seguindo rigorosamente as regras que você mesmo escreveu.",
+        "fr": "Déléguez la gestion de l'argent de votre adolescent à un agent qui applique strictement les règles que vous aurez écrites.",
+        "de": "Ein Agent verwaltet das Geld eines Teenagers strikt nach den Regeln, die du selbst in diesem Spiel festlegst."
+      },
+      "payToLockingHex": "76a9145b0e8429294c2677eafe8303994553ea43f09d8188ac",
+      "offerHashHex": "a14dad4403a8e4f93a6c530cc6e6b04433b3a2fc34e81fb55c3f863bfec61343"
+    },
+    "lena:good": {
+      "signed": {
+        "offer": {
+          "v": 1,
+          "orderId": "*",
+          "facts": "es,fr,de",
+          "specialist": "Lena (demo specialist)",
+          "part": "description",
+          "priceCents": 2,
+          "priceSats": "9512",
+          "fileSha256": "9036b0db0af8da14a9df9e580075277443a815898ec23d15a486aa549e25d108",
+          "expires": 1798761599,
+          "payTo": "bitcoincash:qrzvk9ujc48fylttn48f3tkkjnmetpx6vqf95pw6pd",
+          "pubkey": "02240616b674e5f2b06907420914d21907493ea4ef31845beb74f4040d1a7b13a2"
+        },
+        "sig": "26aeb0e791044d16717ce01f6f3c49b8c49c9f97f3c18eabb2e91926312b5d85e8228dec74ec9c18849eae9b5257f609c5d0e2b2374980bd7ff24a40d05a1bfc"
+      },
+      "file": "description-good.json",
+      "preview": {
+        "es": "Un agente gestiona el dinero de una adolescente de trece años siguiendo estrictamente las reglas que tú mismo hayas escrito.",
+        "fr": "Déléguez la gestion de l'argent de votre adolescent à un agent qui applique strictement les règles que vous aurez écrites.",
+        "de": "Ein Agent verwaltet das Geld eines Teenagers strikt nach den Regeln, die du selbst in diesem Spiel festlegst."
+      },
+      "payToLockingHex": "76a914c4cb1792c54e927d6b9d4e98aed694f79584da6088ac",
+      "offerHashHex": "2ee99caddb8511c786cc38183feee89113b3a677e314ae8d47a60c488b492c92"
+    },
+    "lena:careless": {
+      "signed": {
+        "offer": {
+          "v": 1,
+          "orderId": "*",
+          "facts": "es,fr,de",
+          "specialist": "Lena (demo specialist)",
+          "part": "description",
+          "priceCents": 2,
+          "priceSats": "9512",
+          "fileSha256": "67836af2e239ca0040ee41e187300ba37ad0f56e2da883d34a64f7a178102136",
+          "expires": 1798761599,
+          "payTo": "bitcoincash:qrzvk9ujc48fylttn48f3tkkjnmetpx6vqf95pw6pd",
+          "pubkey": "02240616b674e5f2b06907420914d21907493ea4ef31845beb74f4040d1a7b13a2"
+        },
+        "sig": "8295b2b2e5a615f0926bece217f59bfc4db9358abca3f00b851fbbf157a862955d4fa8edaad48853f939abf45eb288e2ad22e06f2a43da53b8ca9b39d0fc39d6"
+      },
+      "file": "description-careless.json",
+      "preview": {
+        "es": "Um agente gerencia o dinheiro de uma adolescente de 13 anos seguindo rigorosamente as regras que você mesmo escreveu.",
+        "fr": "Déléguez la gestion de l'argent de votre adolescent à un agent qui applique strictement les règles que vous aurez écrites.",
+        "de": "Ein Agent verwaltet das Geld eines Teenagers strikt nach den Regeln, die du selbst in diesem Spiel festlegst."
+      },
+      "payToLockingHex": "76a914c4cb1792c54e927d6b9d4e98aed694f79584da6088ac",
+      "offerHashHex": "38cbd439802352cd4dafa69c17d60bd8aa8c5be6ea010e9c4d4c94a9192be6c9"
+    },
+    "voice": {
+      "signed": {
+        "offer": {
+          "v": 1,
+          "orderId": "*",
+          "facts": "12.25s",
+          "specialist": "voice (demo specialist)",
+          "part": "voice",
+          "priceCents": 2,
+          "priceSats": "9512",
+          "fileSha256": "9a52b10129af601c8a0f390a3220e24398a695641f8224d4d4089a5689efc073",
+          "expires": 1798761599,
+          "payTo": "bitcoincash:qz7t9gc3y9m89wzmj3x7zderx2e9f72lrcusk940hk",
+          "pubkey": "026798be40e18f30a32c9394a49da576d3aa939df88b24ffd647b286eed710c5f5"
+        },
+        "sig": "3965cbfc9e1b6a9543d660a6574111e51d538f2d165120a9b206e7156d87b75d2982b10aaaa1bad1eadcc180ab8d3bd1636726a511a75ed9d46ccbd5655d0e70"
+      },
+      "file": "voice-full.mp3",
+      "preview": "/previews/voice-3s.mp3",
+      "payToLockingHex": "76a914bcb2a311217672b85b944de1372332b254f95f1e88ac",
+      "offerHashHex": "4ea5827f74736f55e04210ef9ed3bbcfb263a47764fa661580b1968d2b5e9ce6"
+    }
+  },
+  "chipnet": {
+    "icon": {
+      "signed": {
+        "offer": {
+          "v": 1,
+          "orderId": "*",
+          "facts": "1024x1024",
+          "specialist": "icon (demo specialist)",
+          "part": "icon",
+          "priceCents": 3,
+          "priceSats": "14267",
+          "fileSha256": "027652c4f6a067cf2aee218298adef7d6726201c4bb385a37641db53e4839c05",
+          "expires": 1798761599,
+          "payTo": "bchtest:qplw5l88wxt2chzufr3rm22pfxkgaeu3vsukqg96qk",
+          "pubkey": "039fbd87348d91f9e0689e1e011ddf406dccbf832238df7b514ae711ae53f6826b"
+        },
+        "sig": "36e71a0cffe0560bcd41f320ef9b4623de48f9d77d4d3899674c34d77c5e540f82005b51cbc21d4d2eb74f77c8ebb5a853549d6850de8aaf3a49b4566bced86c"
+      },
+      "file": "icon-1024.png",
+      "preview": "/previews/icon-128.png",
+      "payToLockingHex": "76a9147eea7ce77196ac5c5c48e23da94149ac8ee7916488ac",
+      "offerHashHex": "38e93e1f9fe9fb66b4c97cba8f5f408debf607f3c5c4792c6698d1a8c80167f2"
+    },
+    "sam:good": {
+      "signed": {
+        "offer": {
+          "v": 1,
+          "orderId": "*",
+          "facts": "es,fr,de",
+          "specialist": "Sam (demo specialist)",
+          "part": "description",
+          "priceCents": 2,
+          "priceSats": "9512",
+          "fileSha256": "9036b0db0af8da14a9df9e580075277443a815898ec23d15a486aa549e25d108",
+          "expires": 1798761599,
+          "payTo": "bchtest:qpdsappf99xzval2l6ps8x29204y8uyasykmntg7ys",
+          "pubkey": "0214ffd7211c47baeafbfd82f7f4c7da11c7e9931d8c95fceb97ebd0d9a5dff6ef"
+        },
+        "sig": "524f4338348cb0b609b9e5ddf9ced6cbe4053f0bf476de742962ad675f719c3ac30a467803b74afa3cfd5c43029f0b79346e86067ae72064be2b526341ed087a"
+      },
+      "file": "description-good.json",
+      "preview": {
+        "es": "Un agente gestiona el dinero de una adolescente de trece años siguiendo estrictamente las reglas que tú mismo hayas escrito.",
+        "fr": "Déléguez la gestion de l'argent de votre adolescent à un agent qui applique strictement les règles que vous aurez écrites.",
+        "de": "Ein Agent verwaltet das Geld eines Teenagers strikt nach den Regeln, die du selbst in diesem Spiel festlegst."
+      },
+      "payToLockingHex": "76a9145b0e8429294c2677eafe8303994553ea43f09d8188ac",
+      "offerHashHex": "cbf9ce1dd323650fa79744bf86e7c6e56a47a18941e48da9918de565c13274d1"
+    },
+    "sam:careless": {
+      "signed": {
+        "offer": {
+          "v": 1,
+          "orderId": "*",
+          "facts": "es,fr,de",
+          "specialist": "Sam (demo specialist)",
+          "part": "description",
+          "priceCents": 2,
+          "priceSats": "9512",
+          "fileSha256": "67836af2e239ca0040ee41e187300ba37ad0f56e2da883d34a64f7a178102136",
+          "expires": 1798761599,
+          "payTo": "bchtest:qpdsappf99xzval2l6ps8x29204y8uyasykmntg7ys",
+          "pubkey": "0214ffd7211c47baeafbfd82f7f4c7da11c7e9931d8c95fceb97ebd0d9a5dff6ef"
+        },
+        "sig": "de8148ec66ffd33ca26db07159420c2fa8293084984b047d7518d12ebad27b5e7a50fb0063ea9661419dd5dfed5332847af1891a64d8bb023d47d8cd84f14788"
+      },
+      "file": "description-careless.json",
+      "preview": {
+        "es": "Um agente gerencia o dinheiro de uma adolescente de 13 anos seguindo rigorosamente as regras que você mesmo escreveu.",
+        "fr": "Déléguez la gestion de l'argent de votre adolescent à un agent qui applique strictement les règles que vous aurez écrites.",
+        "de": "Ein Agent verwaltet das Geld eines Teenagers strikt nach den Regeln, die du selbst in diesem Spiel festlegst."
+      },
+      "payToLockingHex": "76a9145b0e8429294c2677eafe8303994553ea43f09d8188ac",
+      "offerHashHex": "7efd7d6b403746b2d4215768f1f9977f9e066048212aab91810a6c1064afecd6"
+    },
+    "lena:good": {
+      "signed": {
+        "offer": {
+          "v": 1,
+          "orderId": "*",
+          "facts": "es,fr,de",
+          "specialist": "Lena (demo specialist)",
+          "part": "description",
+          "priceCents": 2,
+          "priceSats": "9512",
+          "fileSha256": "9036b0db0af8da14a9df9e580075277443a815898ec23d15a486aa549e25d108",
+          "expires": 1798761599,
+          "payTo": "bchtest:qrzvk9ujc48fylttn48f3tkkjnmetpx6vqdhsxvdx3",
+          "pubkey": "02240616b674e5f2b06907420914d21907493ea4ef31845beb74f4040d1a7b13a2"
+        },
+        "sig": "29e4579f55db3960dd36101d0cb57c9195e5fe6310260bf4c1a676db1dd512cf1188c6f015ad479c085931e79f0ed7ff32506317c0bf1eba741ab530a4febc0b"
+      },
+      "file": "description-good.json",
+      "preview": {
+        "es": "Un agente gestiona el dinero de una adolescente de trece años siguiendo estrictamente las reglas que tú mismo hayas escrito.",
+        "fr": "Déléguez la gestion de l'argent de votre adolescent à un agent qui applique strictement les règles que vous aurez écrites.",
+        "de": "Ein Agent verwaltet das Geld eines Teenagers strikt nach den Regeln, die du selbst in diesem Spiel festlegst."
+      },
+      "payToLockingHex": "76a914c4cb1792c54e927d6b9d4e98aed694f79584da6088ac",
+      "offerHashHex": "08665a8140c7c2aa97218489e374035ce288cd04490f9931673e3876131a39a8"
+    },
+    "lena:careless": {
+      "signed": {
+        "offer": {
+          "v": 1,
+          "orderId": "*",
+          "facts": "es,fr,de",
+          "specialist": "Lena (demo specialist)",
+          "part": "description",
+          "priceCents": 2,
+          "priceSats": "9512",
+          "fileSha256": "67836af2e239ca0040ee41e187300ba37ad0f56e2da883d34a64f7a178102136",
+          "expires": 1798761599,
+          "payTo": "bchtest:qrzvk9ujc48fylttn48f3tkkjnmetpx6vqdhsxvdx3",
+          "pubkey": "02240616b674e5f2b06907420914d21907493ea4ef31845beb74f4040d1a7b13a2"
+        },
+        "sig": "bc12220d19a9104f2596f198bccc8c3fe3701a191521e6f42d88c09b19a96e574650f9d1fb65343cd66ccb4696d08238f1480482fc0089da579f07c9246f6f93"
+      },
+      "file": "description-careless.json",
+      "preview": {
+        "es": "Um agente gerencia o dinheiro de uma adolescente de 13 anos seguindo rigorosamente as regras que você mesmo escreveu.",
+        "fr": "Déléguez la gestion de l'argent de votre adolescent à un agent qui applique strictement les règles que vous aurez écrites.",
+        "de": "Ein Agent verwaltet das Geld eines Teenagers strikt nach den Regeln, die du selbst in diesem Spiel festlegst."
+      },
+      "payToLockingHex": "76a914c4cb1792c54e927d6b9d4e98aed694f79584da6088ac",
+      "offerHashHex": "f4326951eade4c891adcb5053ee88c2855e493936afdf055a5c739267479f462"
+    },
+    "voice": {
+      "signed": {
+        "offer": {
+          "v": 1,
+          "orderId": "*",
+          "facts": "12.25s",
+          "specialist": "voice (demo specialist)",
+          "part": "voice",
+          "priceCents": 2,
+          "priceSats": "9512",
+          "fileSha256": "9a52b10129af601c8a0f390a3220e24398a695641f8224d4d4089a5689efc073",
+          "expires": 1798761599,
+          "payTo": "bchtest:qz7t9gc3y9m89wzmj3x7zderx2e9f72lrcczjzhcs2",
+          "pubkey": "026798be40e18f30a32c9394a49da576d3aa939df88b24ffd647b286eed710c5f5"
+        },
+        "sig": "33ff716b3ab4c4e74413e50c148ed564232a5fdb4b1e110393c74c423e486252ab98aea38bcdc72e0b48e3b084027b6826d19a867158342d08df532d651c6f84"
+      },
+      "file": "voice-full.mp3",
+      "preview": "/previews/voice-3s.mp3",
+      "payToLockingHex": "76a914bcb2a311217672b85b944de1372332b254f95f1e88ac",
+      "offerHashHex": "3443ae0ba158a0e19720d8c1fe4df4d806d328a1538a72a85c3c2b14c3ad71bc"
+    }
+  },
+  "_meta": {
+    "rateUsd": 210.27,
+    "rateAt": "2026-11-16T22:19:45Z",
+    "source": "CoinGecko simple/price"
+  }
+}

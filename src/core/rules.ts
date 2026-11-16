@@ -58,10 +58,19 @@ export function checkDescription(byLang: Record<string, string>, opts: { full: b
   return { ok: true, note: 'Spanish, French and German, as asked' };
 }
 
-/** Letters found by OCR: count only real letters, so stray symbols in artwork do not count. */
-export function countLetters(ocrText: string, confidence: number): number {
-  if (confidence < 60) return 0;
-  return (ocrText.match(/\p{L}/gu) ?? []).length;
+/**
+ * Letters found by OCR. Artwork makes OCR "see" stray one- or two-character shapes, so only readable words count:
+ * at least 3 letters, read with confidence 70 or more. Measured on the demo icons: the word "PLAY" reads at 77–80,
+ * shapes in a clean icon read as 1–2 characters.
+ */
+export const OCR_MIN_WORD_LETTERS = 3;
+export const OCR_MIN_CONFIDENCE = 70;
+export function countLetters(words: { text: string; confidence: number }[]): number {
+  return words
+    .filter((w) => w.confidence >= OCR_MIN_CONFIDENCE)
+    .map((w) => (w.text.match(/\p{L}/gu) ?? []).length)
+    .filter((n) => n >= OCR_MIN_WORD_LETTERS)
+    .reduce((s, n) => s + n, 0);
 }
 
 export function checkIcon(m: { width: number; height: number; letters: number; preview: boolean }): Verdict {

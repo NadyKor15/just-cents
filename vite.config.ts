@@ -5,6 +5,7 @@ export default defineConfig({
   server: { host: '127.0.0.1', port: 5181, strictPort: true },
   build: {
     target: 'es2022',
-    rollupOptions: { input: { index: resolve(__dirname, 'index.html'), lab: resolve(__dirname, 'lab.html') } },
+    // lab.html (wallet lab) stays a dev-only page and is not built into the site
+    rollupOptions: { input: { index: resolve(__dirname, 'index.html') } },
   },
 });
