@@ -189,13 +189,22 @@ export function resetPayment() {
 }
 
 /** Pay pressed: pair a wallet over WizardConnect, build one transaction, let the wallet sign, send it. */
-export function pay(onPaid: () => void): void {
+export async function pay(onPaid: () => void): Promise<void> {
   if (!order) return;
   if (paid) {
     document.querySelector('#kit')?.scrollIntoView({ behavior: 'smooth' });
     return;
   }
   const o = order;
+  // never build a payment before every check has answered
+  if (gates) {
+    toast('Checking the last pieces…', 2500);
+    await Promise.allSettled(Object.values(gates));
+  }
+  if (!o.accepted().length) {
+    toast('Nothing was accepted, so there is nothing to pay.');
+    return;
+  }
   closeModal();
   modal = el('div', 'jc-modal');
   modal.setAttribute('role', 'dialog');
