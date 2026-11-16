@@ -10,6 +10,20 @@
 .blaze-addr:focus-visible{outline:2px solid var(--lime-hot);outline-offset:2px}
 .blaze-addr.copied{color:var(--lime-hot)}
 
+/* description tile: first sentence per language instead of the grey bar */
+.desc-bar.has-text{background:none;border-radius:0;height:auto!important;display:grid;gap:3px}
+.stage-d .t-desc .desc-bar.has-text{left:20px;top:84px;width:246px}
+.stage-m .t-desc .desc-bar.has-text{left:9px;top:41px;width:100px;display:flex;justify-content:center;gap:6px}
+.desc-bar .dl{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font:500 12.5px/1.35 "Figtree",sans-serif;color:var(--ink-2)}
+.desc-bar .dl i{font-style:normal}
+.stage-m .desc-bar .dl{font-size:8px;line-height:1.2}
+.stage-m .desc-bar .dl i{display:none}
+.desc-bar .dl b{display:inline-block;min-width:22px;font-weight:800;color:var(--orchid-lo)}
+.stage-m .desc-bar .dl b{min-width:0}
+.desc-bar .dl.wrong{color:#8a1f2c;text-decoration:line-through;text-decoration-color:rgba(228,70,93,.7)}
+.desc-bar .dl.wrong b{color:var(--pink)}
+/* tall phones: the "Break it yourself" row and "Become a specialist" move down with the receipt and footer */
+.stage-m .brk,.stage-m .spec{margin-top:calc(var(--ex) * .92)}
 .icon-prev-img{display:block;width:100%;height:100%;object-fit:cover;border-radius:20%;image-rendering:auto}
 .txl-pill.live{background:var(--lime-hot)!important;color:var(--ink)!important}
 .txl-pill.live a{color:inherit;font-weight:700;text-decoration:none}

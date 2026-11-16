@@ -3,6 +3,7 @@
 import qrcode from 'qrcode-generator';
 import { Order, descKey, HELPER, type Checked, type Who } from './order';
 import { preloadOcr } from './measure';
+import { checkLanguage, detectLanguage } from '../core/rules';
 import { makeClip } from './clip';
 import { zip } from './zip';
 import { WalletLink, type WalletState } from '../core/wallet';
@@ -24,6 +25,27 @@ const short = (a: string) => `${a.split(':')[1]!.slice(0, 6)}…${a.slice(-6)}`;
 
 function setTagReason(who: Who, text: string) {
   all(`.tag-${who} span`).forEach((s) => (s.innerHTML = text.replace(/, /, ',<br>')));
+}
+
+/** Description preview: the first sentence in each language and what the language detector says about it. */
+function showDescPreview(c: Checked) {
+  const firsts = order!.entry(c.key).preview as Record<string, string>;
+  all('.t-desc .desc-bar').forEach((bar) => {
+    bar.classList.add('has-text');
+    bar.innerHTML = '';
+    for (const lang of ['es', 'fr', 'de']) {
+      const ok = checkLanguage(firsts[lang] ?? '', lang).ok;
+      const row = document.createElement('span');
+      row.className = `dl${ok ? '' : ' wrong'}`;
+      const code = document.createElement('b');
+      code.textContent = lang.toUpperCase();
+      const text = document.createElement('i');
+      text.textContent = ` ${firsts[lang] ?? ''}`;
+      row.append(code, text);
+      row.title = `${lang.toUpperCase()}: ${firsts[lang]} — detected ${detectLanguage(firsts[lang] ?? '')}`;
+      bar.appendChild(row);
+    }
+  });
 }
 
 function showIconPreview(url: string) {
@@ -69,7 +91,7 @@ export function start(careless: Who = 'sam'): void {
   const descGood = o.checkDescription(other);
   const voice = o.checkVoice();
   icon.then(() => showIconPreview(o.entry('icon').preview as string)).catch((e) => fail('Icon', e));
-  descBad.then((c) => { if (!c.verdict.ok) setTagReason(careless, c.verdict.reason); }).catch((e) => fail('Description', e));
+  descBad.then((c) => { showDescPreview(c); if (!c.verdict.ok) setTagReason(careless, c.verdict.reason); }).catch((e) => fail('Description', e));
   descGood.catch((e) => fail('Description', e));
   voice.catch((e) => fail('Voice-over', e));
   gates = { icon, descBad, descGood, voice };
@@ -79,6 +101,8 @@ export function start(careless: Who = 'sam'): void {
 /** The scene calls this at each gate; it resolves when the real step is done (never rejects, the scene must not hang). */
 export function wait(name: GateName): Promise<void> {
   if (!gates) return Promise.resolve();
+  // the replacement's preview takes the tile when the scene reaches it
+  if (name === 'descGood') return gates.descGood.then((c) => showDescPreview(c), () => undefined);
   return gates[name].then(() => undefined, () => undefined);
 }
 
@@ -106,6 +130,7 @@ export async function switchCareless(who: Who): Promise<boolean> {
     const [bad, good] = await Promise.all([order.checkDescription(who), order.checkDescription(other)]);
     if (!bad.verdict.ok) setTagReason(who, bad.verdict.reason);
     if (!good.verdict.ok) toast(`${other}: ${good.verdict.reason}`);
+    else showDescPreview(good);
   } catch (e) {
     fail('Description', e);
   }
