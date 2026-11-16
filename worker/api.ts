@@ -90,7 +90,7 @@ function describe(meta: OrderMeta, origin: string, txid: string | null, choice: 
       variants: (['a', 'b'] as Choice[]).map((v) => ({ variant: v, preview: abs(origin, book[ICON_KEY[v]]!.preview as string), offer_fingerprint: book[ICON_KEY[v]]!.offerHashHex, price_cents: book[ICON_KEY[v]]!.signed.offer.priceCents })),
     },
     parts: accepted,
-    not_chosen: [{ part: `icon (variant ${choice === 'a' ? 'B' : 'A'})`, cents: 0, preview: abs(origin, otherIcon.preview as string), reason: 'not chosen' }],
+    not_chosen: [{ part: `icon (variant ${choice === 'a' ? 'B' : 'A'})`, cents: 0, preview: abs(origin, otherIcon.preview as string), reason: 'not chosen by the person (taste, not a rule: it passed the rules)' }],
     rejected: [
       {
         part: 'description',

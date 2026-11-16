@@ -137,3 +137,9 @@
 .kit-assistant code{font-size:13px;background:#f6eff3;padding:2px 6px;border-radius:6px}
 .kit-api{list-style:none;margin-top:8px;display:grid;gap:4px;font-size:13px}
 .kit-wait{margin-top:6px;font-size:13px;color:#6c5f66}
+/* taste vs rules: a piece you did not choose is neutral (grey ○); only a piece that broke a rule is pink */
+.kit-files li.taste{background:#f3eff1;color:#6c6468;box-shadow:none}
+.kit-files li.taste::before{content:"○";color:#9a8f94}
+.jc-paytable tr.taste td{color:#8a7f83;font-weight:400}
+.jc-paytable tr.rejected td:first-child,.jc-paytable tr.rejected td:last-child{color:#b0304a}
+.blaze-addr.copy-failed{color:#ff9aa8}

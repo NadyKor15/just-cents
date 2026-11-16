@@ -1,6 +1,7 @@
 /// <reference types="vite/client" />
 import './ui/app.js';
 import { BANNER } from './config';
+import { copyText } from './app/copy';
 import { prepareScene, setWho, WHO, type Orderer } from './app/controller';
 
 prepareScene();
@@ -16,12 +17,19 @@ if (import.meta.env.VITE_CATALOG === '1') document.querySelectorAll<HTMLElement>
 document.querySelectorAll<HTMLAnchorElement>('[data-banner]').forEach((a) => {
   const url = BANNER[a.dataset.banner as keyof typeof BANNER];
   if (url) a.href = url;
-  else a.setAttribute('aria-disabled', 'true');
+  else {
+    // not published yet: shown greyed, and a click goes nowhere (no empty tab)
+    a.removeAttribute('href');
+    a.removeAttribute('target');
+    a.setAttribute('aria-disabled', 'true');
+    a.title = 'Coming soon';
+  }
 });
 document.querySelectorAll<HTMLButtonElement>('[data-copy]').forEach((b) =>
   b.addEventListener('click', async () => {
-    await navigator.clipboard.writeText(b.dataset.copy!).catch(() => {});
-    b.classList.add('copied');
-    setTimeout(() => b.classList.remove('copied'), 1200);
+    const ok = await copyText(b.dataset.copy!);
+    b.classList.add(ok ? 'copied' : 'copy-failed');
+    b.title = ok ? 'Copied' : 'Could not copy: select the address and copy it';
+    setTimeout(() => b.classList.remove('copied', 'copy-failed'), 1600);
   }),
 );

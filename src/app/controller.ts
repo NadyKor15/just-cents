@@ -8,6 +8,7 @@ import { readOrderId } from '../core/orderid';
 import { offerHashHex } from '../core/offer';
 import { makeClip } from './clip';
 import { zip } from './zip';
+import { copyText } from './copy';
 import { WalletLink, type WalletState } from '../core/wallet';
 import { explorerTx, type Net } from '../core/chain';
 import { OFFERS } from '../data/offers';
@@ -273,14 +274,16 @@ function closeModal() {
 
 function payTable(o: Order): HTMLElement {
   const t = el('table', 'jc-paytable');
-  const rows: [string, string, string][] = o.accepted().map((c) => [label(c), short(c.offer.offer.payTo), `${c.offer.offer.priceCents}¢`]);
-  rows.push(['Helper', short(helperAddr(o.net)), `${HELPER.cents}¢`]);
+  // the 4th field is the row's kind: '' paid, 'taste' not chosen (grey, as in the receipt), 'rejected' broke a rule (pink)
+  const rows: [string, string, string, string][] = o.accepted().map((c) => [label(c), short(c.offer.offer.payTo), `${c.offer.offer.priceCents}¢`, '']);
+  rows.push(['Helper', short(helperAddr(o.net)), `${HELPER.cents}¢`, '']);
   const rej = o.results[o.careless];
-  if (rej && !rej.verdict.ok) rows.splice(1, 0, [`Description (${o.careless === 'sam' ? 'Sam' : 'Lena'}) rejected`, 'no output', '0¢']);
+  if (rej && !rej.verdict.ok) rows.splice(1, 0, [`Description (${o.careless === 'sam' ? 'Sam' : 'Lena'}) rejected`, 'no output', '0¢', 'rejected']);
   const other = o.notChosenIcon();
-  if (other) rows.splice(1, 0, [`${label(other)} not chosen`, 'no output', '0¢']);
-  for (const r of rows) {
-    const tr = el('tr');
+  if (other) rows.splice(1, 0, [`${label(other)} not chosen`, 'no output', '—', 'taste']);
+  for (const [a, b, c, kind] of rows) {
+    const tr = el('tr', kind);
+    const r = [a, b, c];
     r.forEach((v) => tr.appendChild(el('td', '', v)));
     t.appendChild(tr);
   }
@@ -396,8 +399,7 @@ export async function pay(onPaid: () => void): Promise<void> {
   qr.innerHTML = q.createSvgTag({ cellSize: 4, margin: 2, scalable: true });
   open.href = uri;
   copy.onclick = async () => {
-    await navigator.clipboard.writeText(uri).catch(() => {});
-    copy.textContent = 'Copied';
+    copy.textContent = (await copyText(uri)) ? 'Copied' : 'Could not copy: press and hold the QR or use Open wallet app';
   };
   status.textContent = 'Scan with your wallet, or copy the link into it';
 }
@@ -493,7 +495,7 @@ async function deliver(o: Order) {
     }
   }
   const otherIcon = o.notChosenIcon();
-  if (otherIcon) list.appendChild(el('li', 'zero', `${label(otherIcon)}: not chosen, 0¢ (it passed the rules; you picked the other one)`));
+  if (otherIcon) list.appendChild(el('li', 'taste', `${label(otherIcon)}: not chosen (taste, not a rule: it passed the rules, you picked the other one), nothing paid`));
   const rej = o.results[o.careless];
   if (rej && !rej.verdict.ok) list.appendChild(el('li', 'zero', `Description (${o.careless === 'sam' ? 'Sam' : 'Lena'}): rejected, 0¢ (${rej.verdict.reason})`));
   const receipt = {
