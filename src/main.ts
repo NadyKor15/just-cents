@@ -1,3 +1,4 @@
+/// <reference types="vite/client" />
 import './ui/app.js';
 import { BANNER } from './config';
 import { prepareScene } from './app/controller';
