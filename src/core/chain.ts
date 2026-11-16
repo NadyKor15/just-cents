@@ -72,8 +72,10 @@ export async function request<T>(net: Net, method: string, ...params: (string | 
 
 export type RawUtxo = { tx_hash: string; tx_pos: number; value: number; height: number };
 
-export function listUnspent(net: Net, address: string): Promise<RawUtxo[]> {
-  return request<RawUtxo[]>(net, 'blockchain.address.listunspent', address);
+/** Plain BCH coins only: coins that carry CashTokens are left alone, so a payment can never burn a token. */
+export async function listUnspent(net: Net, address: string): Promise<RawUtxo[]> {
+  const list = await request<(RawUtxo & { token_data?: unknown })[]>(net, 'blockchain.address.listunspent', address, 'exclude_tokens');
+  return list.filter((u) => !u.token_data);
 }
 
 export function getRawTx(net: Net, txid: string): Promise<string> {

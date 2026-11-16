@@ -5,6 +5,7 @@ import { Order, descKey, HELPER, ICON_KEY, type Checked, type Who } from './orde
 import { preloadOcr } from './measure';
 import { checkLanguage, detectLanguage } from '../core/rules';
 import { readOrderId } from '../core/orderid';
+import { offerHashHex } from '../core/offer';
 import { makeClip } from './clip';
 import { zip } from './zip';
 import { WalletLink, type WalletState } from '../core/wallet';
@@ -170,7 +171,9 @@ function cents(key: string): number {
 function renderReceiptPrices() {
   if (!order) return;
   const good = order.careless === 'sam' ? 'lena' : 'sam';
-  const total = cents('icon') + cents(descKey(good, order.careless)) + cents('voice') + HELPER.cents;
+  // once every check has answered, the total counts only accepted pieces; before that, the planned total
+  const settled = order.chosenIcon() && order.results[good] && order.results.voice;
+  const total = settled ? order.totalCents() : cents('icon') + cents(descKey(good, order.careless)) + cents('voice') + HELPER.cents;
   all('.btn-pay').forEach((b) => (b.textContent = `Pay ${total}¢ once`));
 }
 
@@ -180,6 +183,11 @@ export async function switchCareless(who: Who): Promise<boolean> {
   if (paid) {
     toast('A new order starts, so you can pay again.');
     resetPayment();
+    // a new order with its own id; icon and voice checks carry over (same offers), descriptions are checked again below
+    const prev = order;
+    order = new Order(NET, who);
+    order.iconChoice = prev.iconChoice;
+    for (const k of Object.keys(prev.results)) if (k.startsWith('icon') || k === 'voice') order.results[k] = prev.results[k]!;
   }
   order.careless = who;
   const other: Who = who === 'sam' ? 'lena' : 'sam';
@@ -407,8 +415,19 @@ async function deliver(o: Order) {
     network: o.net,
     txid: o.txid,
     explorer: explorerTx(o.net, o.txid),
-    paid: o.accepted().map((c) => ({ part: c.key, specialist: c.offer.offer.specialist, cents: c.offer.offer.priceCents, sats: c.offer.offer.priceSats, payTo: c.offer.offer.payTo, offerFingerprint: c.offer.offer.fileSha256 })),
+    // what was paid = the outputs of the transaction actually built and signed
+    paid: o.accepted().map((c) => ({
+      part: c.key,
+      specialist: c.offer.offer.specialist,
+      cents: c.offer.offer.priceCents,
+      sats: c.offer.offer.priceSats,
+      payTo: c.offer.offer.payTo,
+      offerFingerprint: offerHashHex(c.offer.offer), // as listed (first 16 bytes) in the OP_RETURN note
+      fileSha256: c.offer.offer.fileSha256,
+    })),
     helper: { cents: HELPER.cents, sats: HELPER.sats.toString() },
+    networkFeeSats: o.payment ? o.payment.fee.toString() : null,
+    outputs: o.payment ? o.payment.transaction.outputs.map((x) => x.valueSatoshis.toString()) : null,
     rejected: rej && !rej.verdict.ok ? { part: 'description', specialist: o.careless, cents: 0, reason: rej.verdict.reason } : null,
     note: o.payment?.noteHex,
   };

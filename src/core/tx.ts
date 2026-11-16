@@ -14,8 +14,11 @@ import {
 export const DUST_SATS = 546n;
 /** Network minimum relay fee is 1 sat/byte; we pay exactly that, rounded up. */
 export const FEE_SATS_PER_BYTE = 1n;
-/** Size of a P2PKH input once the wallet adds a Schnorr signature and the public key. */
-export const P2PKH_INPUT_SIGNED_BYTES = 141;
+/**
+ * Size of a P2PKH input once signed: 141 bytes with a Schnorr signature, up to 149 with ECDSA (72-byte DER + sighash).
+ * We size for ECDSA so the fee never falls below 1 sat/byte whichever scheme the wallet uses (Schnorr overpays ≤8 sat/input).
+ */
+export const P2PKH_INPUT_SIGNED_BYTES = 149;
 /** Nodes relay at most 223 bytes of OP_RETURN script by default. */
 export const MAX_OP_RETURN_BYTES = 223;
 /** Text prefix of our OP_RETURN note: protocol name and version. */

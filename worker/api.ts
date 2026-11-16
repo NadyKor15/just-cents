@@ -9,7 +9,8 @@ import offers from '../src/data/offers.json';
 import { readOrderId, newOrderId, type OrderMeta } from '../src/core/orderid';
 import { checkDescription, checkIcon, checkVoice, RULES } from '../src/core/rules';
 import { PAYOUT } from '../src/config';
-import { readOutputs, readNote, bytesToHex } from './txparse';
+import { readOutputs, readNote, bytesToHex, checkOfferPaid } from './txparse';
+import { bookFor } from './index';
 import { rpc } from './fulcrum';
 import { json } from './http';
 import { history } from './history';
@@ -27,10 +28,10 @@ const HELPER_CENTS = 1;
 const RATE_PER_MINUTE = 20;
 
 /** Per-IP limit on order creation, in the edge cache (no storage writes). */
-export async function rateLimited(request: Request): Promise<boolean> {
+export async function rateLimited(request: Request, bucket = 'create'): Promise<boolean> {
   const ip = request.headers.get('cf-connecting-ip') ?? 'local';
   const minute = Math.floor(Date.now() / 60000);
-  const key = new Request(`https://rate.just-cents.invalid/${encodeURIComponent(ip)}/${minute}`);
+  const key = new Request(`https://rate.just-cents.invalid/${bucket}/${encodeURIComponent(ip)}/${minute}`);
   const cache = (globalThis as unknown as { caches?: { default?: Cache } }).caches?.default;
   if (!cache) return false;
   const hit = await cache.match(key);
@@ -161,14 +162,27 @@ export async function api(request: Request, env: ApiEnv): Promise<Response> {
   if (action === 'paid' && request.method === 'POST') {
     const { txid } = (await request.json().catch(() => ({}))) as { txid?: string };
     if (!txid || !/^[0-9a-f]{64}$/.test(txid)) return json({ ok: false, reason: 'txid must be 64 hex characters' }, 400);
+    if (await rateLimited(request, 'paid')) return json({ ok: false, reason: `at most ${RATE_PER_MINUTE} reports per minute` }, 429);
+    const existing = await paidTx(env, meta.id);
+    if (existing) return existing.txid === txid ? json({ ok: true, id: meta.id, txid, icon_choice: existing.choice }) : json({ ok: false, reason: 'this order is already paid by another transaction' }, 409);
     let raw: string;
     try {
       raw = await rpc<string>(meta.net, 'blockchain.transaction.get', [txid, false]);
     } catch (e) {
       return json({ ok: false, reason: `the network does not know this transaction yet: ${e instanceof Error ? e.message : e}` }, 404);
     }
-    const note = readOutputs(raw).map((o) => readNote(o.script)).find((n) => n);
+    let notes: ReturnType<typeof readNote>[];
+    try {
+      notes = readOutputs(raw).map((o) => readNote(o.script)).filter((n) => n);
+    } catch (e) {
+      return json({ ok: false, reason: `cannot read the transaction: ${e instanceof Error ? e.message : e}` }, 400);
+    }
+    const note = notes.length === 1 ? notes[0]! : null;
     if (!note || note.orderIdHex !== meta.id) return json({ ok: false, reason: 'this transaction is not a payment for this order' }, 409);
+    // it must actually pay at least one listed offer, not just carry the order id
+    const book = bookFor(meta.net);
+    const paidAny = Object.keys(book).some((k) => note.offerPrefixes.includes(book[k]!.offerHashHex.slice(0, 32)) && checkOfferPaid(raw, book, k).ok);
+    if (!paidAny) return json({ ok: false, reason: 'this transaction pays none of the offers in its note' }, 409);
     const choice = choiceFromNote(meta.net, note.offerPrefixes);
     if (env.ORDERS) await env.ORDERS.put(`paid:${meta.id}`, JSON.stringify({ txid, choice }), { expirationTtl: 60 * 60 * 24 * 30 });
     return json({ ok: true, id: meta.id, txid, icon_choice: choice });

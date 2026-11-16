@@ -17,6 +17,8 @@ export const HELPER = { cents: 1, sats: 4756n }; // 1¢ at $210.27/BCH (CoinGeck
 export type Checked = { key: string; who?: Who; verdict: Verdict; offer: SignedOffer; detail: string };
 
 import { newOrderId } from '../core/orderid';
+import { txidOf } from '../core/release';
+import { binToHex, decodeTransaction, hexToBin } from '@bitauth/libauth';
 
 const nowSec = () => Math.floor(Date.now() / 1000);
 
@@ -107,24 +109,39 @@ export class Order {
     return this.accepted().reduce((s, c) => s + c.offer.offer.priceCents, 0) + (this.accepted().length ? HELPER.cents : 0);
   }
 
+  /** The transaction the wallet signed; kept so a retry sends THIS one again instead of paying twice. */
+  signedHex = '';
+
   async pay(link: WalletLink, step: (s: string) => void): Promise<{ txid: string; payment: BuiltPayment }> {
-    const acc = this.accepted();
-    if (!acc.length) throw new Error('nothing was accepted, nothing to pay');
-    step('Looking for coins in your wallet');
-    const coins = await link.coins(this.net);
-    if (!coins.length) throw new Error('Your wallet has no coins on the addresses it shared.');
-    const payouts = acc.map((c) => ({ label: c.key, address: c.offer.offer.payTo, sats: BigInt(c.offer.offer.priceSats) }));
-    payouts.push({ label: 'helper', address: PAYOUT.helper[this.net], sats: HELPER.sats });
-    const p = buildPayment({ utxos: coins, payouts, note: noteText(this.id, acc.map((c) => offerHashHex(c.offer.offer))) });
-    this.payment = p;
-    step('Confirm in your wallet');
-    const signed = await link.sign(p, `Just Cents: pay ${acc.length} specialist${acc.length > 1 ? 's' : ''} + helper`);
-    if (!signed.ok) throw new Error(`Wallet: ${signed.error}`);
+    if (!this.signedHex) {
+      const acc = this.accepted();
+      if (!acc.length) throw new Error('nothing was accepted, nothing to pay');
+      step('Looking for coins in your wallet');
+      const coins = await link.coins(this.net);
+      if (!coins.length) throw new Error('Your wallet has no coins on the addresses it shared.');
+      const payouts = acc.map((c) => ({ label: c.key, address: c.offer.offer.payTo, sats: BigInt(c.offer.offer.priceSats) }));
+      payouts.push({ label: 'helper', address: PAYOUT.helper[this.net], sats: HELPER.sats });
+      const p = buildPayment({ utxos: coins, payouts, note: noteText(this.id, acc.map((c) => offerHashHex(c.offer.offer))) });
+      this.payment = p;
+      step('Confirm in your wallet');
+      const signed = await link.sign(p, `Just Cents: pay ${acc.length} specialist${acc.length > 1 ? 's' : ''} + helper`);
+      if (!signed.ok) throw new Error(`Wallet: ${signed.error}`);
+      // the wallet must sign exactly what was built: same outputs, same inputs
+      const got = decodeTransaction(hexToBin(signed.signedHex));
+      if (typeof got === 'string') throw new Error(`Wallet returned an unreadable transaction: ${got}`);
+      const same =
+        got.outputs.length === p.transaction.outputs.length &&
+        got.outputs.every((o, i) => o.valueSatoshis === p.transaction.outputs[i]!.valueSatoshis && binToHex(o.lockingBytecode) === binToHex(p.transaction.outputs[i]!.lockingBytecode)) &&
+        got.inputs.length === p.transaction.inputs.length;
+      if (!same) throw new Error('Wallet returned a different transaction than the one built; nothing was sent.');
+      this.signedHex = signed.signedHex;
+    }
     step('Sending');
-    const b = await broadcast(this.net, signed.signedHex);
+    const txid = txidOf(this.signedHex); // from the signed bytes, never from a server's answer
+    const b = await broadcast(this.net, this.signedHex);
     if (!b.ok) throw new Error(`Network: ${b.nodeError}`);
-    this.txid = b.txid;
-    return { txid: b.txid, payment: p };
+    this.txid = txid;
+    return { txid, payment: this.payment! };
   }
 
   /** Ask each accepted specialist for the full file, check its fingerprint, then re-check the rules on the full file. */

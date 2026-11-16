@@ -80,7 +80,7 @@ describe('payment transaction', () => {
   it('fee is 1 sat/byte of the signed size (unsigned size + signature bytes)', () => {
     const p = buildPayment({ utxos: [coin(100000n)], payouts, note });
     const unsigned = encodeTransaction(p.transaction).length;
-    expect(p.size - unsigned).toBe(141 - 41); // only the unlocking script is missing
+    expect(p.size - unsigned).toBe(149 - 41); // the unlocking script, sized for ECDSA (worst case)
   });
 
   it('round-trips through the wire encoding, outpoint in txid order', () => {
@@ -113,8 +113,8 @@ describe('payment transaction', () => {
     const utxos = [coin(20000n, 0), coin(30000n, 1)];
     const p = buildPayment({ utxos, payouts, note });
     const { size } = signLocally(p.transaction, p.sourceOutputs, () => wallet.priv);
-    expect(size).toBeLessThanOrEqual(p.size);
-    expect(p.size - size).toBeLessThanOrEqual(4); // estimate is tight
+    expect(size).toBeLessThanOrEqual(p.size); // fee never below 1 sat/byte
+    expect(p.size - size).toBeLessThanOrEqual(8 * p.transaction.inputs.length + 4); // Schnorr overpays at most 8 sat per input
   });
 
   it('a rejected specialist simply has no output', () => {

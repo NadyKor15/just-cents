@@ -4,7 +4,8 @@ import { buildPayment, lockingFor, noteText, type Utxo } from '../src/core/tx';
 import { checkPaid } from '../src/core/release';
 import { offerHashHex, verifyOffer, ANY_ORDER } from '../src/core/offer';
 import { OFFER_PUBKEY, PAYOUT } from '../src/config';
-import { checkPaidRaw, readOutputs } from '../worker/txparse';
+import { checkPaidRaw, checkOfferPaid, readOutputs } from '../worker/txparse';
+import { bookFor } from '../worker/index';
 import offers from '../src/data/offers.json';
 
 const priv = sha256.hash(utf8ToBin('worker-test'));
@@ -38,6 +39,32 @@ describe('worker transaction reader', () => {
       expect(w.ok).toBe(expectOk);
       expect(l.ok).toBe(expectOk);
     }
+  });
+});
+
+describe('one payment cannot unlock two offers of the same specialist', () => {
+  const book = bookFor('chipnet');
+  const a = book['icon']!, b = book['icon:b']!;
+  const pay = (sats: bigint, hashes: string[]) =>
+    binToHex(encodeTransaction(buildPayment({ utxos: [coin], payouts: [{ label: 'icon', address: PAYOUT.icon.chipnet, sats }], note: noteText(ORDER, hashes) }).transaction));
+  it('one price paid, both variants listed: neither file is released', () => {
+    const raw = pay(BigInt(a.priceSats), [a.offerHashHex, b.offerHashHex]);
+    expect(checkOfferPaid(raw, book, 'icon').ok).toBe(false);
+    expect(checkOfferPaid(raw, book, 'icon:b').ok).toBe(false);
+  });
+  it('one price paid, one variant listed: only that file', () => {
+    const raw = pay(BigInt(b.priceSats), [b.offerHashHex]);
+    expect(checkOfferPaid(raw, book, 'icon:b').ok).toBe(true);
+    expect(checkOfferPaid(raw, book, 'icon').ok).toBe(false);
+  });
+  it('both prices paid, both listed: both files', () => {
+    const raw = pay(BigInt(a.priceSats) + BigInt(b.priceSats), [a.offerHashHex, b.offerHashHex]);
+    expect(checkOfferPaid(raw, book, 'icon').ok).toBe(true);
+    expect(checkOfferPaid(raw, book, 'icon:b').ok).toBe(true);
+  });
+  it('Sam careless and good share an address: one payment opens one of them', () => {
+    const raw = pay(0n + BigInt(book['sam:good']!.priceSats), [book['sam:good']!.offerHashHex, book['sam:careless']!.offerHashHex]).replace(binToHex(lockingFor(PAYOUT.icon.chipnet)), binToHex(lockingFor(PAYOUT.sam.chipnet)));
+    expect(checkOfferPaid(raw, book, 'sam:good').ok).toBe(false);
   });
 });
 

@@ -77,6 +77,32 @@ export function readNote(script: Uint8Array): { orderIdHex: string; offerPrefixe
 
 export type Paid = { ok: true; paidSats: bigint; orderIdHex: string } | { ok: false; reason: string };
 
+export type BookEntry = { payToLockingHex: string; offerHashHex: string; priceSats: string };
+
+/**
+ * One payment must not unlock two offers of the same specialist (two icon variants share one address).
+ * The amount paid to this offer's address must cover the prices of ALL offers in the note that pay to
+ * that same address.
+ */
+export function checkOfferPaid(rawHex: string, book: Record<string, BookEntry>, key: string): Paid {
+  const entry = book[key];
+  if (!entry) return { ok: false, reason: `no such offer: ${key}` };
+  let outs: RawOutput[];
+  try {
+    outs = readOutputs(rawHex);
+  } catch (e) {
+    return { ok: false, reason: `cannot read transaction: ${e instanceof Error ? e.message : e}` };
+  }
+  const notes = outs.map((o) => readNote(o.script)).filter((n) => n !== null);
+  if (notes.length !== 1) return { ok: false, reason: notes.length ? 'more than one Just Cents note' : 'no Just Cents note in this transaction' };
+  const listed = new Set(notes[0]!.offerPrefixes);
+  let required = 0n;
+  for (const e of Object.values(book)) {
+    if (e.payToLockingHex === entry.payToLockingHex && listed.has(e.offerHashHex.slice(0, 32))) required += BigInt(e.priceSats);
+  }
+  return checkPaidRaw(rawHex, { payToLockingHex: entry.payToLockingHex, minSats: required > 0n ? required : BigInt(entry.priceSats), offerHashHex: entry.offerHashHex });
+}
+
 export function checkPaidRaw(rawHex: string, want: { payToLockingHex: string; minSats: bigint; offerHashHex: string }): Paid {
   let outs: RawOutput[];
   try {

@@ -4,11 +4,21 @@
 // No libauth here: it initialises WASM at import time, which Workers do not allow. The offer book carries
 // the precomputed payout script and offer fingerprint, and worker/txparse.ts reads the transaction.
 import offers from '../src/data/offers.json';
-import { checkPaidRaw } from './txparse';
+import { checkOfferPaid, type BookEntry } from './txparse';
 import { rpc, type Net } from './fulcrum';
 
 type OfferEntry = { signed: { offer: { priceSats: string } }; file: string; payToLockingHex: string; offerHashHex: string };
 const OFFERS = offers as unknown as Record<Net, Record<string, OfferEntry>>;
+
+/** The offer book as the payment checks need it. */
+export function bookFor(net: Net): Record<string, BookEntry> {
+  const b: Record<string, BookEntry> = {};
+  for (const [k, e] of Object.entries(OFFERS[net] ?? {})) {
+    if (k.startsWith('_')) continue;
+    b[k] = { payToLockingHex: e.payToLockingHex, offerHashHex: e.offerHashHex, priceSats: e.signed.offer.priceSats };
+  }
+  return b;
+}
 
 export interface Env {
   ASSETS: { fetch(req: Request | string): Promise<Response> };
@@ -48,7 +58,7 @@ export async function release(url: URL, env: Env): Promise<Response> {
     return json({ ok: false, reason: `could not read the transaction from the network: ${msg}` }, 502);
   }
   if (!raw) return json({ ok: false, reason: 'transaction not found' }, 404);
-  const paid = checkPaidRaw(raw, { payToLockingHex: entry.payToLockingHex, minSats: BigInt(entry.signed.offer.priceSats), offerHashHex: entry.offerHashHex });
+  const paid = checkOfferPaid(raw, bookFor(net), entryKey);
   if (!paid.ok) return json({ ok: false, reason: paid.reason }, 402);
   const file = await env.ASSETS.fetch(new Request(new URL(`/files/${entry.file}`, url.origin)));
   if (!file.ok) return json({ ok: false, reason: 'file missing on the specialist side' }, 500);
