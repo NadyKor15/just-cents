@@ -14,8 +14,8 @@ export interface Env {
   ASSETS: { fetch(req: Request | string): Promise<Response> };
 }
 
-export const json = (body: unknown, status = 200) =>
-  new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json', 'cache-control': 'no-store' } });
+import { json } from './http';
+export { json };
 
 async function rawTx(net: Net, txid: string): Promise<string | null> {
   // Right after broadcast a server may not know the transaction yet: ask a few times.

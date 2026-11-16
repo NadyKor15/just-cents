@@ -13,10 +13,7 @@ export const HELPER = { cents: 1, sats: 4756n }; // 1¢ at $210.27/BCH (CoinGeck
 
 export type Checked = { key: string; who?: Who; verdict: Verdict; offer: SignedOffer; detail: string };
 
-function hex16(): string {
-  const b = crypto.getRandomValues(new Uint8Array(16));
-  return [...b].map((x) => x.toString(16).padStart(2, '0')).join('');
-}
+import { newOrderId } from '../core/orderid';
 
 const nowSec = () => Math.floor(Date.now() / 1000);
 
@@ -25,7 +22,7 @@ export function descKey(who: Who, careless: Who): string {
 }
 
 export class Order {
-  readonly id = hex16();
+  readonly id: string;
   readonly results: Record<string, Checked> = {};
   txid = '';
   payment: BuiltPayment | null = null;
@@ -33,7 +30,10 @@ export class Order {
   constructor(
     readonly net: Net,
     public careless: Who,
-  ) {}
+    id?: string,
+  ) {
+    this.id = id ?? newOrderId(net, careless);
+  }
 
   entry(key: string): OfferEntry {
     const e = OFFERS[this.net]?.[key];

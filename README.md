@@ -59,6 +59,27 @@ Anyone can become a Just Cents specialist with two endpoints on their own server
 
 Your rules must be checkable by code, published before the work, the same for everyone.
 
+**Example: an existing service joins.** Say you already run a voice service. Add two routes next to your API:
+
+```
+POST /just-cents/offer   {"order": "<id>", "text": "...", "seconds": 12}
+  → {"preview": "<url of the first 3 s>", "offer": {...signed: price, sha256 of the full mp3, deadline, your BCH address}}
+GET  /just-cents/file?order=<id>&txid=<txid>
+  → the full mp3, once the transaction pays your address and its note lists your offer's fingerprint
+```
+
+Your price, your rules ("10 to 15 seconds"), your address. No account with us and no bank.
+
+## For assistants
+
+Assistants (Claude, GPT, developer agents) can place orders; a person still signs. Connect over MCP:
+
+```
+claude mcp add --transport http justcents https://justcents.retailbox-automation.com/mcp
+```
+
+Tools: `create_order`, `get_order`, `get_pay_link`, `get_kit`. The same over plain HTTP under `/api/orders`, described in [`/llms.txt`](public/llms.txt). The assistant never holds money: it hands the person a pay link, the person signs once in their own wallet, and the assistant fetches the kit. Creating an order stores nothing (the order id carries its own state); the only stored fact is "this order was paid by this transaction", written after the transaction is read from the network. OCR for "no text on the icon" runs in the person's browser on the pay page, not in the API.
+
 ## Limits, said plainly
 
 - **OCR finds clear words, not every letter.** tesseract.js reads horizontal words of three or more letters with confidence 70 or more (the word "PLAY" on a test icon is found; shapes in a clean icon are not counted). Slanted or faint text can pass. The rule is published with this limit.

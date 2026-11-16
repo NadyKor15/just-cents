@@ -1,5 +1,8 @@
 import './ui/app.js';
 import { BANNER } from './config';
+import { prepareScene } from './app/controller';
+
+prepareScene();
 
 // BLAZE banner: slides, code, CashTokens address (copy on click).
 document.querySelectorAll<HTMLAnchorElement>('[data-banner]').forEach((a) => {

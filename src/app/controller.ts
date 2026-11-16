@@ -4,6 +4,7 @@ import qrcode from 'qrcode-generator';
 import { Order, descKey, HELPER, type Checked, type Who } from './order';
 import { preloadOcr } from './measure';
 import { checkLanguage, detectLanguage } from '../core/rules';
+import { readOrderId } from '../core/orderid';
 import { makeClip } from './clip';
 import { zip } from './zip';
 import { WalletLink, type WalletState } from '../core/wallet';
@@ -12,7 +13,22 @@ import { OFFERS } from '../data/offers';
 import { PAYOUT } from '../config';
 
 const Q = new URLSearchParams(location.search);
-export const NET: Net = Q.get('net') === 'chipnet' ? 'chipnet' : 'mainnet';
+/** An order made by an assistant through the API: /?order=<id>. Its network and careless specialist come with it. */
+export const FIXED = readOrderId(Q.get('order') ?? '');
+export const NET: Net = FIXED ? FIXED.net : Q.get('net') === 'chipnet' ? 'chipnet' : 'mainnet';
+/** When the careless one is Lena from the start, the scene's first plate shows Lena (labels swapped). */
+const SWAPPED = FIXED?.careless === 'lena';
+const plate = (who: Who) => (SWAPPED ? (who === 'lena' ? 'sam' : 'lena') : who);
+
+/** Scene labels for an order whose careless specialist is Lena from the start. */
+export function prepareScene(): void {
+  if (!FIXED) return;
+  all('.brk').forEach((b) => (b.style.display = 'none')); // the order is fixed; the person can still read who failed
+  if (!SWAPPED) return;
+  all('.tag-sam b').forEach((b) => (b.textContent = 'Lena (demo specialist)'));
+  all('.tag-lena b').forEach((b) => (b.textContent = 'Sam (demo specialist)'));
+  all('.receipt [data-sam]').forEach((e) => (e.innerHTML = e.dataset.lena ?? e.innerHTML));
+}
 
 type GateName = 'icon' | 'descBad' | 'descGood' | 'voice';
 
@@ -24,7 +40,7 @@ const all = (sel: string) => [...document.querySelectorAll<HTMLElement>(sel)];
 const short = (a: string) => `${a.split(':')[1]!.slice(0, 6)}…${a.slice(-6)}`;
 
 function setTagReason(who: Who, text: string) {
-  all(`.tag-${who} span`).forEach((s) => (s.innerHTML = text.replace(/, /, ',<br>')));
+  all(`.tag-${plate(who)} span`).forEach((s) => (s.innerHTML = text.replace(/, /, ',<br>')));
 }
 
 /** Description preview: the first sentence in each language and what the language detector says about it. */
@@ -82,7 +98,8 @@ export function toast(text: string, ms = 6000) {
 /** Start pressed: the helper splits the order and asks the specialists for previews; checks run as they arrive. */
 export function start(careless: Who = 'sam'): void {
   preloadOcr();
-  order = new Order(NET, careless);
+  if (FIXED) careless = FIXED.careless;
+  order = new Order(NET, careless, FIXED?.id);
   paid = false;
   const o = order;
   const other: Who = careless === 'sam' ? 'lena' : 'sam';
@@ -261,6 +278,8 @@ export async function pay(onPaid: () => void): Promise<void> {
       paid = true;
       status.textContent = 'Paid. Specialists are handing over the files.';
       setTx(o.net, r.txid);
+      // tell the order API, so an assistant waiting on this order can fetch the kit (the server checks the note on chain)
+      void reportPaid(o.id, r.txid);
       setTimeout(closeModal, 900);
       onPaid();
       void deliver(o);
@@ -284,6 +303,18 @@ export async function pay(onPaid: () => void): Promise<void> {
     copy.textContent = 'Copied';
   };
   status.textContent = 'Scan with your wallet, or copy the link into it';
+}
+
+async function reportPaid(id: string, txid: string) {
+  for (let i = 0; i < 5; i++) {
+    try {
+      const r = await fetch(`/api/orders/${id}/paid`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ txid }) });
+      if (r.ok || r.status === 409) return;
+    } catch {
+      /* retry */
+    }
+    await new Promise((res) => setTimeout(res, 2000 * (i + 1)));
+  }
 }
 
 function setTx(net: Net, txid: string) {

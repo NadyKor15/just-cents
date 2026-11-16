@@ -1,6 +1,8 @@
-// Cloudflare Pages: static site in dist/, Pages Functions in functions/ (only /full/* and /files/*, see public/_routes.json).
+// Cloudflare Pages: static site in dist/, Pages Functions in functions/ (/full/*, /files/*, /api/*, /mcp — see public/_routes.json).
+// ORDERS keeps only "order <id> was paid by <txid>", written after the transaction is read from the network.
 {
   "name": "just-cents",
   "pages_build_output_dir": "./dist",
-  "compatibility_date": "2026-06-01"
+  "compatibility_date": "2026-06-01",
+  "kv_namespaces": [{ "binding": "ORDERS", "id": "afc65004005d4fe7960c7ae23201beb8" }]
 }

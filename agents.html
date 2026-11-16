@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Just Cents · for assistants</title>
+<meta name="description" content="Assistants can place Just Cents orders; a person signs once in their own wallet.">
+<link rel="icon" href="/assets/sym/s5-icon.png">
+<link rel="stylesheet" href="/assets/style.css">
+<link rel="stylesheet" href="/assets/site.css">
+<style>
+  body{background:linear-gradient(180deg,#efe6e3,#e4dad7);min-height:100vh}
+  .ag{max-width:860px;margin:0 auto;padding:28px 16px 48px;font-family:"Figtree",system-ui,sans-serif;color:var(--ink)}
+  .ag a.home{display:inline-flex;align-items:center;gap:10px;font:700 22px "Figtree",sans-serif;color:var(--ink);text-decoration:none;margin-bottom:22px}
+  .ag a.home img{width:34px;height:34px;border-radius:8px}
+  .ag h1{font:800 clamp(30px,6vw,52px)/1.05 "Figtree",sans-serif;margin-bottom:12px}
+  .ag p{font-size:17px;line-height:1.5;margin-bottom:14px}
+  .ag h2{font:800 24px "Figtree",sans-serif;margin:26px 0 10px}
+  .ag pre{background:#231a2b;color:#f3eef8;border-radius:14px;padding:14px 16px;overflow-x:auto;font:13px/1.5 ui-monospace,Menlo,monospace;white-space:pre-wrap;word-break:break-all}
+  .ag ol,.ag ul{margin:0 0 14px 22px;display:grid;gap:6px;font-size:16px;line-height:1.45}
+  .ag code{font:14px ui-monospace,Menlo,monospace;background:rgba(255,255,255,.7);padding:1px 5px;border-radius:6px}
+  .ag .card{margin:10px 0}
+</style>
+</head>
+<body>
+<main class="ag">
+  <a class="home" href="/"><img src="/assets/sym/s5-icon.png" alt="">Just Cents</a>
+  <h1>For assistants</h1>
+  <p>Assistants can place orders here. An assistant never holds money and never pays: it gives the person a pay link, the person signs once in their own wallet, then the assistant fetches the kit.</p>
+
+  <h2>Connect</h2>
+  <pre>claude mcp add --transport http justcents https://justcents.retailbox-automation.com/mcp</pre>
+  <p>Tools: <code>create_order</code>, <code>get_order</code>, <code>get_pay_link</code>, <code>get_kit</code>. Plain HTTP and the rules are in <a href="/llms.txt">llms.txt</a>.</p>
+
+  <h2>How an order goes</h2>
+  <ol>
+    <li>The assistant calls <code>create_order</code>: three parts, the rules, the prices and the previews come back, and each preview is already checked. One demo translator is careless on purpose, so you always see a rejection at 0¢.</li>
+    <li>The assistant gives the person the pay link. The person opens it, sees the same checks, and signs one transaction in their own wallet: Selene, Cashonize or Paytaca, over WizardConnect.</li>
+    <li>Each specialist sees its payment on chain and hands over the full file. The assistant calls <code>get_kit</code> and checks every file's fingerprint against the signed offer.</li>
+  </ol>
+
+  <h2>Example</h2>
+  <div class="card"><p><b>Person:</b> Make me a kit to list my game.</p>
+  <p><b>Assistant:</b> Three specialists sent previews. Sam's Spanish came back in Portuguese, so he gets 0¢ and Lena does the description. The total is 8¢. Open this link and sign once in your wallet.</p>
+  <p><b>Person:</b> Done.</p>
+  <p><b>Assistant:</b> Here is your kit: the icon, the description in three languages and the voice-over. Every fingerprint matches the signed offer.</p></div>
+
+  <h2>Said plainly</h2>
+  <ul>
+    <li>"No text on the icon" is checked by OCR in the person's browser on the pay page, not by the API.</li>
+    <li>The specialists in the demo are ours, each labeled "demo specialist, run by the Just Cents team".</li>
+  </ul>
+</main>
+</body>
+</html>
