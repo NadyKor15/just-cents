@@ -12,6 +12,7 @@ import { PAYOUT } from '../src/config';
 import { readOutputs, readNote, bytesToHex } from './txparse';
 import { rpc } from './fulcrum';
 import { json } from './http';
+import { history } from './history';
 
 type Net = 'mainnet' | 'chipnet';
 type Entry = { signed: { offer: { priceCents: number; priceSats: string; fileSha256: string; facts: string; specialist: string; payTo: string } }; file: string; preview: string | Record<string, string>; payToLockingHex: string; offerHashHex: string };
@@ -130,6 +131,7 @@ export async function api(request: Request, env: ApiEnv): Promise<Response> {
   const url = new URL(request.url);
   const origin = url.origin;
   const parts = url.pathname.replace(/\/+$/, '').split('/').slice(2); // ['orders', id?, action?]
+  if (parts[0] === 'specialists' && parts[2] === 'history' && request.method === 'GET') return history(request);
   if (parts[0] !== 'orders') return json({ ok: false, reason: 'see /llms.txt' }, 404);
 
   if (parts.length === 1) {

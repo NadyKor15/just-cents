@@ -100,6 +100,9 @@
 .btn-like{min-height:48px;padding:0 26px;border:0;border-radius:999px;background:var(--orchid);color:#fff;font:700 16px "Figtree",sans-serif;cursor:pointer}
 .btn-like:disabled{opacity:.55;cursor:progress}
 .more h2{text-align:center;margin-bottom:20px}
+.more-link{text-align:center;margin-top:18px;font-size:16px;font-weight:700}
+.more-link a{color:var(--orchid-lo)}
+.ag a{color:var(--orchid-lo)}
 .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
 .card{padding:20px 20px 18px;border-radius:22px;background:var(--glass);border:1.5px solid var(--glass-line);
   box-shadow:0 0 0 2px rgba(217,244,95,.55),0 0 18px rgba(217,244,95,.35),0 10px 26px rgba(90,60,60,.10)}

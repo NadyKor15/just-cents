@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Just Cents · catalog</title>
+<meta name="description" content="Any small job that can be checked by a rule.">
+<link rel="icon" href="/assets/sym/s5-icon.png">
+<link rel="stylesheet" href="/assets/style.css">
+<link rel="stylesheet" href="/assets/site.css">
+<style>
+  body{background:linear-gradient(180deg,#efe6e3,#e4dad7);min-height:100vh}
+  .cat{max-width:1080px;margin:0 auto;padding:24px 16px 56px;font-family:"Figtree",system-ui,sans-serif;color:var(--ink)}
+  .cat a.home{display:inline-flex;align-items:center;gap:10px;font:700 22px "Figtree",sans-serif;color:var(--ink);text-decoration:none;margin-bottom:18px}
+  .cat a.home img{width:34px;height:34px;border-radius:8px}
+  .cat h1{font:800 clamp(30px,6vw,52px)/1.05 "Figtree",sans-serif;margin-bottom:10px}
+  .cat > p{font-size:17px;line-height:1.5;margin-bottom:22px;max-width:760px}
+  .c-sect{margin:26px 0}
+  .c-sect h2{font:800 26px "Figtree",sans-serif;margin-bottom:4px}
+  .c-rule{font-size:15px;color:var(--ink-2);margin-bottom:12px}
+  .c-rule b{color:var(--orchid-lo)}
+  .c-specs{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+  .c-spec{padding:18px;border-radius:22px;background:var(--glass);border:1.5px solid var(--glass-line);box-shadow:0 0 0 2px rgba(217,244,95,.55),0 0 18px rgba(217,244,95,.3),0 10px 26px rgba(90,60,60,.10)}
+  .c-spec h3{font:700 19px/1.25 "Figtree",sans-serif}
+  .c-who{font-size:13px;color:var(--ink-3);margin:2px 0 10px}
+  .c-ex{display:flex;gap:10px;align-items:center;margin-bottom:10px}
+  .c-ex img{width:72px;height:72px;border-radius:16px}
+  .c-ex audio{width:100%}
+  .c-lines{font-size:13px;line-height:1.4}
+  .c-lines b{color:var(--orchid-lo);margin-right:4px}
+  .c-spec dl{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;font-size:14px;margin-bottom:10px}
+  .c-spec dt{font-weight:700}
+  .c-paid{font-size:13px;margin:6px 0 12px}
+  .c-paid li{list-style:none;font-family:ui-monospace,Menlo,monospace;font-size:12px;margin:2px 0}
+  .c-paid a{color:var(--orchid-lo)}
+  .c-order{display:inline-flex;min-height:44px;align-items:center;padding:0 20px;border-radius:999px;background:var(--orchid);color:#fff;font-weight:700;text-decoration:none}
+  .c-empty{padding:18px;border-radius:22px;border:1.5px dashed rgba(120,100,110,.45);font-size:15px}
+  .c-empty a{color:var(--orchid-lo);font-weight:700}
+</style>
+</head>
+<body>
+<main class="cat">
+  <a class="home" href="/"><img src="/assets/sym/s5-icon.png" alt="">Just Cents</a>
+  <h1>Any small job that can be checked by a rule.</h1>
+  <p>Specialists, their prices, rules and terms. Instead of reviews: work that was accepted and paid, read from the Bitcoin Cash network just now. The specialists here are ours, each labeled "demo specialist, run by the Just Cents team".</p>
+  <div id="sections"></div>
+</main>
+<script type="module" src="/src/catalog.ts"></script>
+</body>
+</html>
