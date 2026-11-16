@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-16T22:21:27.807Z",
+  "generated_at": "2026-11-16T23:08:01.231Z",
   "files": [
     {
       "name": "description-de.txt",
@@ -59,6 +59,28 @@
       "note": "rasterized icon.svg; no letters or digits",
       "width": 1024,
       "height": 1024
+    },
+    {
+      "name": "icon-b-1024.png",
+      "bytes": 229034,
+      "sha256": "6bb608385b5c456eed378591796a33c1375827b4dca2a10db38609a60596d9e4",
+      "note": "variant B rasterized from icon-b.svg; no letters or digits",
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "name": "icon-b-preview-128.png",
+      "bytes": 21738,
+      "sha256": "152e097e58996b0c3bea8d80801b94c655e4b408da89960009500e4ff84a0d5a",
+      "note": "variant B 128 px preview, same watermark treatment as icon-preview-128.png; no letters (mark has a cent-sign glyph)",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "name": "icon-b.svg",
+      "bytes": 4770,
+      "sha256": "1ae064faa48923ec651446ef49705837b2575f00171957966003c9988d709dd8",
+      "note": "variant B source: dusk sky, camp tent with pennant, dotted route, smiling agent orb; no <text> elements"
     },
     {
       "name": "icon-bad-512-with-text.png",

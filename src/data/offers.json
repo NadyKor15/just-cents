@@ -22,6 +22,28 @@
       "payToLockingHex": "76a9147eea7ce77196ac5c5c48e23da94149ac8ee7916488ac",
       "offerHashHex": "2ba9c77d59e5da36a953072c88fed0195dcf3811676b25c75bab9f9fd9b4d316"
     },
+    "icon:b": {
+      "signed": {
+        "offer": {
+          "v": 1,
+          "orderId": "*",
+          "facts": "1024x1024",
+          "specialist": "icon (demo specialist)",
+          "part": "icon",
+          "priceCents": 3,
+          "priceSats": "14267",
+          "fileSha256": "6bb608385b5c456eed378591796a33c1375827b4dca2a10db38609a60596d9e4",
+          "expires": 1798761599,
+          "payTo": "bitcoincash:qplw5l88wxt2chzufr3rm22pfxkgaeu3vscyy08d82",
+          "pubkey": "039fbd87348d91f9e0689e1e011ddf406dccbf832238df7b514ae711ae53f6826b"
+        },
+        "sig": "ab1d5d96494e98611a7cff0a2723c8d2fb418176529aafc8526e2004af639b165418bf0388ef3785c011a95eb495ec00cefa353c7e28efcef4f3fc6ad98bb779"
+      },
+      "file": "icon-b-1024.png",
+      "preview": "/previews/icon-b-128.png",
+      "payToLockingHex": "76a9147eea7ce77196ac5c5c48e23da94149ac8ee7916488ac",
+      "offerHashHex": "523548b198f5207d618fc6cc2008aa0dcef2e498b88c3540d8438975481fda51"
+    },
     "sam:good": {
       "signed": {
         "offer": {
@@ -171,6 +193,28 @@
       "preview": "/previews/icon-128.png",
       "payToLockingHex": "76a9147eea7ce77196ac5c5c48e23da94149ac8ee7916488ac",
       "offerHashHex": "38e93e1f9fe9fb66b4c97cba8f5f408debf607f3c5c4792c6698d1a8c80167f2"
+    },
+    "icon:b": {
+      "signed": {
+        "offer": {
+          "v": 1,
+          "orderId": "*",
+          "facts": "1024x1024",
+          "specialist": "icon (demo specialist)",
+          "part": "icon",
+          "priceCents": 3,
+          "priceSats": "14267",
+          "fileSha256": "6bb608385b5c456eed378591796a33c1375827b4dca2a10db38609a60596d9e4",
+          "expires": 1798761599,
+          "payTo": "bchtest:qplw5l88wxt2chzufr3rm22pfxkgaeu3vsukqg96qk",
+          "pubkey": "039fbd87348d91f9e0689e1e011ddf406dccbf832238df7b514ae711ae53f6826b"
+        },
+        "sig": "c200595e3f1e6a9268dd500ea40bebef150429d737eabeed92382df64006b307d24f14fa9b04b38562ac4d71f5084f97dc8da1d9f3169bc1fe9dbf1c75f58944"
+      },
+      "file": "icon-b-1024.png",
+      "preview": "/previews/icon-b-128.png",
+      "payToLockingHex": "76a9147eea7ce77196ac5c5c48e23da94149ac8ee7916488ac",
+      "offerHashHex": "e9a8e31dc0219ce073ab0577995f51e5e39abb9c507146f01c1f0d298dad64de"
     },
     "sam:good": {
       "signed": {

@@ -27,7 +27,7 @@ describe('order API', () => {
     const { status, j } = await call('POST', '/api/orders', {});
     expect(status).toBe(201);
     expect(j.network).toBe('mainnet');
-    expect(j.parts.map((p: any) => [p.part, p.price_cents, p.check.ok])).toEqual([['icon', 3, true], ['description', 2, true], ['voice', 2, true]]);
+    expect(j.parts.map((p: any) => [p.part, p.price_cents, p.check.ok])).toEqual([['icon (variant A)', 3, true], ['description', 2, true], ['voice', 2, true]]);
     expect(j.rejected[0]).toMatchObject({ cents: 0, reason: 'asked for Spanish, got Portuguese' });
     expect(j.total_cents).toBe(8);
     expect(j.status).toBe('awaiting_payment');
@@ -58,6 +58,23 @@ describe('order API', () => {
     expect(kit.j.files.map((f: any) => f.part)).toEqual(['icon', 'description', 'voice']);
     expect(kit.j.files[1].url).toContain('/full/lena%3Agood?net=chipnet&txid=');
     expect(kit.j.files.every((f: any) => /^[0-9a-f]{64}$/.test(f.sha256))).toBe(true);
+  });
+  it('offers two icon variants; only the chosen one is a paid part, the other is "not chosen, 0 cents"', async () => {
+    const a = (await call('POST', '/api/orders', {})).j;
+    expect(a.icon_choice.chosen).toBe('a');
+    expect(a.icon_choice.variants.map((v: any) => v.variant)).toEqual(['a', 'b']);
+    expect(a.parts[0].part).toBe('icon (variant A)');
+    expect(a.not_chosen[0]).toMatchObject({ part: 'icon (variant B)', cents: 0 });
+    expect(a.total_cents).toBe(8);
+    const b = (await call('GET', `/api/orders/${a.id}?choice=b`)).j;
+    expect(b.parts[0].part).toBe('icon (variant B)');
+    expect(b.parts[0].offer_fingerprint).toBe(a.icon_choice.variants[1].offer_fingerprint);
+    expect(b.pay_url).toBe(`${O}/?order=${a.id}&choice=b`);
+    const id = newOrderId('chipnet', 'sam');
+    store.set(`paid:${id}`, JSON.stringify({ txid: 'cd'.repeat(32), choice: 'b' }));
+    const kit = (await call('GET', `/api/orders/${id}/kit`)).j;
+    expect(kit.icon_choice).toBe('b');
+    expect(kit.files[0].url).toContain('/full/icon%3Ab?');
   });
   it('rejects bad ids and bad txids', async () => {
     expect((await call('GET', '/api/orders/nothex')).status).toBe(400);

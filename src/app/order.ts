@@ -9,6 +9,9 @@ import { PAYOUT } from '../config';
 import { audioSeconds, loadImage, readText, sha256Hex } from './measure';
 
 export type Who = 'sam' | 'lena';
+export type IconChoice = 'a' | 'b';
+/** Offer keys of the two icon variants (variant A keeps the original key). */
+export const ICON_KEY: Record<IconChoice, string> = { a: 'icon', b: 'icon:b' };
 export const HELPER = { cents: 1, sats: 4756n }; // 1¢ at $210.27/BCH (CoinGecko, 16.11.2026 22:19Z), fixed with the offers
 
 export type Checked = { key: string; who?: Who; verdict: Verdict; offer: SignedOffer; detail: string };
@@ -48,15 +51,28 @@ export class Order {
     return e.signed;
   }
 
-  async checkIcon(): Promise<Checked> {
-    const offer = this.verify('icon');
+  /** Which icon variant the person picked (taste); both are checked by the same rules. */
+  iconChoice: IconChoice = 'a';
+
+  async checkIcon(variant: IconChoice = 'a'): Promise<Checked> {
+    const key = ICON_KEY[variant];
+    const offer = this.verify(key);
     const [w, h] = offer.offer.facts.split('x').map(Number) as [number, number];
-    const img = await loadImage(this.entry('icon').preview as string);
+    const img = await loadImage(this.entry(key).preview as string);
     const ocr = await readText(img);
     const letters = countLetters(ocr.words);
     const verdict = checkIcon({ width: w, height: h, letters, preview: false });
     const detail = `declared ${w}×${h} (signed); OCR on the ${img.naturalWidth}px preview: ${letters} letters`;
-    return (this.results.icon = { key: 'icon', verdict, offer, detail });
+    return (this.results[key] = { key, verdict, offer, detail });
+  }
+
+  /** The icon that will be paid for: the chosen variant. */
+  chosenIcon(): Checked | undefined {
+    return this.results[ICON_KEY[this.iconChoice]];
+  }
+
+  notChosenIcon(): Checked | undefined {
+    return this.results[ICON_KEY[this.iconChoice === 'a' ? 'b' : 'a']];
   }
 
   async checkDescription(who: Who): Promise<Checked> {
@@ -84,7 +100,7 @@ export class Order {
   }
 
   accepted(): Checked[] {
-    return [this.results.icon, this.results[this.goodWho()], this.results.voice].filter((c): c is Checked => !!c && c.verdict.ok);
+    return [this.chosenIcon(), this.results[this.goodWho()], this.results.voice].filter((c): c is Checked => !!c && c.verdict.ok);
   }
 
   totalCents(): number {
@@ -121,7 +137,7 @@ export class Order {
     const bytes = await r.arrayBuffer();
     const match = (await sha256Hex(bytes)) === c.offer.offer.fileSha256;
     let verdict: Verdict;
-    if (c.key === 'icon') {
+    if (c.key.startsWith('icon')) {
       const img = await loadImage(new Blob([bytes], { type: 'image/png' }));
       const ocr = await readText(img);
       verdict = checkIcon({ width: img.naturalWidth, height: img.naturalHeight, letters: countLetters(ocr.words), preview: false });

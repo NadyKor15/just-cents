@@ -16,6 +16,13 @@ Files marked TEST ONLY are deliberately wrong and are used only in tests.
     two 40 px copies in opposite corners). The mark contains a cent-sign glyph; no other letters or digits.
   - `icon-bad-512-with-text.png` (TEST ONLY): 512 px with the word PLAY.
 
+## Icon variant B (pick by taste)
+- Variant A (above): daytime, blue/orange, paper plane over a sun. Variant B: dusk, pink-purple sky, a camp tent with a
+  pennant on a hill, mountains, a setting sun, a dotted route leading to the tent door, and a small smiling agent orb.
+- `icon-b.svg` is hand-authored (no text elements). `bash specialists/scripts/make-icon-b.sh` rasterizes it the same way
+  (Chrome for Testing headless shell) to `icon-b-1024.png` and builds `icon-b-preview-128.png` with the same watermark
+  treatment, using the mark at `code/just-cents/public/assets/sym/s5-icon.png`.
+
 ## Descriptions (specialists "lena" and "sam")
 - `description-en.txt` is written by hand from the itch page (109 words).
 - Translations: `python3 -I specialists/scripts/translate.py <es|fr|de|pt> <out-file> ["extra instruction"]`

@@ -12,19 +12,20 @@ const TOOLS = [
       properties: {
         network: { type: 'string', enum: ['mainnet', 'chipnet'], description: 'Bitcoin Cash network, mainnet by default' },
         careless: { type: 'string', enum: ['sam', 'lena'], description: 'Which demo translator is careless on purpose (default sam)' },
+        choice: { type: 'string', enum: ['a', 'b'], description: 'Which of the two icon variants the person prefers (default a); only the chosen one is paid' },
       },
     },
   },
   {
     name: 'get_order',
     description: 'Read an order: previews, checks, the rejected piece (0 cents) and whether it is paid.',
-    inputSchema: { type: 'object', properties: { order_id: { type: 'string' } }, required: ['order_id'] },
+    inputSchema: { type: 'object', properties: { order_id: { type: 'string' }, choice: { type: 'string', enum: ['a', 'b'] } }, required: ['order_id'] },
   },
   {
     name: 'get_pay_link',
     description:
-      'Get the link a person opens to pay the order with one signature in their own wallet over WizardConnect (tested with Cashonize). The assistant never holds money and cannot pay; give this link to the person.',
-    inputSchema: { type: 'object', properties: { order_id: { type: 'string' } }, required: ['order_id'] },
+      'Get the link a person opens to pay the order with one signature in their own wallet over WizardConnect (tested with Cashonize). The assistant never holds money and cannot pay; give this link to the person. Pass choice to set the icon variant the person picked.',
+    inputSchema: { type: 'object', properties: { order_id: { type: 'string' }, choice: { type: 'string', enum: ['a', 'b'] } }, required: ['order_id'] },
   },
   {
     name: 'get_kit',
@@ -64,9 +65,10 @@ async function handle(msg: Rpc, origin: string, env: ApiEnv, ip?: string): Promi
       const name = msg.params?.name as string;
       const a = (msg.params?.arguments ?? {}) as Record<string, string>;
       let r;
-      if (name === 'create_order') r = await callApi(origin, 'POST', '/api/orders', env, { network: a.network, careless: a.careless }, ip);
-      else if (name === 'get_order') r = await callApi(origin, 'GET', `/api/orders/${a.order_id}`, env);
-      else if (name === 'get_pay_link') r = await callApi(origin, 'GET', `/api/orders/${a.order_id}/pay`, env);
+      const ch = a.choice === 'b' ? '?choice=b' : '';
+      if (name === 'create_order') r = await callApi(origin, 'POST', '/api/orders', env, { network: a.network, careless: a.careless, choice: a.choice }, ip);
+      else if (name === 'get_order') r = await callApi(origin, 'GET', `/api/orders/${a.order_id}${ch}`, env);
+      else if (name === 'get_pay_link') r = await callApi(origin, 'GET', `/api/orders/${a.order_id}/pay${ch}`, env);
       else if (name === 'get_kit') r = await callApi(origin, 'GET', `/api/orders/${a.order_id}/kit${a.txid ? `?txid=${a.txid}` : ''}`, env);
       else return error(msg.id, -32602, `unknown tool ${name}`);
       return reply(msg.id, { content: [{ type: 'text', text: JSON.stringify(r.body, null, 2) }], isError: r.status >= 400 && r.status !== 409 });

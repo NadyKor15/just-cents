@@ -1,7 +1,7 @@
 // Glue between the animated scene (ui/app.js) and the real order: the scene waits at gates until
 // the real preview has arrived and the real check has run, and its texts come from the real verdicts.
 import qrcode from 'qrcode-generator';
-import { Order, descKey, HELPER, type Checked, type Who } from './order';
+import { Order, descKey, HELPER, ICON_KEY, type Checked, type Who } from './order';
 import { preloadOcr } from './measure';
 import { checkLanguage, detectLanguage } from '../core/rules';
 import { readOrderId } from '../core/orderid';
@@ -64,7 +64,43 @@ function showDescPreview(c: Checked) {
   });
 }
 
-function showIconPreview(url: string) {
+/** Two icon previews; the person picks one by taste. Only the chosen one gets an output in the payment. */
+function showIconChoice(o: Order) {
+  const render = () => {
+    all('.icon-art').forEach((e) => {
+      e.classList.add('two');
+      e.innerHTML = '';
+      for (const v of ['a', 'b'] as const) {
+        const c = o.results[ICON_KEY[v]];
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = `iv${o.iconChoice === v ? ' on' : ''}`;
+        b.setAttribute('aria-pressed', String(o.iconChoice === v));
+        b.setAttribute('aria-label', `Icon variant ${v.toUpperCase()}${c && !c.verdict.ok ? ' (rejected)' : ''}`);
+        const img = new Image();
+        img.src = o.entry(ICON_KEY[v]).preview as string;
+        img.alt = '';
+        const tag = document.createElement('b');
+        tag.textContent = v.toUpperCase();
+        b.append(img, tag);
+        b.onclick = (ev) => {
+          ev.stopPropagation();
+          if (paid || o.iconChoice === v || !c?.verdict.ok) return;
+          o.iconChoice = v;
+          render();
+          renderReceiptPrices();
+        };
+        e.appendChild(b);
+      }
+    });
+    const chosen = o.iconChoice.toUpperCase(), other = o.iconChoice === 'a' ? 'B' : 'A';
+    all('.receipt .icon-chosen').forEach((s) => (s.textContent = `Icon (${chosen})`));
+    all('.receipt .icon-other').forEach((s) => (s.textContent = `Icon (${other}) not chosen`));
+  };
+  render();
+}
+
+export function showIconPreview(url: string) {
   all('.icon-art').forEach((e) => {
     e.innerHTML = '';
     const img = new Image();
@@ -103,11 +139,13 @@ export function start(careless: Who = 'sam'): void {
   paid = false;
   const o = order;
   const other: Who = careless === 'sam' ? 'lena' : 'sam';
-  const icon = o.checkIcon();
+  if (Q.get('choice') === 'b') o.iconChoice = 'b';
+  const icons = [o.checkIcon('a'), o.checkIcon('b')] as const;
+  const icon = Promise.all(icons).then(([a]) => a);
   const descBad = o.checkDescription(careless);
   const descGood = o.checkDescription(other);
   const voice = o.checkVoice();
-  icon.then(() => showIconPreview(o.entry('icon').preview as string)).catch((e) => fail('Icon', e));
+  icon.then(() => showIconChoice(o)).catch((e) => fail('Icon', e));
   descBad.then((c) => { showDescPreview(c); if (!c.verdict.ok) setTagReason(careless, c.verdict.reason); }).catch((e) => fail('Description', e));
   descGood.catch((e) => fail('Description', e));
   voice.catch((e) => fail('Voice-over', e));
@@ -175,14 +213,12 @@ function closeModal() {
 
 function payTable(o: Order): HTMLElement {
   const t = el('table', 'jc-paytable');
-  const rows: [string, string, string][] = o.accepted().map((c) => [
-    c.key === 'icon' ? 'Icon' : c.key === 'voice' ? 'Voice-over' : `Description (${c.who === 'sam' ? 'Sam' : 'Lena'})`,
-    short(c.offer.offer.payTo),
-    `${c.offer.offer.priceCents}¢`,
-  ]);
+  const rows: [string, string, string][] = o.accepted().map((c) => [label(c), short(c.offer.offer.payTo), `${c.offer.offer.priceCents}¢`]);
   rows.push(['Helper', short(helperAddr(o.net)), `${HELPER.cents}¢`]);
   const rej = o.results[o.careless];
   if (rej && !rej.verdict.ok) rows.splice(1, 0, [`Description (${o.careless === 'sam' ? 'Sam' : 'Lena'}) rejected`, 'no output', '0¢']);
+  const other = o.notChosenIcon();
+  if (other) rows.splice(1, 0, [`${label(other)} not chosen`, 'no output', '0¢']);
   for (const r of rows) {
     const tr = el('tr');
     r.forEach((v) => tr.appendChild(el('td', '', v)));
@@ -354,7 +390,7 @@ async function deliver(o: Order) {
       li.className = f.match && f.verdict.ok ? 'ok' : 'bad';
       li.textContent = `${label(c)}: ${f.match ? 'fingerprint matches the offer' : 'fingerprint does NOT match the offer'} · ${f.verdict.ok ? f.verdict.note : f.verdict.reason}`;
       files.push({ name: f.name, data: new Uint8Array(f.bytes) });
-      if (c.key === 'icon') icon = new Blob([f.bytes], { type: 'image/png' });
+      if (c.key.startsWith('icon')) icon = new Blob([f.bytes], { type: 'image/png' });
       else if (c.key === 'voice') voice = f.bytes;
       else texts = JSON.parse(new TextDecoder().decode(f.bytes));
     } catch (e) {
@@ -362,6 +398,8 @@ async function deliver(o: Order) {
       li.textContent = `${label(c)}: ${e instanceof Error ? e.message : e}`;
     }
   }
+  const otherIcon = o.notChosenIcon();
+  if (otherIcon) list.appendChild(el('li', 'zero', `${label(otherIcon)}: not chosen, 0¢ (it passed the rules; you picked the other one)`));
   const rej = o.results[o.careless];
   if (rej && !rej.verdict.ok) list.appendChild(el('li', 'zero', `Description (${o.careless === 'sam' ? 'Sam' : 'Lena'}): rejected, 0¢ (${rej.verdict.reason})`));
   const receipt = {
@@ -404,7 +442,8 @@ async function deliver(o: Order) {
 }
 
 function label(c: Checked): string {
-  return c.key === 'icon' ? 'Icon' : c.key === 'voice' ? 'Voice-over' : `Description (${c.who === 'sam' ? 'Sam' : 'Lena'})`;
+  if (c.key.startsWith('icon')) return `Icon (${c.key === ICON_KEY.a ? 'A' : 'B'})`;
+  return c.key === 'voice' ? 'Voice-over' : `Description (${c.who === 'sam' ? 'Sam' : 'Lena'})`;
 }
 
 export function currentOrder(): Order | null {

@@ -1,0 +1,99 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="dusk" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#241552"/>
+      <stop offset="0.35" stop-color="#6A2E92"/>
+      <stop offset="0.62" stop-color="#E0517E"/>
+      <stop offset="0.82" stop-color="#FF9A62"/>
+      <stop offset="1" stop-color="#FFC77A"/>
+    </linearGradient>
+    <radialGradient id="sunglow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#FFE9A8" stop-opacity="0.95"/>
+      <stop offset="0.5" stop-color="#FFB070" stop-opacity="0.5"/>
+      <stop offset="1" stop-color="#FF8A70" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="sun" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFF0B0"/>
+      <stop offset="1" stop-color="#FFB45E"/>
+    </linearGradient>
+    <linearGradient id="m1" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8B3E94"/>
+      <stop offset="1" stop-color="#C2578F"/>
+    </linearGradient>
+    <linearGradient id="m2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4C2380"/>
+      <stop offset="1" stop-color="#7B3A8C"/>
+    </linearGradient>
+    <linearGradient id="hill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2E1A5A"/>
+      <stop offset="1" stop-color="#170C34"/>
+    </linearGradient>
+    <linearGradient id="tentL" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FF8F6B"/>
+      <stop offset="1" stop-color="#F2607A"/>
+    </linearGradient>
+    <linearGradient id="tentR" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FFC27F"/>
+      <stop offset="1" stop-color="#FF8F6B"/>
+    </linearGradient>
+    <radialGradient id="door" cx="0.5" cy="0.8" r="0.7">
+      <stop offset="0" stop-color="#FFF4C2"/>
+      <stop offset="1" stop-color="#FFC45E"/>
+    </radialGradient>
+    <radialGradient id="orb" cx="0.4" cy="0.35" r="0.75">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#C9B6FF"/>
+    </radialGradient>
+    <filter id="soft" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="16"/>
+    </filter>
+  </defs>
+
+  <rect width="1024" height="1024" fill="url(#dusk)"/>
+
+  <!-- stars -->
+  <g fill="#FFFFFF">
+    <circle cx="120" cy="120" r="7" opacity="0.9"/>
+    <circle cx="330" cy="70" r="5" opacity="0.7"/>
+    <circle cx="560" cy="130" r="6" opacity="0.8"/>
+    <circle cx="880" cy="90" r="7" opacity="0.9"/>
+    <circle cx="960" cy="260" r="5" opacity="0.7"/>
+    <circle cx="70" cy="330" r="5" opacity="0.6"/>
+    <circle cx="760" cy="230" r="4" opacity="0.6"/>
+  </g>
+
+  <!-- agent orb with two friendly eyes -->
+  <circle cx="250" cy="250" r="120" fill="#C9B6FF" opacity="0.28" filter="url(#soft)"/>
+  <circle cx="250" cy="250" r="78" fill="url(#orb)"/>
+  <circle cx="226" cy="244" r="11" fill="#3A1F6E"/>
+  <circle cx="274" cy="244" r="11" fill="#3A1F6E"/>
+  <path d="M226 280 Q250 298 274 280" fill="none" stroke="#3A1F6E" stroke-width="9" stroke-linecap="round"/>
+
+  <!-- setting sun -->
+  <circle cx="700" cy="640" r="330" fill="url(#sunglow)"/>
+  <circle cx="700" cy="640" r="170" fill="url(#sun)"/>
+
+  <!-- mountains (far, mid) -->
+  <path d="M0 700 L150 560 L260 650 L400 500 L560 690 L700 600 L850 520 L1024 650 L1024 1024 L0 1024 Z" fill="url(#m1)"/>
+  <path d="M0 780 L130 690 L250 760 L380 650 L520 780 L660 700 L800 640 L930 720 L1024 680 L1024 1024 L0 1024 Z" fill="url(#m2)"/>
+
+  <!-- front hill -->
+  <path d="M0 860 C 200 800 380 830 520 860 C 700 900 860 840 1024 800 L1024 1024 L0 1024 Z" fill="url(#hill)"/>
+
+  <!-- tent shadow -->
+  <ellipse cx="450" cy="900" rx="230" ry="28" fill="#0D0620" opacity="0.5" filter="url(#soft)"/>
+
+  <!-- tent -->
+  <polygon points="470,540 250,900 470,900" fill="url(#tentL)"/>
+  <polygon points="470,540 690,900 470,900" fill="url(#tentR)"/>
+  <polygon points="470,640 405,900 535,900" fill="url(#door)"/>
+  <polygon points="470,640 470,900 405,900" fill="#FFE08A" opacity="0.5"/>
+  <polyline points="250,900 470,540 690,900" fill="none" stroke="#FFD3A0" stroke-width="10" stroke-linejoin="round" stroke-linecap="round"/>
+  <!-- pennant on tent top -->
+  <line x1="470" y1="540" x2="470" y2="470" stroke="#FFD3A0" stroke-width="9" stroke-linecap="round"/>
+  <polygon points="470,470 535,490 470,512" fill="#FFF4C2"/>
+
+  <!-- dotted route to the tent door -->
+  <path d="M960 1010 C 800 980 700 950 600 935 C 540 925 500 915 470 905" fill="none" stroke="#FFFFFF" stroke-width="26" stroke-linecap="round" stroke-dasharray="1 56" opacity="0.95"/>
+  <path d="M 140 1000 C 220 960 320 960 410 925" fill="none" stroke="#FFFFFF" stroke-width="26" stroke-linecap="round" stroke-dasharray="1 56" opacity="0.6"/>
+</svg>

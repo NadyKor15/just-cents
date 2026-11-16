@@ -35,6 +35,8 @@ copyFileSync(`${A}/voice-full.mp3`, 'public/files/voice-full.mp3');
 writeFileSync('public/files/description-good.json', JSON.stringify(good, null, 2));
 writeFileSync('public/files/description-careless.json', JSON.stringify(careless, null, 2));
 copyFileSync(`${A}/icon-preview-128.png`, 'public/previews/icon-128.png');
+copyFileSync(`${A}/icon-b-1024.png`, 'public/files/icon-b-1024.png');
+copyFileSync(`${A}/icon-b-preview-128.png`, 'public/previews/icon-b-128.png');
 copyFileSync(`${A}/voice-preview-3s.mp3`, 'public/previews/voice-3s.mp3');
 
 const fileHash = (p: string) => binToHex(sha256.hash(readFileSync(p)));
@@ -44,6 +46,7 @@ const seconds = (p: string) =>
 type Spec = { key: string; who: 'ICON' | 'SAM' | 'LENA' | 'VOICE'; specialist: string; part: Offer['part']; cents: number; file: string; facts: string; preview: string | Record<string, string> };
 const specs: Spec[] = [
   { key: 'icon', who: 'ICON', specialist: 'icon (demo specialist)', part: 'icon', cents: 3, file: 'icon-1024.png', facts: '1024x1024', preview: '/previews/icon-128.png' },
+  { key: 'icon:b', who: 'ICON', specialist: 'icon (demo specialist)', part: 'icon', cents: 3, file: 'icon-b-1024.png', facts: '1024x1024', preview: '/previews/icon-b-128.png' },
   { key: 'sam:good', who: 'SAM', specialist: 'Sam (demo specialist)', part: 'description', cents: 2, file: 'description-good.json', facts: 'es,fr,de', preview: { es: firstSentence(es), fr: firstSentence(fr), de: firstSentence(de) } },
   { key: 'sam:careless', who: 'SAM', specialist: 'Sam (demo specialist)', part: 'description', cents: 2, file: 'description-careless.json', facts: 'es,fr,de', preview: { es: firstSentence(pt), fr: firstSentence(fr), de: firstSentence(de) } },
   { key: 'lena:good', who: 'LENA', specialist: 'Lena (demo specialist)', part: 'description', cents: 2, file: 'description-good.json', facts: 'es,fr,de', preview: { es: firstSentence(es), fr: firstSentence(fr), de: firstSentence(de) } },

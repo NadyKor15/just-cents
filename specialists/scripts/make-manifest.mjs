@@ -19,7 +19,10 @@ const LANG = {
 }
 const NOTES = {
   'icon.svg': 'hand-authored source of the icon; no <text> elements',
-  'icon-1024.png': 'rasterized icon.svg; no letters or digits',
+  'icon-b.svg': 'variant B source: dusk sky, camp tent with pennant, dotted route, smiling agent orb; no <text> elements',
+  'icon-b-1024.png': 'variant B rasterized from icon-b.svg; no letters or digits',
+  'icon-b-preview-128.png': 'variant B 128 px preview, same watermark treatment as icon-preview-128.png; no letters (mark has a cent-sign glyph)',
+  'icon-1024.png':'rasterized icon.svg; no letters or digits',
   'icon-preview-128.png': '128 px downscale + brand-mark watermark (s5-icon.png at ~40 % opacity, 3 copies) + 4 thin diagonal lines; no letters',
   'icon-bad-512-with-text.png': 'TEST ONLY: deliberately wrong, contains the word PLAY',
   'description-pt-instead-of-es.txt': 'TEST ONLY: Portuguese delivered when Spanish was requested',
@@ -32,7 +35,7 @@ const NOTES = {
 const sha = (p) => createHash('sha256').update(readFileSync(p)).digest('hex')
 const probe = (p, args) => execFileSync(args[0], [...args.slice(1), p], { encoding: 'utf8' }).trim()
 
-const files = readdirSync(A).filter((f) => f !== 'MANIFEST.json' && !f.startsWith('.')).sort()
+const files = readdirSync(A).filter((f) => f !== 'MANIFEST.json' && !f.startsWith('.') && statSync(join(A, f)).isFile()).sort()
 const out = { generated_at: new Date().toISOString(), files: [] }
 for (const name of files) {
   const p = join(A, name)

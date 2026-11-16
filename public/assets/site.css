@@ -22,6 +22,37 @@
 .stage-m .desc-bar .dl b{min-width:0}
 .desc-bar .dl.wrong{color:#8a1f2c;text-decoration:line-through;text-decoration-color:rgba(228,70,93,.7)}
 .desc-bar .dl.wrong b{color:var(--pink)}
+/* receipt with the icon choice: one more row ("Icon (B) not chosen 0¢"), the rest moves down */
+.stage-d .rw{height:404px}
+.stage-d .r1b{top:54px;height:36px}
+.stage-d .r2{top:90px}
+.stage-d .r3{top:145px}
+.stage-d .r4{top:184px}
+.stage-d .r5{top:223px}
+.stage-d .btn-pay{top:276px}
+.stage-d .txl{top:340px}
+.stage-m .rw{height:186px}
+.stage-m .r1b{top:27px;height:18px}
+.stage-m .r2{top:45px}
+.stage-m .r3{top:63px}
+.stage-m .r4{top:81px}
+.stage-m .r5{top:99px}
+.stage-m .btn-pay{top:121px}
+.stage-m .txl{top:154px}
+.row.r1b span,.row.r1b em{color:#8a7f83}
+.stage-d .row.r1b{font-size:15px}
+/* two icon variants in the icon tile: the chosen one is lit, the other dimmed; click to choose */
+.icon-art.two{display:flex;gap:10px;align-items:flex-start;background:none!important;clip-path:none!important;overflow:visible}
+.stage-d .t-icon .icon-art.two{left:18px;top:74px;width:174px;height:104px}
+.stage-m .t-icon .icon-art.two{left:5px;top:26px;width:74px;height:44px;gap:4px}
+.icon-art.two .iv{position:relative;flex:1;border:0;padding:0;background:none;cursor:pointer;border-radius:18px;transition:opacity .2s,box-shadow .2s}
+.stage-m .icon-art.two .iv{border-radius:7px}
+.icon-art.two .iv img{display:block;width:100%;aspect-ratio:1;border-radius:inherit}
+.icon-art.two .iv:not(.on){opacity:.5}
+.icon-art.two .iv.on{box-shadow:0 0 0 3px var(--lime-hot),0 0 14px rgba(217,244,95,.7)}
+.stage-m .icon-art.two .iv.on{box-shadow:0 0 0 1.5px var(--lime-hot)}
+.icon-art.two .iv b{display:block;margin-top:4px;text-align:center;font:800 13px/1 "Figtree",sans-serif;color:var(--orchid-lo)}
+.stage-m .icon-art.two .iv b{display:none}
 /* tall phones: the "Break it yourself" row and "Become a specialist" move down with the receipt and footer */
 .stage-m .brk,.stage-m .spec{margin-top:calc(var(--ex) * .92)}
 .icon-prev-img{display:block;width:100%;height:100%;object-fit:cover;border-radius:20%;image-rendering:auto}
