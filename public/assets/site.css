@@ -46,6 +46,7 @@
 .jc-linkrow{display:flex;gap:8px;justify-content:center;margin-bottom:10px;flex-wrap:wrap}
 .jc-btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 18px;border-radius:999px;border:0;cursor:pointer;
   font:700 15px "Figtree",sans-serif;background:var(--orchid);color:#fff;text-decoration:none}
+.jc-btn[hidden]{display:none}
 .jc-btn.ghost{background:#efe7ec;color:var(--ink)}
 .jc-wallets{text-align:center;font-size:13px;color:var(--ink-3)}
 .jc-status{margin-top:12px;padding:10px 12px;border-radius:12px;background:#f2eef6;font-weight:600;font-size:14px;text-align:center}
@@ -77,6 +78,7 @@
 @media (max-width:899px){.cards{grid-template-columns:1fr}}
 .spec-sec ol{margin:10px 0 12px 22px;display:grid;gap:6px}
 .spec-sec a{color:var(--orchid-lo);font-weight:700}
+.spec-sec a[aria-disabled="true"]{opacity:.45;pointer-events:none;text-decoration:none}
 .site-foot{font-size:13px;color:var(--ink-3);padding-bottom:40px}
 
 .jc-toast{position:fixed;left:50%;bottom:20px;transform:translate(-50%,40px);opacity:0;z-index:120;max-width:calc(100vw - 32px);

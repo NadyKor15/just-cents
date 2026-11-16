@@ -128,16 +128,13 @@ export async function makeClip(input: ClipInput, onProgress?: (p: number) => voi
       x.restore();
       if (t >= LINES) {
         const i = Math.min(input.lines.length - 1, Math.floor((t - LINES) / perLine));
-        const lt = t - LINES - i * perLine;
-        const line = input.lines[i]!;
-        x.globalAlpha = Math.max(0, Math.min(1, lt / 0.3));
+        const line = input.lines[i]!; // hard cut between lines, no fade
         x.font = '800 26px Figtree, system-ui, sans-serif';
         x.fillStyle = '#9a4f95';
         x.fillText(line.lang.toUpperCase(), 500, 250);
         x.font = '700 40px Figtree, system-ui, sans-serif';
         x.fillStyle = '#231a2b';
         wrap(x, line.text, 680).slice(0, 5).forEach((l, j) => x.fillText(l, 500, 310 + j * 52));
-        x.globalAlpha = 1;
       }
     }
     x.fillStyle = '#d6f45a';

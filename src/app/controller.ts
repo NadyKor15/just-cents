@@ -101,6 +101,8 @@ export function start(careless: Who = 'sam'): void {
 /** The scene calls this at each gate; it resolves when the real step is done (never rejects, the scene must not hang). */
 export function wait(name: GateName): Promise<void> {
   if (!gates) return Promise.resolve();
+  // ?hold=<gate> keeps the scene on that moment (for screenshots and the demo video), e.g. ?hold=descGood shows Sam's rejection
+  if (Q.get('hold') === name) return new Promise(() => {});
   // the replacement's preview takes the tile when the scene reaches it
   if (name === 'descGood') return gates.descGood.then((c) => showDescPreview(c), () => undefined);
   return gates[name].then(() => undefined, () => undefined);
