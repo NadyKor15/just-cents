@@ -1,7 +1,14 @@
-// The helper puts a short clip together from the accepted parts: the icon, the first line of each
-// description and the voice-over. Drawn on a canvas and recorded in the browser, in real time.
-export type ClipInput = { icon: Blob; lines: { lang: string; text: string }[]; voice: ArrayBuffer };
+// The helper puts a short clip together from the accepted parts and the game's own material:
+// a few seconds of gameplay (no sound), stills of the game, then the new icon with the first line of each
+// description; the accepted voice-over plays across the whole clip. Drawn on a canvas and recorded in the
+// browser in real time. Hard cuts and a slow push-in only: no blur, no still moments.
+export type ClipInput = { icon: Blob; lines: { lang: string; text: string }[]; voice: ArrayBuffer; frames?: string[]; gameplay?: string };
 export type Clip = { blob: Blob; ext: 'webm' | 'mp4'; seconds: number };
+
+/** Game material from the game's own public store page and its recorded play-through. */
+export const GAME_FRAMES = ['/game-frames/first-call.jpg', '/game-frames/hike-day.jpg', '/game-frames/build-a-rule.jpg'];
+export const GAMEPLAY = '/game-frames/gameplay.mp4';
+export const MAX_SECONDS = 15;
 
 function pickType(): { mime: string; ext: 'webm' | 'mp4' } | null {
   const c = [
@@ -29,6 +36,32 @@ function wrap(x: CanvasRenderingContext2D, text: string, maxW: number): string[]
   return lines;
 }
 
+async function bitmap(url: string): Promise<ImageBitmap | null> {
+  try {
+    const r = await fetch(url);
+    if (!r.ok) return null;
+    return await createImageBitmap(await r.blob());
+  } catch {
+    return null;
+  }
+}
+
+async function videoEl(url: string): Promise<HTMLVideoElement | null> {
+  const v = document.createElement('video');
+  v.muted = true;
+  v.playsInline = true;
+  v.preload = 'auto';
+  v.src = url;
+  const ok = await new Promise<boolean>((resolve) => {
+    v.oncanplaythrough = () => resolve(true);
+    v.onerror = () => resolve(false);
+    setTimeout(() => resolve(v.readyState >= 3), 8000);
+  });
+  return ok ? v : null;
+}
+
+const ease = (t: number) => (t < 0 ? 0 : t > 1 ? 1 : t * t * (3 - 2 * t));
+
 export async function makeClip(input: ClipInput, onProgress?: (p: number) => void): Promise<Clip> {
   const type = pickType();
   if (!type) throw new Error('this browser cannot record video');
@@ -38,6 +71,8 @@ export async function makeClip(input: ClipInput, onProgress?: (p: number) => voi
   cv.height = H;
   const x = cv.getContext('2d')!;
   const icon = await createImageBitmap(input.icon);
+  const frames = (await Promise.all((input.frames ?? GAME_FRAMES).map(bitmap))).filter((b): b is ImageBitmap => !!b);
+  const play = await videoEl(input.gameplay ?? GAMEPLAY);
   const ac = new AudioContext();
   const buf = await ac.decodeAudioData(input.voice.slice(0));
   const dest = ac.createMediaStreamDestination();
@@ -45,13 +80,26 @@ export async function makeClip(input: ClipInput, onProgress?: (p: number) => voi
   src.buffer = buf;
   src.connect(dest);
   const stream = new MediaStream([...cv.captureStream(30).getVideoTracks(), ...dest.stream.getAudioTracks()]);
-  const rec = new MediaRecorder(stream, { mimeType: type.mime, videoBitsPerSecond: 2_500_000 });
+  const rec = new MediaRecorder(stream, { mimeType: type.mime, videoBitsPerSecond: 3_500_000 });
   const chunks: Blob[] = [];
   rec.ondataavailable = (e) => e.data.size && chunks.push(e.data);
-  const total = buf.duration + 0.6;
-  const per = total / input.lines.length;
+
+  // timeline: gameplay → stills → icon with the description lines; voice over all of it
+  const G = play ? Math.min(3, play.duration || 2.6) : 0;
+  const PER_FRAME = 1.1;
+  const ICON = G + frames.length * PER_FRAME;
+  const total = Math.min(MAX_SECONDS, Math.max(buf.duration + 0.6, ICON + 6.6));
+  const LINES = ICON + 0.5;
+  const perLine = (total - LINES) / input.lines.length;
   let t0 = 0;
   let raf = 0;
+
+  const cover = (img: CanvasImageSource, iw: number, ih: number, zoom: number) => {
+    const s = Math.max(W / iw, H / ih) * zoom;
+    const w = iw * s, h = ih * s;
+    x.drawImage(img, (W - w) / 2, (H - h) / 2, w, h);
+  };
+
   const draw = () => {
     const t = (performance.now() - t0) / 1000;
     const g = x.createLinearGradient(0, 0, W, H);
@@ -59,39 +107,52 @@ export async function makeClip(input: ClipInput, onProgress?: (p: number) => voi
     g.addColorStop(1, '#efe6f1');
     x.fillStyle = g;
     x.fillRect(0, 0, W, H);
-    // icon with a soft rise
-    const k = Math.min(1, t / 0.6);
-    const s = 300 + 12 * Math.sin(t * 1.4);
-    x.save();
-    x.globalAlpha = k;
-    x.shadowColor = 'rgba(90,60,90,.25)';
-    x.shadowBlur = 40;
-    x.shadowOffsetY = 18;
-    x.drawImage(icon, 150, H / 2 - s / 2 + (1 - k) * 30, s, s);
-    x.restore();
-    // current line
-    const i = Math.min(input.lines.length - 1, Math.floor(t / per));
-    const lt = t - i * per;
-    const a = Math.min(1, lt / 0.35) * Math.min(1, (per - lt) / 0.35 + 0.0001);
-    const line = input.lines[i]!;
-    x.globalAlpha = Math.max(0, a);
-    x.fillStyle = '#9a4f95';
-    x.font = '700 26px Figtree, system-ui, sans-serif';
-    x.fillText(line.lang.toUpperCase(), 540, 250);
-    x.fillStyle = '#231a2b';
-    x.font = '700 40px Figtree, system-ui, sans-serif';
-    wrap(x, line.text, 620).slice(0, 5).forEach((l, j) => x.fillText(l, 540, 310 + j * 52));
-    x.globalAlpha = 1;
-    // progress line in lime
+    if (play && t < G) {
+      cover(play, play.videoWidth, play.videoHeight, 1 + 0.06 * (t / G));
+    } else if (t < ICON && frames.length) {
+      const k = Math.min(frames.length - 1, Math.floor((t - G) / PER_FRAME));
+      const ft = t - G - k * PER_FRAME;
+      const f = frames[k]!;
+      cover(f, f.width, f.height, 1.02 + 0.07 * (ft / PER_FRAME));
+    } else {
+      // the new icon, rising, then breathing slowly while the lines run
+      const it = t - ICON;
+      const k = ease(it / 0.5);
+      const s = 300 + 14 * Math.sin(it * 1.6);
+      x.save();
+      x.shadowColor = 'rgba(40,20,40,.35)';
+      x.shadowBlur = 30;
+      x.shadowOffsetY = 12;
+      x.globalAlpha = k;
+      x.drawImage(icon, 110, H / 2 - s / 2 - 30 + (1 - k) * 40, s, s);
+      x.restore();
+      if (t >= LINES) {
+        const i = Math.min(input.lines.length - 1, Math.floor((t - LINES) / perLine));
+        const lt = t - LINES - i * perLine;
+        const line = input.lines[i]!;
+        x.globalAlpha = Math.max(0, Math.min(1, lt / 0.3));
+        x.font = '800 26px Figtree, system-ui, sans-serif';
+        x.fillStyle = '#9a4f95';
+        x.fillText(line.lang.toUpperCase(), 500, 250);
+        x.font = '700 40px Figtree, system-ui, sans-serif';
+        x.fillStyle = '#231a2b';
+        wrap(x, line.text, 680).slice(0, 5).forEach((l, j) => x.fillText(l, 500, 310 + j * 52));
+        x.globalAlpha = 1;
+      }
+    }
     x.fillStyle = '#d6f45a';
-    x.fillRect(0, H - 10, (W * Math.min(t, total)) / total, 10);
+    x.fillRect(0, H - 8, (W * Math.min(t, total)) / total, 8);
     onProgress?.(Math.min(1, t / total));
     if (t < total) raf = requestAnimationFrame(draw);
   };
   const done = new Promise<void>((r) => (rec.onstop = () => r()));
   rec.start(250);
   t0 = performance.now();
-  src.start();
+  if (play) {
+    play.currentTime = 0;
+    void play.play().catch(() => {});
+  }
+  src.start(ac.currentTime + 0.3);
   draw();
   await new Promise((r) => setTimeout(r, total * 1000));
   cancelAnimationFrame(raf);

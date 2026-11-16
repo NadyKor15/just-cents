@@ -33,5 +33,10 @@ Files marked TEST ONLY are deliberately wrong and are used only in tests.
   cuts `voice-preview-3s.mp3` (`-t 3.0`, `afade=t=out:st=2.6:d=0.4`), and makes `voice-bad-32s.mp3` (TEST ONLY, 30.17 s)
   from `scripts/voice-bad-script.txt`.
 
+## Game material in the clip (not paid parts)
+The game is the author's separate, already published project. `assets/game-frames/*.jpg` are stills from its public
+store page; `assets/game-frames/gameplay.mp4` is 2.6 s (three 0.85 s cuts, no sound) from a recorded play-through of
+the submitted build. The helper puts them at the start of the kit's clip; they are not sold by any specialist.
+
 ## Manifest
 `node specialists/scripts/make-manifest.mjs` rewrites `assets/MANIFEST.json` (run it last, after any regeneration).
