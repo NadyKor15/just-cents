@@ -89,7 +89,8 @@ function layout() {
   const vw = document.documentElement.clientWidth;
   const s = vw / W;
   // phone: the chosen picture is 2:3, a real phone is ~9:19 — spread the extra height through the layout instead of an empty band
-  const ex = key === 'm' && !CAPTURE ? Math.max(0, Math.min(340, Math.round((window.innerHeight / s - H0) / 4) * 4)) : 0;
+  // keep the first extra height while the layout stays the same: iPhone hides its toolbar on scroll, a height-only resize must not rebuild the scene
+  const ex = world && key === cur ? world.ex : key === 'm' && !CAPTURE ? Math.max(0, Math.min(340, Math.round((window.innerHeight / s - H0) / 4) * 4)) : 0;
   const H = H0 + ex;
   st.style.transform = `scale(${s})`; st.style.height = `${H}px`; st.style.setProperty('--ex', `${ex}px`);
   page.style.height = `${H * s}px`;
