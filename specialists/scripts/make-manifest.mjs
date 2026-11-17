@@ -26,7 +26,7 @@ const NOTES = {
   'icon-preview-128.png': '128 px downscale + brand-mark watermark (s5-icon.png at ~40 % opacity, 3 copies) + 4 thin diagonal lines; no letters',
   'icon-bad-512-with-text.png': 'TEST ONLY: deliberately wrong, contains the word PLAY',
   'description-pt-instead-of-es.txt': 'TEST ONLY: Portuguese delivered when Spanish was requested',
-  'voice-script.txt': 'English trailer script, spoken by macOS say, voice Samantha',
+  'voice-script.txt': 'English trailer script, spoken by Kokoro-82M (Apache-2.0), voice af_heart, locally',
   'voice-full.mp3': 'full voice-over, mono 44.1 kHz 96 kbps',
   'voice-preview-3s.mp3': 'first 3.0 s of voice-full.mp3 with 0.4 s fade-out',
   'voice-bad-32s.mp3': 'TEST ONLY: deliberately too long (~30 s)',

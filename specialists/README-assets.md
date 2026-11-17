@@ -34,16 +34,18 @@ Files marked TEST ONLY are deliberately wrong and are used only in tests.
   restricted to spa, fra, deu, por, ita, eng, cat, glg, nld. Exit code 1 if any result differs from the expected language.
 
 ## Voice-over (specialist "voice")
-- `voice-script.txt` is the English trailer line (42 words).
-- `bash specialists/scripts/make-voice.sh [rate]` (default 200 wpm) speaks it with macOS `say -v Samantha` (en_US),
-  converts with ffmpeg 9.0.2 (`-ac 1 -ar 44100 -c:a libmp3lame -b:a 96k`) to `voice-full.mp3` (12.25 s),
-  cuts `voice-preview-3s.mp3` (`-t 3.0`, `afade=t=out:st=2.6:d=0.4`), and makes `voice-bad-32s.mp3` (TEST ONLY, 30.17 s)
-  from `scripts/voice-bad-script.txt`.
+- `voice-script.txt` is the English trailer line about the game (42 words).
+- `<venv>/bin/python -I specialists/scripts/make-voice-kokoro.py --model-dir <dir> --text specialists/assets/voice-script.txt --out specialists/assets/voice-full.mp3 --preview specialists/assets/voice-preview-3s.mp3`
+  speaks it with **Kokoro-82M** by hexgrad (weights and voices: Apache License 2.0, https://huggingface.co/hexgrad/Kokoro-82M),
+  voice `af_heart` (the voice of the game's own agent), through **kokoro-onnx** 0.6.1 (MIT) and onnxruntime (MIT), locally;
+  model files `kokoro-v1.0.onnx` and `voices-v1.0.bin` from the kokoro-onnx release `model-files-v1.0`. Loudness normalised
+  with ffmpeg `loudnorm` (−16 LUFS target). Result: `voice-full.mp3` 13.67 s, `voice-preview-3s.mp3` 3.0 s. It is an AI voice.
+- `voice-bad-32s.mp3` (TEST ONLY, 30.17 s) is the older macOS `say` take from `scripts/voice-bad-script.txt` (`scripts/make-voice.sh`).
 
 ## Game material in the clip (not paid parts)
 The game is the author's separate, already published project. `assets/game-frames/*.jpg` are stills from its public
 store page; `assets/game-frames/gameplay.mp4` is 2.6 s (three 0.85 s cuts, no sound) from a recorded play-through of
-the submitted build. The helper puts them at the start of the kit's clip; they are not sold by any specialist.
+the submitted build. Just Cents puts them at the start of the kit's clip; they are not sold by any specialist.
 
 ## Manifest
 `node specialists/scripts/make-manifest.mjs` rewrites `assets/MANIFEST.json` (run it last, after any regeneration).
