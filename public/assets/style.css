@@ -342,3 +342,6 @@ html:not(.tour) .sym-switch{display:none}
   background:radial-gradient(60% 60% at 50% 35%,#fbf7f5,#e9e0dc 70%,#d8ccc7);box-shadow:0 18px 30px rgba(90,60,60,.12)}
 .no-gl .stage-d::after{left:52px;top:783px;width:1337px;height:100px}
 .no-gl .stage-m::after{left:14px;top:356px;width:362px;height:78px}
+
+/* phone: the order field and Start sit above the .scene wrapper (both z-index 5, scene comes later) */
+.stage-m .order{z-index:7}
