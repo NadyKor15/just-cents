@@ -23,14 +23,16 @@ function img(src: string, alt: string) {
   return i;
 }
 
-function lines(key: string) {
-  const p = OFFERS[NET][key]!.preview as Record<string, string>;
-  const d = el('div', 'c-lines');
-  for (const l of ['es', 'fr', 'de']) {
-    const r = el('div');
-    r.append(el('b', '', l.toUpperCase()), document.createTextNode(p[l] ?? ''));
-    d.appendChild(r);
-  }
+function musicLine(key: string) {
+  const e = OFFERS[NET][key]!;
+  const [sec, lic, author] = e.signed.offer.facts.split(';');
+  const d = el('div', 'c-ex');
+  d.appendChild(el('div', 'c-lines', `${author ?? ''} · ${lic ?? ''} · ${parseFloat(sec ?? '').toFixed(1)} s`));
+  const a = el('audio');
+  a.controls = true;
+  a.preload = 'metadata';
+  a.src = e.preview as string;
+  d.appendChild(a);
   return d;
 }
 
@@ -56,28 +58,22 @@ const SECTIONS: Section[] = [
     ],
   },
   { title: 'Documents', rule: 'A receipt photo turned into a table. Rule: the rows add up to the receipt total.', live: [] },
-  {
-    title: 'Texts',
-    main: 'A store description. Rule: about 100 words, in Spanish, French and German.',
-    rule: 'A product description. Rule: under 300 characters, in the language you asked for.',
-    live: [
-      { id: 'lena', title: 'Store description in three languages', who: 'Lena (demo specialist)', offerKey: 'lena:good', rule: RULES.description.text, example: () => { const d = el('div', 'c-ex'); d.appendChild(lines('lena:good')); return d; } },
-      {
-        id: 'sam',
-        title: 'Store description in three languages',
-        who: 'Sam (demo specialist, careless on purpose)',
-        offerKey: 'sam:careless',
-        rule: RULES.description.text,
-        extra: 'Sam often sends Portuguese where Spanish was asked. That piece is rejected and costs 0¢.',
-        example: () => { const d = el('div', 'c-ex'); d.appendChild(lines('sam:careless')); return d; },
-      },
-    ],
-  },
+  { title: 'Texts', rule: 'A product description. Rule: under 300 characters, in the language you asked for.', live: [] },
   {
     title: 'Sound',
-    main: 'A voice-over. Rule: 10 to 15 seconds.',
-    rule: 'Music for a clip. Rule: exactly 15 seconds.',
+    main: 'Music for a clip. Rule: exactly 15 seconds, CC0 or CC BY, the licence written into the file.',
+    rule: 'Sound effects for a game. Rule: each one under 2 seconds, CC0 or CC BY.',
     live: [
+      { id: 'lena', title: 'Music for a clip, 15 s', who: 'Lena (demo specialist)', offerKey: 'lena:good', rule: RULES.music.text, example: () => musicLine('lena:good') },
+      {
+        id: 'sam',
+        title: 'Music for a clip, 15 s',
+        who: 'Sam (demo specialist, careless on purpose)',
+        offerKey: 'sam:careless',
+        rule: RULES.music.text,
+        extra: 'Sam often sends 17.2 s where exactly 15 s was asked. That piece is rejected and costs 0¢.',
+        example: () => musicLine('sam:careless'),
+      },
       {
         id: 'voice',
         title: 'Voice-over for a store page',

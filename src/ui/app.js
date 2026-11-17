@@ -253,7 +253,7 @@ function buildWorld(st, key, W, H, ex = 0) {
     x: key === 'm' ? 70 : 330, homeW: 1, hidden: 1, signOn: 0, checkOn: 0, jump: 0, follow: false, px: null, cur: '', vx: 0, face: 1, pose: '', idleT: 0 };
   const RULES = {
     icon: 'Image size and whether the image contains text',
-    desc: 'The language of a text',
+    desc: 'The length of the music and its licence',
     voice: 'The length of the audio',
     help: 'Only the accepted pieces get paid. A rejected piece costs 0¢.',
   };

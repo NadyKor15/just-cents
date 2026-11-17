@@ -9,8 +9,8 @@ Built for BCH BLAZE 2026. MIT licensed.
 ## Two minutes on the live site
 
 1. The order is filled in: "Make me a kit to list my game." Press **Start**.
-2. Three parts appear: an icon, a description in three languages, a voice-over. Previews arrive: a 128 px watermarked icon, the first sentence in each language, the first three seconds of the voice.
-3. Every preview is checked by code against the published rules. The demo specialist Sam is careless on purpose and delivers Portuguese where Spanish was asked: rejected, 0¢. Just Cents then asks Lena, and her text passes. **Break it yourself** lets you make Lena the careless one instead; both texts are checked again.
+2. Three parts appear: an icon, music for the clip, a voice-over. Previews arrive: a 128 px watermarked icon, the first three seconds of each music piece with its licence, the first three seconds of the voice.
+3. Every preview is checked by code against the published rules. The demo musician Sam is careless on purpose and delivers 17.2 s where exactly 15 s was asked: rejected, 0¢. Just Cents then uses Lena's piece, which passes. **Break it yourself** lets you make Lena the careless one instead; both pieces are checked again.
 4. **Pay 8¢ once**: connect a wallet over WizardConnect (tested with Cashonize, on mainnet and chipnet) and sign one transaction.
 5. Each specialist sees its own output on chain and hands over the full file. The page checks every file's fingerprint against the signed offer, runs the rules again on the full files, puts a short clip together from the accepted parts, and gives you the kit and a receipt with the transaction link.
 
@@ -21,10 +21,10 @@ Built for BCH BLAZE 2026. MIT licensed.
 | Part | Rule | How it is checked |
 |---|---|---|
 | Icon | 1024×1024, no text | size from the signed offer and the full file; OCR (tesseract.js, in the browser) on the preview and on the full file |
-| Description | about 100 words, in Spanish, French and German | language detection (franc) on the first sentence of each language, then on the full texts, plus a word count |
+| Music for the clip | exactly 15 s (±0.1 s); CC0 1.0 or CC BY 4.0, the licence written into the file | length and licence declared in the signed offer; the licence frames (id, full licence text, source page; for CC BY the author) read from the file itself; the length measured on the full file (Web Audio) |
 | Voice-over | 10 to 15 seconds | length declared in the signed offer, then measured on the full file (Web Audio) |
 
-**A preview cannot be taken and used.** The icon preview is 128 px with a watermark, the text preview is the first sentence, the voice preview is three seconds. With the preview comes a signed offer: price, fingerprint (sha256) of the full file, deadline, payout address, signed with the specialist's key (Schnorr, secp256k1).
+**A preview cannot be taken and used.** The icon preview is 128 px with a watermark, the music preview is three seconds, the voice preview is three seconds. With the preview comes a signed offer: price, fingerprint (sha256) of the full file, deadline, payout address, signed with the specialist's key (Schnorr, secp256k1).
 
 **One payment reaches many recipients.** The browser builds one Bitcoin Cash transaction (libauth): one output per accepted specialist, 1¢ for the service, change back to the address of the first coin spent, and an OP_RETURN note. A rejected specialist gets no output. The wallet only signs (`broadcast: false`); the page broadcasts and shows the node's answer.
 
@@ -45,6 +45,8 @@ Built for BCH BLAZE 2026. MIT licensed.
 | `src/core/tx.ts` | coin selection, the one payment transaction, the OP_RETURN note, fee at 1 sat/byte |
 | `src/core/offer.ts` | signed offers (canonical form, Schnorr sign and verify) |
 | `src/core/rules.ts` | the acceptance rules (pure functions) |
+| `src/core/music.ts` | music rules: decoded length, licence frames (ID3) read from the file |
+| `src/core/mesh.ts` | 3D model rules: watertight (every edge in exactly two triangles), fits a printer bed given as a parameter |
 | `src/core/release.ts` | "my output is on chain" check (libauth) |
 | `src/core/wallet.ts` | WizardConnect, site side: pairing, wallet coins from its shared public keys, sign request |
 | `src/core/chain.ts` | Fulcrum (Electrum) access with a second server |
@@ -103,6 +105,14 @@ npm run build && npx wrangler pages dev dist --port 8787   # site + Pages Functi
 
 Add `?net=chipnet` to use the test network. A live chipnet test of the whole payment path with a headless wallet: `LIVE=1 TEST_MNEMONIC_FILE=<file> npx vitest run test/live`.
 
+## Credits
+
+- Music in the demo, all CC0 1.0 (public domain dedication), from OpenGameArt.org, the same tracks as in the game. The CC0 field on each page was checked on 17 Nov 2026; the pages and the full CC0 text are kept in `specialists/source-music/`, and every mp3 carries the licence, its full text and its source page:
+  - Town Theme RPG by cynicmusic, https://opengameart.org/content/town-theme-rpg
+  - Hot Springs Town by Kistol, https://opengameart.org/content/hot-springs-town
+- Voice-over: an AI voice, Kokoro-82M by hexgrad (weights and voices: Apache License 2.0), voice `af_heart`, run locally through kokoro-onnx (MIT). Details in `specialists/README-assets.md`.
+- Stills, play footage and character art: from the game Autopilot: Summer Rules, by its author.
+
 ## License
 
-MIT
+MIT (code). The files under `specialists/` keep their own licences, listed above and in `specialists/README-assets.md`.

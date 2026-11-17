@@ -11,7 +11,7 @@ export type Offer = {
   /** What the specialist promises about the full file, checked again after download (e.g. "1024x1024", "12.34s", "es,fr,de"). */
   facts: string;
   specialist: string; // e.g. "lena"
-  part: 'icon' | 'description' | 'voice';
+  part: 'icon' | 'music' | 'voice' | 'model';
   priceCents: number;
   priceSats: string; // decimal string, satoshis
   fileSha256: string; // 32 bytes hex of the full file

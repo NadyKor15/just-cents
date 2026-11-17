@@ -1,6 +1,7 @@
 // One order, end to end: previews → checks against the published rules → one payment → full files.
 import { verifyOffer, offerHashHex, type SignedOffer } from '../core/offer';
-import { checkDescription, checkIcon, checkVoice, countLetters, checkLanguage, countWords, RULES, type Verdict } from '../core/rules';
+import { checkIcon, checkVoice, countLetters, checkMusicDeclared, checkMusicFile, type Verdict } from '../core/rules';
+import { MUSIC_SECONDS, readId3 } from '../core/music';
 import { buildPayment, noteText, type BuiltPayment } from '../core/tx';
 import { broadcast, type Net } from '../core/chain';
 import type { WalletLink } from '../core/wallet';
@@ -14,7 +15,7 @@ export type IconChoice = 'a' | 'b';
 export const ICON_KEY: Record<IconChoice, string> = { a: 'icon', b: 'icon:b' };
 export const SERVICE = { cents: 1, sats: 4756n }; // Just Cents' own 1¢ for matching and checks; at $210.27/BCH (CoinGecko, 16.11.2026 22:19Z), fixed with the offers
 
-export type Checked = { key: string; who?: Who; verdict: Verdict; offer: SignedOffer; detail: string };
+export type Checked = { key: string; who?: Who; verdict: Verdict; offer: SignedOffer; detail: string; music?: { title: string; author: string; license: string; seconds: number } };
 
 import { newOrderId } from '../core/orderid';
 import { txidOf } from '../core/release';
@@ -22,7 +23,7 @@ import { binToHex, decodeTransaction, hexToBin } from '@bitauth/libauth';
 
 const nowSec = () => Math.floor(Date.now() / 1000);
 
-export function descKey(who: Who, careless: Who): string {
+export function musicKey(who: Who, careless: Who): string {
   return `${who}:${who === careless ? 'careless' : 'good'}`;
 }
 
@@ -77,13 +78,24 @@ export class Order {
     return this.results[ICON_KEY[this.iconChoice === 'a' ? 'b' : 'a']];
   }
 
-  async checkDescription(who: Who): Promise<Checked> {
-    const key = descKey(who, this.careless);
+  /** Music piece by Sam or Lena: the length and licence they declare in the signed offer, and the licence written into the preview file. */
+  async checkMusic(who: Who): Promise<Checked> {
+    const key = musicKey(who, this.careless);
     const offer = this.verify(key);
-    const firsts = this.entry(key).preview as Record<string, string>;
-    const verdict = checkDescription(firsts, { full: false });
-    const detail = RULES.description.languages.map((l) => `${l}: ${checkLanguage(firsts[l] ?? '', l).ok ? 'ok' : 'wrong'}`).join(', ');
-    return (this.results[who] = { key, who, verdict, offer, detail });
+    const [sec, license = '', author = ''] = offer.offer.facts.split(';');
+    const seconds = parseFloat(sec ?? '');
+    let verdict = checkMusicDeclared(offer.offer.facts);
+    const preview = await (await fetch(this.entry(key).preview as string)).arrayBuffer();
+    const tags = readId3(preview);
+    // the preview carries the same licence frames as the full piece: check them on the file, not only the promise
+    if (verdict.ok) {
+      const inFile = checkMusicFile(preview, MUSIC_SECONDS);
+      if (!inFile.ok) verdict = inFile;
+      else if (tags?.txxx['LICENSE'] !== license) verdict = { ok: false, reason: `the file says ${tags?.txxx['LICENSE'] ?? 'no licence'}, the offer says ${license}` };
+    }
+    const title = (tags?.title ?? '').replace(/\s*\((15 s cut|cut|preview)\)$/, '');
+    const detail = `declared ${seconds} s and ${license} (signed); licence in the preview file: ${tags?.txxx['LICENSE'] ?? 'none'}`;
+    return (this.results[who] = { key, who, verdict, offer, detail, music: { title, author, license, seconds } });
   }
 
   async checkVoice(): Promise<Checked> {
@@ -96,7 +108,7 @@ export class Order {
     return (this.results.voice = { key: 'voice', verdict, offer, detail });
   }
 
-  /** The specialist that ended up accepted for the description. */
+  /** The musician that ended up accepted. */
   goodWho(): Who {
     return this.careless === 'sam' ? 'lena' : 'sam';
   }
@@ -161,9 +173,7 @@ export class Order {
     } else if (c.key === 'voice') {
       verdict = checkVoice({ seconds: await audioSeconds(bytes), preview: false });
     } else {
-      const texts = JSON.parse(new TextDecoder().decode(bytes)) as Record<string, string>;
-      verdict = checkDescription(texts, { full: true });
-      if (verdict.ok) verdict = { ok: true, note: `${verdict.note}; ${RULES.description.languages.map((l) => countWords(texts[l]!)).join('/')} words` };
+      verdict = checkMusicFile(bytes, await audioSeconds(bytes));
     }
     return { bytes, name: this.entry(c.key).file, match, verdict };
   }

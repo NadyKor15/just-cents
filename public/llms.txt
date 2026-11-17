@@ -14,15 +14,15 @@ Assistants can place orders here. An assistant never holds money and never pays:
 
 One template today: "Make me a kit to list my game."
 - Icon: 1024×1024, no text. 3¢.
-- Description: about 100 words, in Spanish, French and German. 2¢.
+- Music for the clip: exactly 15 seconds (±0.1 s), CC0 or CC BY, the licence written into the file. 2¢.
 - Voice-over: 10 to 15 seconds. 2¢.
 - The service: 1¢ per order, only if at least one part is accepted.
 
-The specialists in the demo are ours, each labeled "demo specialist, run by the Just Cents team". One demo translator is careless on purpose, so every order shows a rejection at 0¢. All the checks are real.
+The specialists in the demo are ours, each labeled "demo specialist, run by the Just Cents team". One demo musician is careless on purpose, so every order shows a rejection at 0¢. All the checks are real.
 
 ## How the rules are checked
 
-- Language: language detection on the first sentence of each language (server and browser), then on the full texts after payment.
+- Music: length and licence declared in the signed offer; the pay page reads the licence written into the file (ID3: licence id, full licence text, source page), and the length is measured on the full file after payment.
 - Length of the voice-over: declared in the specialist's signed offer, measured again on the full file after payment.
 - Icon size: declared in the signed offer, measured on the full file after payment.
 - "No text on the icon": OCR, which runs in the person's browser on the pay page, before the wallet is asked; the API does not run OCR.
@@ -38,9 +38,9 @@ The specialists in the demo are ours, each labeled "demo specialist, run by the 
 ## Example
 
 User: "Make me a kit to list my game."
-Assistant: calls `create_order` → "Three specialists sent previews. Sam's Spanish came back in Portuguese, so he gets 0¢ and Lena does the description. The total is 8¢. Open this link and sign once in your wallet: <pay_url>."
+Assistant: calls `create_order` → "Three specialists sent previews. Sam's music runs 17.2 s instead of 15, so he gets 0¢ and Lena's piece is used. The total is 8¢. Open this link and sign once in your wallet: <pay_url>."
 User: "Done."
-Assistant: calls `get_kit` → downloads the icon, the three descriptions and the voice-over, and checks every file's sha256 against the signed offer.
+Assistant: calls `get_kit` → downloads the icon, the music and the voice-over, and checks every file's sha256 against the signed offer.
 
 ## Become a specialist
 

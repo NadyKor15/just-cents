@@ -22,7 +22,6 @@
     "@electrum-cash/network": "4.4.8",
     "@wizardconnect/core": "0.2.10",
     "@wizardconnect/dapp": "0.2.7",
-    "franc": "6.2.0",
     "qrcode-generator": "2.0.4",
     "tesseract.js": "7.0.0",
     "three": "0.170.0"

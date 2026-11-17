@@ -1,61 +1,35 @@
 // Acceptance rules, published before any work starts and checked by plain code.
-// The inputs (image size, recognised text, detected language, audio length) are measured by the caller;
+// The inputs (image size, recognised text, audio length, licence tags) are measured by the caller;
 // these functions only decide, so they are easy to test and the same everywhere.
-import { franc } from 'franc';
+import { ALLOWED_LICENSES, MUSIC_SECONDS, MUSIC_TOLERANCE, checkMusic } from './music';
 
 export type Verdict = { ok: true; note: string } | { ok: false; reason: string };
 
 export const RULES = {
   icon: { width: 1024, height: 1024, maxLetters: 0, text: 'Icon: 1024×1024, no letters.' },
-  description: { languages: ['es', 'fr', 'de'] as const, minWords: 60, maxWords: 140, text: 'Description: about 100 words, in Spanish, French and German.' },
+  music: { seconds: MUSIC_SECONDS, tolerance: MUSIC_TOLERANCE, text: 'Music for the clip: exactly 15 s, CC0 or CC BY, the licence written into the file.' },
   voice: { minSec: 10, maxSec: 15, text: 'Voice-over: 10 to 15 seconds.' },
 };
 
-export const LANG_NAMES: Record<string, string> = {
-  es: 'Spanish',
-  fr: 'French',
-  de: 'German',
-  pt: 'Portuguese',
-  it: 'Italian',
-  en: 'English',
-};
-
-/** franc answers in ISO 639-3; we speak ISO 639-1. */
-const ISO3_TO_1: Record<string, string> = { spa: 'es', fra: 'fr', deu: 'de', por: 'pt', ita: 'it', eng: 'en', cat: 'ca', glg: 'gl', nld: 'nl' };
-
-/** Language of a text, ISO 639-1, or "und" if unsure. Limited to languages a store kit could plausibly contain. */
-export function detectLanguage(text: string): string {
-  const code = franc(text, { minLength: 10, only: Object.keys(ISO3_TO_1) });
-  return ISO3_TO_1[code] ?? 'und';
+/**
+ * Music as the specialist declares it in the signed offer: "<seconds>s;<SPDX licence>;<author>".
+ * The page checks the same things again on the file itself (decoded length, licence frames and text).
+ */
+export function checkMusicDeclared(facts: string): Verdict {
+  const [secPart, license = '', author = ''] = facts.split(';');
+  const sec = parseFloat(secPart ?? '');
+  if (!Number.isFinite(sec)) return { ok: false, reason: 'length unknown' };
+  if (Math.abs(sec - MUSIC_SECONDS) > MUSIC_TOLERANCE) return { ok: false, reason: `asked for ${MUSIC_SECONDS}.0 s, got ${sec.toFixed(1)} s` };
+  const rule = ALLOWED_LICENSES[license];
+  if (!rule) return { ok: false, reason: license ? `licence ${license} is not on the allowed list (CC0 1.0, CC BY 4.0)` : 'no licence' };
+  if (rule.needsAuthor && !author) return { ok: false, reason: `${rule.name} needs the author's name` };
+  return { ok: true, note: `${sec.toFixed(1)} s, ${rule.name}${author ? ` by ${author}` : ''}` };
 }
 
-export function checkLanguage(text: string, expected: string): Verdict {
-  const got = detectLanguage(text);
-  const want = LANG_NAMES[expected] ?? expected;
-  if (got === expected) return { ok: true, note: `${want}, as asked` };
-  const gotName = LANG_NAMES[got] ?? (got === 'und' ? 'an unknown language' : got);
-  return { ok: false, reason: `asked for ${want}, got ${gotName}` };
-}
-
-export function countWords(text: string): number {
-  return text.trim().split(/\s+/).filter(Boolean).length;
-}
-
-/** The description is checked per language on the first sentence shown in the preview and, after payment, on the full text. */
-export function checkDescription(byLang: Record<string, string>, opts: { full: boolean }): Verdict {
-  for (const lang of RULES.description.languages) {
-    const t = byLang[lang];
-    if (!t) return { ok: false, reason: `missing ${LANG_NAMES[lang]}` };
-    const v = checkLanguage(t, lang);
-    if (!v.ok) return v;
-    if (opts.full) {
-      const n = countWords(t);
-      if (n < RULES.description.minWords || n > RULES.description.maxWords) {
-        return { ok: false, reason: `${LANG_NAMES[lang]} text is ${n} words, asked about 100` };
-      }
-    }
-  }
-  return { ok: true, note: 'Spanish, French and German, as asked' };
+/** The same rules on the delivered mp3: decoded length plus the licence written into the file. */
+export function checkMusicFile(buf: ArrayBuffer, seconds: number): Verdict {
+  const v = checkMusic(buf, seconds);
+  return v.ok ? { ok: true, note: v.reason } : { ok: false, reason: v.reason };
 }
 
 /**

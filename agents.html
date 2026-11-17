@@ -34,16 +34,16 @@
 
   <h2>How an order goes</h2>
   <ol>
-    <li>The assistant calls <code>create_order</code>: three parts, the rules, the prices and the previews come back, and each preview is already checked. One demo translator is careless on purpose, so you always see a rejection at 0¢.</li>
+    <li>The assistant calls <code>create_order</code>: three parts, the rules, the prices and the previews come back, and each preview is already checked. One demo musician is careless on purpose, so you always see a rejection at 0¢.</li>
     <li>The assistant gives the person the pay link. The person opens it, sees the same checks, and signs one transaction in their own wallet over WizardConnect (tested with Cashonize).</li>
     <li>Each specialist sees its payment on chain and hands over the full file. The assistant calls <code>get_kit</code> and checks every file's fingerprint against the signed offer.</li>
   </ol>
 
   <h2>Example</h2>
   <div class="card"><p><b>Person:</b> Make me a kit to list my game.</p>
-  <p><b>Assistant:</b> Three specialists sent previews. Sam's Spanish came back in Portuguese, so he gets 0¢ and Lena does the description. The total is 8¢. Open this link and sign once in your wallet.</p>
+  <p><b>Assistant:</b> Three specialists sent previews. Sam's music runs 17.2 s instead of 15, so he gets 0¢ and Lena's piece is used. The total is 8¢. Open this link and sign once in your wallet.</p>
   <p><b>Person:</b> Done.</p>
-  <p><b>Assistant:</b> Here is your kit: the icon, the description in three languages and the voice-over. Every fingerprint matches the signed offer.</p></div>
+  <p><b>Assistant:</b> Here is your kit: the icon, 15 s of music and the voice-over. Every fingerprint matches the signed offer.</p></div>
 
   <h2>Said plainly</h2>
   <ul>

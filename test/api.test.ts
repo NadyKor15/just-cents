@@ -27,8 +27,8 @@ describe('order API', () => {
     const { status, j } = await call('POST', '/api/orders', {});
     expect(status).toBe(201);
     expect(j.network).toBe('mainnet');
-    expect(j.parts.map((p: any) => [p.part, p.price_cents, p.check.ok])).toEqual([['icon (variant A)', 3, true], ['description', 2, true], ['voice', 2, true]]);
-    expect(j.rejected[0]).toMatchObject({ cents: 0, reason: 'asked for Spanish, got Portuguese' });
+    expect(j.parts.map((p: any) => [p.part, p.price_cents, p.check.ok])).toEqual([['icon (variant A)', 3, true], ['music', 2, true], ['voice', 2, true]]);
+    expect(j.rejected[0]).toMatchObject({ part: 'music', cents: 0, reason: 'asked for 15.0 s, got 17.2 s' });
     expect(j.total_cents).toBe(8);
     expect(j.status).toBe('awaiting_payment');
     expect(j.pay_url).toBe(`${O}/?order=${j.id}`);
@@ -55,7 +55,7 @@ describe('order API', () => {
     store.set(`paid:${id}`, 'ab'.repeat(32));
     const kit = await call('GET', `/api/orders/${id}/kit`);
     expect(kit.status).toBe(200);
-    expect(kit.j.files.map((f: any) => f.part)).toEqual(['icon', 'description', 'voice']);
+    expect(kit.j.files.map((f: any) => f.part)).toEqual(['icon', 'music', 'voice']);
     expect(kit.j.files[1].url).toContain('/full/lena%3Agood?net=chipnet&txid=');
     expect(kit.j.files.every((f: any) => /^[0-9a-f]{64}$/.test(f.sha256))).toBe(true);
   });

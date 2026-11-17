@@ -14,7 +14,7 @@ const seconds = (p: string) => Number(execFileSync('ffprobe', ['-v', 'error', '-
 
 describe('music rules on the delivered files', () => {
   it('both 15 s pieces pass: CC0 text, author and source are in the file', () => {
-    for (const [f, who] of [['specialists/music/music-a.mp3', 'cynicmusic'], ['specialists/music/music-b.mp3', 'Kistol']] as const) {
+    for (const [f, who] of [['specialists/assets/music-sam-good.mp3', 'cynicmusic'], ['specialists/assets/music-lena-good.mp3', 'Kistol']] as const) {
       const v = checkMusic(read(f), seconds(f));
       expect(v.ok, v.reason).toBe(true);
       expect(v.license).toBe('CC0-1.0');
@@ -24,7 +24,7 @@ describe('music rules on the delivered files', () => {
   });
 
   it('the careless musician’s 17.2 s piece is rejected for length', () => {
-    const f = 'specialists/music/music-careless.mp3';
+    const f = 'specialists/assets/music-sam-careless.mp3';
     const v = checkMusic(read(f), seconds(f));
     expect(v.ok).toBe(false);
     expect(v.reason).toBe('asked for 15.0 s, got 17.2 s');
@@ -32,7 +32,7 @@ describe('music rules on the delivered files', () => {
 
   it('a file without a licence, or with one not on the list, or without the text, is rejected', () => {
     const dir = mkdtempSync(join(tmpdir(), 'jc-music-'));
-    const src = 'specialists/music/music-a.mp3';
+    const src = 'specialists/assets/music-sam-good.mp3';
     const strip = join(dir, 'none.mp3');
     execFileSync('ffmpeg', ['-v', 'error', '-y', '-i', src, '-map_metadata', '-1', '-c', 'copy', strip]);
     expect(checkMusic(read(strip), 15).reason).toBe('no licence in the file');

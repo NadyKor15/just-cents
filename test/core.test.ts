@@ -14,7 +14,7 @@ import { buildPayment, DUST_SATS, estimateSize, lockingFor, noteText, opReturnBy
 import { ANY_ORDER, offerHashHex, signOffer, verifyOffer, type Offer } from '../src/core/offer';
 import { checkPaid, txidOf } from '../src/core/release';
 import { signLocally } from './helpers/signer';
-import { checkDescription, checkIcon, checkLanguage, checkVoice, countLetters, detectLanguage } from '../src/core/rules';
+import { checkIcon, checkMusicDeclared, checkVoice, countLetters } from '../src/core/rules';
 
 function keyAddr(seed: number, prefix: 'bitcoincash' | 'bchtest' = 'bchtest') {
   const priv = sha256.hash(utf8ToBin(`test-key-${seed}`));
@@ -131,7 +131,7 @@ describe('offers', () => {
     orderId: ORDER,
     facts: 'es,fr,de',
     specialist: 'lena',
-    part: 'description',
+    part: 'music',
     priceCents: 2,
     priceSats: '9500',
     fileSha256: binToHex(sha256.hash(utf8ToBin('full file'))),
@@ -202,22 +202,11 @@ describe('rules', () => {
     expect(checkVoice({ seconds: 32, preview: false })).toEqual({ ok: false, reason: 'asked for up to 15 s, got 32 s' });
     expect(checkVoice({ seconds: 3, preview: true, declaredSeconds: 8 }).ok).toBe(false);
   });
-  it('language: Spanish vs Portuguese on one sentence', () => {
-    const es = 'Un juego de verano donde tú pones las reglas y el piloto automático hace el resto.';
-    const pt = 'Um jogo de verão onde você define as regras e o piloto automático faz o resto.';
-    expect(detectLanguage(es)).toBe('es');
-    expect(detectLanguage(pt)).toBe('pt');
-    expect(checkLanguage(pt, 'es')).toEqual({ ok: false, reason: 'asked for Spanish, got Portuguese' });
-  });
-  it('description: all three languages', () => {
-    const v = checkDescription(
-      {
-        es: 'Un juego de verano donde tú pones las reglas y el piloto automático hace el resto.',
-        fr: "Un jeu d'été où vous fixez les règles et le pilote automatique fait le reste.",
-        de: 'Ein Sommerspiel, in dem du die Regeln festlegst und der Autopilot den Rest erledigt.',
-      },
-      { full: false },
-    );
-    expect(v).toEqual({ ok: true, note: 'Spanish, French and German, as asked' });
+  it('music as declared in the signed offer: length, licence from the list, author for CC BY', () => {
+    expect(checkMusicDeclared('15.00s;CC0-1.0;cynicmusic')).toEqual({ ok: true, note: '15.0 s, CC0 1.0 by cynicmusic' });
+    expect(checkMusicDeclared('17.20s;CC0-1.0;cynicmusic')).toEqual({ ok: false, reason: 'asked for 15.0 s, got 17.2 s' });
+    expect(checkMusicDeclared('15.05s;CC-BY-4.0;')).toEqual({ ok: false, reason: "CC BY 4.0 needs the author's name" });
+    expect(checkMusicDeclared('15.00s;CC-BY-NC-4.0;x').ok).toBe(false);
+    expect(checkMusicDeclared('15.00s').ok).toBe(false);
   });
 });

@@ -6,12 +6,12 @@ const TOOLS = [
   {
     name: 'create_order',
     description:
-      'Order a kit to list a game in a store: an icon (1024x1024, no text), a ~100-word description in Spanish, French and German, and a 10-15 s voice-over. Returns the rules, prices in cents, previews and the result of each check. Nothing is paid here.',
+      'Order a kit to list a game in a store: an icon (1024x1024, no text), 15 s of music for the clip (CC0 or CC BY, the licence written into the file), and a 10-15 s voice-over. Returns the rules, prices in cents, previews and the result of each check. Nothing is paid here.',
     inputSchema: {
       type: 'object',
       properties: {
         network: { type: 'string', enum: ['mainnet', 'chipnet'], description: 'Bitcoin Cash network, mainnet by default' },
-        careless: { type: 'string', enum: ['sam', 'lena'], description: 'Which demo translator is careless on purpose (default sam)' },
+        careless: { type: 'string', enum: ['sam', 'lena'], description: 'Which demo musician is careless on purpose (default sam)' },
         choice: { type: 'string', enum: ['a', 'b'], description: 'Which of the two icon variants the person prefers (default a); only the chosen one is paid' },
       },
     },

@@ -22,35 +22,32 @@ const RATE = 210.27;
 const sats = (cents: number) => String(Math.round((cents / 100 / RATE) * 1e8));
 const EXPIRES = Math.floor(Date.parse('2026-12-31T23:59:59Z') / 1000);
 
-const firstSentence = (t: string) => t.trim().split(/(?<=[.!?])\s+/)[0]!;
-const text = (f: string) => readFileSync(`${A}/${f}`, 'utf8').trim();
-const es = text('description-es.txt'), fr = text('description-fr.txt'), de = text('description-de.txt'), pt = text('description-pt-instead-of-es.txt');
-const good = { es, fr, de };
-const careless = { es: pt, fr, de }; // asked for Spanish, delivers Portuguese
-
 mkdirSync('public/files', { recursive: true });
 mkdirSync('public/previews', { recursive: true });
-copyFileSync(`${A}/icon-1024.png`, 'public/files/icon-1024.png');
-copyFileSync(`${A}/voice-full.mp3`, 'public/files/voice-full.mp3');
-writeFileSync('public/files/description-good.json', JSON.stringify(good, null, 2));
-writeFileSync('public/files/description-careless.json', JSON.stringify(careless, null, 2));
+for (const f of ['icon-1024.png', 'icon-b-1024.png', 'voice-full.mp3', 'music-sam-good.mp3', 'music-sam-careless.mp3', 'music-lena-good.mp3', 'music-lena-careless.mp3']) copyFileSync(`${A}/${f}`, `public/files/${f}`);
 copyFileSync(`${A}/icon-preview-128.png`, 'public/previews/icon-128.png');
-copyFileSync(`${A}/icon-b-1024.png`, 'public/files/icon-b-1024.png');
 copyFileSync(`${A}/icon-b-preview-128.png`, 'public/previews/icon-b-128.png');
 copyFileSync(`${A}/voice-preview-3s.mp3`, 'public/previews/voice-3s.mp3');
+copyFileSync(`${A}/music-sam-preview-3s.mp3`, 'public/previews/music-sam-3s.mp3');
+copyFileSync(`${A}/music-lena-preview-3s.mp3`, 'public/previews/music-lena-3s.mp3');
 
 const fileHash = (p: string) => binToHex(sha256.hash(readFileSync(p)));
 const seconds = (p: string) =>
   Number(execFileSync('ffprobe', ['-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', p], { encoding: 'utf8' }).trim()).toFixed(2);
 
-type Spec = { key: string; who: 'ICON' | 'SAM' | 'LENA' | 'VOICE'; specialist: string; part: Offer['part']; cents: number; file: string; facts: string; preview: string | Record<string, string> };
+const tag = (p: string, k: string) =>
+  execFileSync('ffprobe', ['-v', 'error', '-show_entries', `format_tags=${k}`, '-of', 'default=nw=1:nk=1', p], { encoding: 'utf8' }).trim();
+const musicFacts = (f: string) => `${seconds(`public/files/${f}`)}s;${tag(`public/files/${f}`, 'LICENSE')};${tag(`public/files/${f}`, 'artist')}`;
+
+type Spec = { key: string; who: 'ICON' | 'SAM' | 'LENA' | 'VOICE'; specialist: string; part: Offer['part']; cents: number; file: string; facts: string; preview: string };
 const specs: Spec[] = [
   { key: 'icon', who: 'ICON', specialist: 'icon (demo specialist)', part: 'icon', cents: 3, file: 'icon-1024.png', facts: '1024x1024', preview: '/previews/icon-128.png' },
   { key: 'icon:b', who: 'ICON', specialist: 'icon (demo specialist)', part: 'icon', cents: 3, file: 'icon-b-1024.png', facts: '1024x1024', preview: '/previews/icon-b-128.png' },
-  { key: 'sam:good', who: 'SAM', specialist: 'Sam (demo specialist)', part: 'description', cents: 2, file: 'description-good.json', facts: 'es,fr,de', preview: { es: firstSentence(es), fr: firstSentence(fr), de: firstSentence(de) } },
-  { key: 'sam:careless', who: 'SAM', specialist: 'Sam (demo specialist)', part: 'description', cents: 2, file: 'description-careless.json', facts: 'es,fr,de', preview: { es: firstSentence(pt), fr: firstSentence(fr), de: firstSentence(de) } },
-  { key: 'lena:good', who: 'LENA', specialist: 'Lena (demo specialist)', part: 'description', cents: 2, file: 'description-good.json', facts: 'es,fr,de', preview: { es: firstSentence(es), fr: firstSentence(fr), de: firstSentence(de) } },
-  { key: 'lena:careless', who: 'LENA', specialist: 'Lena (demo specialist)', part: 'description', cents: 2, file: 'description-careless.json', facts: 'es,fr,de', preview: { es: firstSentence(pt), fr: firstSentence(fr), de: firstSentence(de) } },
+  // music: "<seconds>s;<licence>;<author>" as measured on the full file and read from its licence frames
+  { key: 'sam:good', who: 'SAM', specialist: 'Sam (demo specialist)', part: 'music', cents: 2, file: 'music-sam-good.mp3', facts: musicFacts('music-sam-good.mp3'), preview: '/previews/music-sam-3s.mp3' },
+  { key: 'sam:careless', who: 'SAM', specialist: 'Sam (demo specialist)', part: 'music', cents: 2, file: 'music-sam-careless.mp3', facts: musicFacts('music-sam-careless.mp3'), preview: '/previews/music-sam-3s.mp3' },
+  { key: 'lena:good', who: 'LENA', specialist: 'Lena (demo specialist)', part: 'music', cents: 2, file: 'music-lena-good.mp3', facts: musicFacts('music-lena-good.mp3'), preview: '/previews/music-lena-3s.mp3' },
+  { key: 'lena:careless', who: 'LENA', specialist: 'Lena (demo specialist)', part: 'music', cents: 2, file: 'music-lena-careless.mp3', facts: musicFacts('music-lena-careless.mp3'), preview: '/previews/music-lena-3s.mp3' },
   { key: 'voice', who: 'VOICE', specialist: 'voice (demo specialist)', part: 'voice', cents: 2, file: 'voice-full.mp3', facts: `${seconds('public/files/voice-full.mp3')}s`, preview: '/previews/voice-3s.mp3' },
 ];
 

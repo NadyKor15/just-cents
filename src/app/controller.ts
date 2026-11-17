@@ -1,9 +1,8 @@
 // Glue between the animated scene (ui/app.js) and the real order: the scene waits at gates until
 // the real preview has arrived and the real check has run, and its texts come from the real verdicts.
 import qrcode from 'qrcode-generator';
-import { Order, descKey, SERVICE, ICON_KEY, type Checked, type Who } from './order';
+import { Order, musicKey, SERVICE, ICON_KEY, type Checked, type Who } from './order';
 import { preloadOcr } from './measure';
-import { checkLanguage, detectLanguage } from '../core/rules';
 import { readOrderId } from '../core/orderid';
 import { offerHashHex } from '../core/offer';
 import { makeClip } from './clip';
@@ -45,24 +44,38 @@ function setTagReason(who: Who, text: string) {
   all(`.tag-${plate(who)} span`).forEach((s) => (s.innerHTML = text.replace(/, /, ',<br>')));
 }
 
-/** Description preview: the first sentence in each language and what the language detector says about it. */
-function showDescPreview(c: Checked) {
-  const firsts = order!.entry(c.key).preview as Record<string, string>;
+/** Music preview: what the musician declares (title, author, licence, length), checked against the rules; tap to hear 3 s. */
+let previewAudio: HTMLAudioElement | null = null;
+function showMusicPreview(c: Checked) {
+  const m = c.music;
+  if (!m) return;
+  const lenOk = Math.abs(m.seconds - 15) <= 0.1;
+  const rows: [string, string, boolean][] = [
+    ['♪', m.title, true],
+    ['CC', `${m.license.replace('-1.0', ' 1.0').replace('-4.0', ' 4.0')} · ${m.author}`, c.verdict.ok || lenOk],
+    ['⏱', `${m.seconds.toFixed(1)} s`, lenOk],
+  ];
+  const url = order!.entry(c.key).preview as string;
   all('.t-desc .desc-bar').forEach((bar) => {
     bar.classList.add('has-text');
     bar.innerHTML = '';
-    for (const lang of ['es', 'fr', 'de']) {
-      const ok = checkLanguage(firsts[lang] ?? '', lang).ok;
+    for (const [code, text, ok] of rows) {
       const row = document.createElement('span');
       row.className = `dl${ok ? '' : ' wrong'}`;
-      const code = document.createElement('b');
-      code.textContent = lang.toUpperCase();
-      const text = document.createElement('i');
-      text.textContent = ` ${firsts[lang] ?? ''}`;
-      row.append(code, text);
-      row.title = `${lang.toUpperCase()}: ${firsts[lang]} — detected ${detectLanguage(firsts[lang] ?? '')}`;
+      const b = document.createElement('b');
+      b.textContent = code;
+      const i = document.createElement('i');
+      i.textContent = ` ${text}`;
+      row.append(b, i);
       bar.appendChild(row);
     }
+    bar.title = `${m.title} by ${m.author}, ${m.license}, ${m.seconds.toFixed(1)} s. Tap to hear the first 3 seconds.`;
+    bar.onclick = (e) => {
+      e.stopPropagation();
+      previewAudio?.pause();
+      previewAudio = new Audio(url);
+      void previewAudio.play().catch(() => {});
+    };
   });
 }
 
@@ -170,12 +183,12 @@ function runChecks(o: Order, careless: Who) {
   if (Q.get('choice') === 'b') o.iconChoice = 'b';
   const icons = [o.checkIcon('a'), o.checkIcon('b')] as const;
   const icon = Promise.all(icons).then(([a]) => a);
-  const descBad = o.checkDescription(careless);
-  const descGood = o.checkDescription(other);
+  const descBad = o.checkMusic(careless);
+  const descGood = o.checkMusic(other);
   const voice = o.checkVoice();
   icon.then(() => showIconChoice(o)).catch((e) => fail('Icon', e));
-  descBad.then((c) => { showDescPreview(c); if (!c.verdict.ok) setTagReason(careless, c.verdict.reason); }).catch((e) => fail('Description', e));
-  descGood.catch((e) => fail('Description', e));
+  descBad.then((c) => { showMusicPreview(c); if (!c.verdict.ok) setTagReason(careless, c.verdict.reason); }).catch((e) => fail('Music', e));
+  descGood.catch((e) => fail('Music', e));
   voice.catch((e) => fail('Voice-over', e));
   return { icon, descBad, descGood, voice };
 }
@@ -212,7 +225,7 @@ export function wait(name: GateName): Promise<void> {
   // ?hold=<gate> keeps the scene on that moment (for screenshots and the demo video), e.g. ?hold=descGood shows Sam's rejection
   if (Q.get('hold') === name) return new Promise(() => {});
   // the replacement's preview takes the tile when the scene reaches it
-  if (name === 'descGood') return gates.descGood.then((c) => showDescPreview(c), () => undefined);
+  if (name === 'descGood') return gates.descGood.then((c) => showMusicPreview(c), () => undefined);
   return gates[name].then(() => undefined, () => undefined);
 }
 
@@ -225,11 +238,11 @@ function renderReceiptPrices() {
   const good = order.careless === 'sam' ? 'lena' : 'sam';
   // once every check has answered, the total counts only accepted pieces; before that, the planned total
   const settled = order.chosenIcon() && order.results[good] && order.results.voice;
-  const total = settled ? order.totalCents() : cents('icon') + cents(descKey(good, order.careless)) + cents('voice') + SERVICE.cents;
+  const total = settled ? order.totalCents() : cents('icon') + cents(musicKey(good, order.careless)) + cents('voice') + SERVICE.cents;
   all('.btn-pay').forEach((b) => (b.textContent = `Pay ${total}¢ once`));
 }
 
-/** "Break it yourself": the judge picks who is careless; both descriptions are checked again for real. */
+/** "Break it yourself": the judge picks who is careless; both music pieces are checked again for real. */
 export async function switchCareless(who: Who): Promise<boolean> {
   if (!order || order.careless === who) return false;
   if (paid) {
@@ -237,7 +250,7 @@ export async function switchCareless(who: Who): Promise<boolean> {
     resetPayment();
   }
   // the careless specialist is part of the order id, so another choice is another order (new id);
-  // icon and voice checks carry over (same offers), descriptions are checked again below
+  // icon and voice checks carry over (same offers), music pieces are checked again below
   const prev = order;
   const fresh = WHO === 'assistant' ? await createByAssistant(who).catch(() => new Order(NET, who)) : new Order(NET, who);
   fresh.iconChoice = prev.iconChoice;
@@ -245,12 +258,12 @@ export async function switchCareless(who: Who): Promise<boolean> {
   order = fresh;
   const other: Who = who === 'sam' ? 'lena' : 'sam';
   try {
-    const [bad, good] = await Promise.all([order.checkDescription(who), order.checkDescription(other)]);
+    const [bad, good] = await Promise.all([order.checkMusic(who), order.checkMusic(other)]);
     if (!bad.verdict.ok) setTagReason(who, bad.verdict.reason);
     if (!good.verdict.ok) toast(`${other}: ${good.verdict.reason}`);
-    else showDescPreview(good);
+    else showMusicPreview(good);
   } catch (e) {
-    fail('Description', e);
+    fail('Music', e);
   }
   renderReceiptPrices();
   return true;
@@ -278,7 +291,7 @@ function payTable(o: Order): HTMLElement {
   const rows: [string, string, string, string][] = o.accepted().map((c) => [label(c), short(c.offer.offer.payTo), `${c.offer.offer.priceCents}¢`, '']);
   rows.push(['Just Cents service', short(serviceAddr(o.net)), `${SERVICE.cents}¢`, '']);
   const rej = o.results[o.careless];
-  if (rej && !rej.verdict.ok) rows.splice(1, 0, [`Description (${o.careless === 'sam' ? 'Sam' : 'Lena'}) rejected`, 'no output', '0¢', 'rejected']);
+  if (rej && !rej.verdict.ok) rows.splice(1, 0, [`Music (${o.careless === 'sam' ? 'Sam' : 'Lena'}) rejected`, 'no output', '0¢', 'rejected']);
   const other = o.notChosenIcon();
   if (other) rows.splice(1, 0, [`${label(other)} not chosen`, 'no output', '—', 'taste']);
   for (const [a, b, c, kind] of rows) {
@@ -477,7 +490,8 @@ async function deliver(o: Order) {
   const files: { name: string; data: Uint8Array }[] = [];
   let icon: Blob | null = null;
   let voice: ArrayBuffer | null = null;
-  let texts: Record<string, string> | null = null;
+  let music: ArrayBuffer | null = null;
+  let musicInfo: Checked['music'] | undefined;
   for (const c of o.accepted()) {
     const li = el('li', 'pending', `${label(c)}: waiting for the specialist`);
     list.appendChild(li);
@@ -488,7 +502,10 @@ async function deliver(o: Order) {
       files.push({ name: f.name, data: new Uint8Array(f.bytes) });
       if (c.key.startsWith('icon')) icon = new Blob([f.bytes], { type: 'image/png' });
       else if (c.key === 'voice') voice = f.bytes;
-      else texts = JSON.parse(new TextDecoder().decode(f.bytes));
+      else {
+        music = f.bytes;
+        musicInfo = c.music;
+      }
     } catch (e) {
       li.className = 'bad';
       li.textContent = `${label(c)}: ${e instanceof Error ? e.message : e}`;
@@ -497,7 +514,7 @@ async function deliver(o: Order) {
   const otherIcon = o.notChosenIcon();
   if (otherIcon) list.appendChild(el('li', 'taste', `${label(otherIcon)}: not chosen (taste, not a rule: it passed the rules, you picked the other one), nothing paid`));
   const rej = o.results[o.careless];
-  if (rej && !rej.verdict.ok) list.appendChild(el('li', 'zero', `Description (${o.careless === 'sam' ? 'Sam' : 'Lena'}): rejected, 0¢ (${rej.verdict.reason})`));
+  if (rej && !rej.verdict.ok) list.appendChild(el('li', 'zero', `Music (${o.careless === 'sam' ? 'Sam' : 'Lena'}): rejected, 0¢ (${rej.verdict.reason})`));
   const receipt = {
     order: o.id,
     network: o.net,
@@ -516,17 +533,17 @@ async function deliver(o: Order) {
     service: { cents: SERVICE.cents, sats: SERVICE.sats.toString() },
     networkFeeSats: o.payment ? o.payment.fee.toString() : null,
     outputs: o.payment ? o.payment.transaction.outputs.map((x) => x.valueSatoshis.toString()) : null,
-    rejected: rej && !rej.verdict.ok ? { part: 'description', specialist: o.careless, cents: 0, reason: rej.verdict.reason } : null,
+    rejected: rej && !rej.verdict.ok ? { part: 'music', specialist: o.careless, cents: 0, reason: rej.verdict.reason } : null,
     note: o.payment?.noteHex,
   };
   files.push({ name: 'receipt.json', data: new TextEncoder().encode(JSON.stringify(receipt, null, 2)) });
-  if (icon && voice && texts) {
+  if (icon && voice && music) {
     const li = el('li', 'pending', 'Clip: Just Cents is putting it together');
     list.appendChild(li);
     try {
-      const t = texts as Record<string, string>;
+      const credit = musicInfo ? `${musicInfo.title} by ${musicInfo.author} · ${musicInfo.license.replace('-1.0', ' 1.0').replace('-4.0', ' 4.0')}` : 'Music';
       const clip = await makeClip(
-        { icon, voice, lines: ['es', 'fr', 'de'].map((lang) => ({ lang, text: (t[lang] ?? '').split(/(?<=[.!?])\s/)[0]! })) },
+        { icon, voice, music, lines: [{ lang: 'Autopilot: Summer Rules', text: 'Your AI. Your rules. Your money.' }, { lang: '♪ Music', text: credit }] },
         (p) => (li.textContent = `Clip: Just Cents is putting it together (${Math.round(p * 100)}%)`),
       );
       files.push({ name: `clip.${clip.ext}`, data: new Uint8Array(await clip.blob.arrayBuffer()) });
@@ -550,7 +567,7 @@ async function deliver(o: Order) {
 
 function label(c: Checked): string {
   if (c.key.startsWith('icon')) return `Icon (${c.key === ICON_KEY.a ? 'A' : 'B'})`;
-  return c.key === 'voice' ? 'Voice-over' : `Description (${c.who === 'sam' ? 'Sam' : 'Lena'})`;
+  return c.key === 'voice' ? 'Voice-over' : `Music (${c.who === 'sam' ? 'Sam' : 'Lena'})`;
 }
 
 export function currentOrder(): Order | null {

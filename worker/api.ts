@@ -7,7 +7,7 @@
 // network and its JC1 note names this order.
 import offers from '../src/data/offers.json';
 import { readOrderId, newOrderId, type OrderMeta } from '../src/core/orderid';
-import { checkDescription, checkIcon, checkVoice, RULES } from '../src/core/rules';
+import { checkMusicDeclared, checkIcon, checkVoice, RULES } from '../src/core/rules';
 import { PAYOUT } from '../src/config';
 import { readOutputs, readNote, bytesToHex, checkOfferPaid } from './txparse';
 import { bookFor } from './index';
@@ -58,8 +58,8 @@ function describe(meta: OrderMeta, origin: string, txid: string | null, choice: 
   const bad = book[`${meta.careless}:careless`]!, ok = book[`${good}:good`]!;
   const [w, h] = icon.signed.offer.facts.split('x').map(Number) as [number, number];
   const iconCheck = checkIcon({ width: w, height: h, letters: 0, preview: false });
-  const badCheck = checkDescription(bad.preview as Record<string, string>, { full: false });
-  const okCheck = checkDescription(ok.preview as Record<string, string>, { full: false });
+  const badCheck = checkMusicDeclared(bad.signed.offer.facts);
+  const okCheck = checkMusicDeclared(ok.signed.offer.facts);
   const voiceCheck = checkVoice({ seconds: parseFloat(voice.signed.offer.facts), preview: false });
   const part = (label: string, specialist: string, e: Entry, check: ReturnType<typeof checkIcon>, how: string) => ({
     part: label,
@@ -75,7 +75,7 @@ function describe(meta: OrderMeta, origin: string, txid: string | null, choice: 
   });
   const accepted = [
     part(`icon (variant ${choice.toUpperCase()})`, 'icon (demo specialist)', icon, iconCheck, 'size from the signed offer here; "no letters" is checked by OCR in the browser on the pay page, before the wallet is asked'),
-    part('description', `${name(good)} (demo specialist)`, ok, okCheck, 'language detection (franc) on the first sentence of each language, here'),
+    part('music', `${name(good)} (demo specialist)`, ok, okCheck, 'length and licence from the signed offer here; the pay page checks the licence written into the file, and the length is measured again on the full file after payment'),
     part('voice', 'voice (demo specialist)', voice, voiceCheck, 'length from the signed offer here, measured again on the full file after payment'),
   ];
   const total = accepted.reduce((s, p) => s + p.price_cents, 0) + SERVICE_CENTS;
@@ -83,7 +83,7 @@ function describe(meta: OrderMeta, origin: string, txid: string | null, choice: 
     id: meta.id,
     network: net,
     request: REQUEST,
-    rules: { icon: RULES.icon.text, description: RULES.description.text, voice: RULES.voice.text },
+    rules: { icon: RULES.icon.text, music: RULES.music.text, voice: RULES.voice.text },
     icon_choice: {
       chosen: choice,
       note: 'Two icon variants pass the same rules; the person picks one by taste and pays only for that one. Change it with ?choice=a|b on GET /api/orders/{id}, /pay and in pay_url.',
@@ -93,7 +93,7 @@ function describe(meta: OrderMeta, origin: string, txid: string | null, choice: 
     not_chosen: [{ part: `icon (variant ${choice === 'a' ? 'B' : 'A'})`, cents: 0, preview: abs(origin, otherIcon.preview as string), reason: 'not chosen by the person (taste, not a rule: it passed the rules)' }],
     rejected: [
       {
-        part: 'description',
+        part: 'music',
         specialist: `${name(meta.careless)} (demo specialist, careless on purpose)`,
         cents: 0,
         reason: badCheck.ok ? null : badCheck.reason,
@@ -202,7 +202,7 @@ export async function api(request: Request, env: ApiEnv): Promise<Response> {
       txid,
       icon_choice: choice,
       files: keys.map((k) => ({
-        part: k.startsWith('icon') ? 'icon' : k === 'voice' ? 'voice' : 'description',
+        part: k.startsWith('icon') ? 'icon' : k === 'voice' ? 'voice' : 'music',
         name: book[k]!.file,
         url: `${origin}/full/${encodeURIComponent(k)}?net=${meta.net}&txid=${txid}`,
         sha256: book[k]!.signed.offer.fileSha256,

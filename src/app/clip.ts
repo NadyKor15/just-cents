@@ -1,8 +1,8 @@
 // Just Cents puts a short clip together from the accepted parts and the game's own material:
-// a few seconds of gameplay (no sound), stills of the game, then the new icon with the first line of each
-// description; the accepted voice-over plays across the whole clip. Drawn on a canvas and recorded in the
+// a few seconds of gameplay (no sound), stills of the game, then the new icon with a line or two;
+// the accepted music plays under the accepted voice-over across the whole clip. Drawn on a canvas and recorded in the
 // browser in real time. Hard cuts and a slow push-in only: no blur, no still moments.
-export type ClipInput = { icon: Blob; lines: { lang: string; text: string }[]; voice: ArrayBuffer; frames?: string[]; gameplay?: string };
+export type ClipInput = { icon: Blob; lines: { lang: string; text: string }[]; voice: ArrayBuffer; music?: ArrayBuffer; frames?: string[]; gameplay?: string };
 export type Clip = { blob: Blob; ext: 'webm' | 'mp4'; seconds: number };
 
 /** Game material from the game's own public store page and its recorded play-through. */
@@ -79,16 +79,25 @@ export async function makeClip(input: ClipInput, onProgress?: (p: number) => voi
   const src = ac.createBufferSource();
   src.buffer = buf;
   src.connect(dest);
+  // music bed under the voice
+  const mbuf = input.music ? await ac.decodeAudioData(input.music.slice(0)) : null;
+  const msrc = mbuf ? ac.createBufferSource() : null;
+  if (msrc && mbuf) {
+    msrc.buffer = mbuf;
+    const gain = ac.createGain();
+    gain.gain.value = 0.32;
+    msrc.connect(gain).connect(dest);
+  }
   const stream = new MediaStream([...cv.captureStream(30).getVideoTracks(), ...dest.stream.getAudioTracks()]);
   const rec = new MediaRecorder(stream, { mimeType: type.mime, videoBitsPerSecond: 3_500_000 });
   const chunks: Blob[] = [];
   rec.ondataavailable = (e) => e.data.size && chunks.push(e.data);
 
-  // timeline: gameplay → stills → icon with the description lines; voice over all of it
+  // timeline: gameplay → stills → icon with the lines; music and voice over all of it
   const G = play ? Math.min(3, play.duration || 2.6) : 0;
   const PER_FRAME = 1.1;
   const ICON = G + frames.length * PER_FRAME;
-  const total = Math.min(MAX_SECONDS, Math.max(buf.duration + 0.6, ICON + 6.6));
+  const total = Math.min(MAX_SECONDS, Math.max(buf.duration + 0.6, mbuf ? mbuf.duration : 0, ICON + 6.6));
   const LINES = ICON + 0.5;
   const perLine = (total - LINES) / input.lines.length;
   let t0 = 0;
@@ -149,6 +158,7 @@ export async function makeClip(input: ClipInput, onProgress?: (p: number) => voi
     play.currentTime = 0;
     void play.play().catch(() => {});
   }
+  msrc?.start(ac.currentTime);
   src.start(ac.currentTime + 0.3);
   draw();
   await new Promise((r) => setTimeout(r, total * 1000));
