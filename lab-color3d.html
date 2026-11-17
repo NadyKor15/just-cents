@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Colour 3D trial (dev)</title>
+<style>
+  body{margin:0;background:#efe9e8;font:15px system-ui,sans-serif;color:#2b2427}
+  .row{display:flex;gap:20px;padding:20px;flex-wrap:wrap}
+  figure{margin:0;background:#f7f2f1;border-radius:22px;padding:12px 12px 8px;box-shadow:0 10px 28px rgba(90,60,60,.10)}
+  canvas{display:block;width:400px;height:460px}
+  figcaption{text-align:center;padding:6px 0 4px;font-weight:600}
+  figcaption small{display:block;font-weight:400;color:#6c5f66}
+</style>
+</head>
+<body>
+<div class="row" id="row"></div>
+<script type="module">
+  // ?f=<dir under /specialists/trial-3d>,…  &angles=0.6,2.6  — renders mesh.ply (vertex colours) from each angle
+  import * as THREE from 'three';
+  import { PLYLoader } from 'three/examples/jsm/loaders/PLYLoader.js';
+  const q = new URLSearchParams(location.search);
+  const dirs = (q.get('f') || 'out-stand1').split(',');
+  const angles = (q.get('angles') || '0.6').split(',').map(Number);
+  const heightMm = Number(q.get('mm') || 80);
+  for (const d of dirs) {
+    const geo = await new PLYLoader().loadAsync(`/specialists/trial-3d/${d}/${q.get('file') || 'mesh.ply'}`);
+    // stand the figure up along its longest axis (three.js: y is up); ?flip=1 turns it upside down
+    geo.computeBoundingBox();
+    { const e = new THREE.Vector3(); geo.boundingBox.getSize(e);
+      if (e.x >= e.y && e.x >= e.z) geo.rotateZ(Math.PI / 2); else if (e.z >= e.y) geo.rotateX(-Math.PI / 2); }
+    if (q.get('flip') === '1') geo.rotateZ(Math.PI);
+    if (q.get('turn')) geo.rotateY(Number(q.get('turn')));
+    geo.computeVertexNormals();
+    geo.computeBoundingBox();
+    const bb = geo.boundingBox;
+    const s = heightMm / (bb.max.y - bb.min.y);
+    geo.scale(s, s, s);
+    geo.computeBoundingBox();
+    const b2 = geo.boundingBox;
+    geo.translate(-(b2.min.x + b2.max.x) / 2, -b2.min.y, -(b2.min.z + b2.max.z) / 2);
+    const size = new THREE.Vector3(); geo.boundingBox.getSize(size);
+    for (const ang of angles) {
+      const fig = document.createElement('figure');
+      const c = document.createElement('canvas');
+      const cap = document.createElement('figcaption');
+      cap.innerHTML = q.get('caption') ? `${q.get('caption')}<small>${size.y.toFixed(0)} mm tall · ${size.x.toFixed(0)} × ${size.z.toFixed(0)} mm footprint · watertight, fits a 256 mm bed</small>` : `${d} · view ${ang}<small>${size.x.toFixed(0)} × ${size.y.toFixed(0)} × ${size.z.toFixed(0)} mm, ${geo.index ? geo.index.count / 3 : geo.attributes.position.count / 3} triangles</small>`;
+      fig.append(c, cap); document.getElementById('row').append(fig);
+      const W = 400, H = 460;
+      const r = new THREE.WebGLRenderer({ canvas: c, antialias: true, preserveDrawingBuffer: true });
+      r.setPixelRatio(2); r.setSize(W, H, false); r.outputColorSpace = THREE.SRGBColorSpace;
+      r.shadowMap.enabled = true; r.shadowMap.type = THREE.PCFSoftShadowMap;
+      const scene = new THREE.Scene(); scene.background = new THREE.Color('#f7f2f1');
+      const mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .6 }));
+      mesh.castShadow = true; scene.add(mesh);
+      const span = Math.max(size.x, size.y, size.z);
+      const g = new THREE.Mesh(new THREE.PlaneGeometry(span * 8, span * 8), new THREE.ShadowMaterial({ opacity: .18 }));
+      g.rotation.x = -Math.PI / 2; g.receiveShadow = true; scene.add(g);
+      scene.add(new THREE.HemisphereLight('#ffffff', '#b8acb0', 1.1));
+      const sun = new THREE.DirectionalLight('#ffffff', 1.5); sun.position.set(span, span * 1.6, span * 1.2); sun.castShadow = true;
+      Object.assign(sun.shadow.camera, { left: -span, right: span, top: span, bottom: -span }); scene.add(sun);
+      const cam = new THREE.PerspectiveCamera(30, W / H, 1, span * 20);
+      const dist = span * 2.4;
+      cam.position.set(Math.sin(ang) * dist, size.y * 0.5 + span * 0.3, Math.cos(ang) * dist); cam.lookAt(0, size.y * 0.5, 0);
+      r.render(scene, cam);
+    }
+  }
+  document.body.dataset.ready = '1';
+</script>
+</body>
+</html>
