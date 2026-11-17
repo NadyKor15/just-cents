@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Figure views (dev)</title>
+<style>
+  body{margin:0;background:#efe9e8;font:15px system-ui,sans-serif;color:#2b2427}
+  .row{display:flex;gap:20px;padding:20px;flex-wrap:nowrap}
+  figure{margin:0;background:#f7f2f1;border-radius:22px;padding:12px 12px 8px;box-shadow:0 10px 28px rgba(90,60,60,.10)}
+  canvas{display:block;width:400px;height:460px}
+  figcaption{text-align:center;padding:6px 0 4px;font-weight:600}
+  figcaption small{display:block;font-weight:400;color:#6c5f66}
+</style>
+</head>
+<body>
+<div class="row" id="row"></div>
+<script type="module">
+  import { viewStl } from '/src/app/viewer3d.ts';
+  import { checkModel } from '/src/core/mesh.ts';
+  const q = new URLSearchParams(location.search);
+  const which = (q.get('show') || 'stand,walk').split(',');
+  const ITEMS = {
+    stand: { file: '/specialists/figure/figure-stand.stl', title: 'Standing', color: '#a866a4', label: '80 mm' },
+    walk: { file: '/specialists/figure/figure-walk.stl', title: 'Walking', color: '#a866a4', label: '80 mm' },
+    careless: { file: '/specialists/figure/figure-careless.stl', title: 'Careless modeler: 300 mm', color: '#e4465d', label: '300 mm', bed: [256, 256, 256] },
+  };
+  for (const k of which) {
+    const it = ITEMS[k];
+    const buf = await (await fetch(it.file)).arrayBuffer();
+    const v = checkModel(buf);
+    const fig = document.createElement('figure');
+    const c = document.createElement('canvas');
+    const cap = document.createElement('figcaption');
+    cap.innerHTML = `${it.title}<small>${v.ok ? '✓ ' : '✕ '}${v.reason}${it.bed ? ' (dashed box: the bed)' : ''}</small>`;
+    fig.append(c, cap);
+    document.getElementById('row').append(fig);
+    viewStl(c, buf, { color: it.color, label: it.label, bed: it.bed, background: '#f7f2f1' });
+  }
+  document.body.dataset.ready = '1';
+</script>
+</body>
+</html>

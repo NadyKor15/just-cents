@@ -22,14 +22,20 @@ from PIL import Image
 
 
 # ------------------------------------------------------------------ mask
-def load_mask(path, frame=None, grid=None, alpha=128):
+def load_mask(path, frame=None, grid=None, alpha=128, blur=2.0):
     im = Image.open(path).convert('RGBA')
     if frame and grid:
         cols, rows = grid
         fw, fh = im.width // cols, im.height // rows
         c, r = frame
         im = im.crop((c * fw, r * fh, (c + 1) * fw, (r + 1) * fh))
-    a = np.array(im)[:, :, 3] >= alpha
+    # a light blur of the alpha before thresholding: smooth outline instead of the sprite's pixel steps
+    from PIL import ImageFilter
+
+    al = im.getchannel('A')
+    if blur:
+        al = al.filter(ImageFilter.GaussianBlur(blur))
+    a = np.array(al) >= alpha
     return a, im
 
 
@@ -295,12 +301,13 @@ def main():
     ap.add_argument('--grid')
     ap.add_argument('--height-mm', type=float, default=80.0)
     ap.add_argument('--thick-mm', type=float, default=6.0)
-    ap.add_argument('--eps-px', type=float, default=1.2)
+    ap.add_argument('--eps-px', type=float, default=1.6)
+    ap.add_argument('--blur-px', type=float, default=2.0)
     ap.add_argument('--preview')
     a = ap.parse_args()
     frame = tuple(int(v) for v in a.frame.split(',')) if a.frame else None
     grid = tuple(int(v) for v in a.grid.split(',')) if a.grid else None
-    m, im = load_mask(a.src, frame, grid)
+    m, im = load_mask(a.src, frame, grid, blur=a.blur_px)
     m = clean_mask(m)
     outline = trace_outline(m)
     eps = a.eps_px
