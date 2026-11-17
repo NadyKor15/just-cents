@@ -19,6 +19,8 @@ export const EXAMPLE = {
   mcpOrder:
     'Order a kit to list a game in a store: an icon (1024x1024, no text), 15 s of music for the clip (CC0 or CC BY, the licence written into the file), and a 10-15 s voice-over.',
 
+  // The choice slot shows the icon A/B as a working placeholder until the main example is chosen again
+  // (a 3D figure was tried here and dropped; its rules stay in src/core/mesh.ts, not in the scene).
   choice: {
     /** label in receipt, kit and API, e.g. "Icon (A)" */
     label: 'Icon',
