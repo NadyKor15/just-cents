@@ -2,12 +2,13 @@
 // a few seconds of gameplay (no sound), stills of the game, then the new icon with a line or two;
 // the accepted music plays under the accepted voice-over across the whole clip. Drawn on a canvas and recorded in the
 // browser in real time. Hard cuts and a slow push-in only: no blur, no still moments.
-export type ClipInput = { icon: Blob; lines: { lang: string; text: string }[]; voice: ArrayBuffer; music?: ArrayBuffer; frames?: string[]; gameplay?: string };
+export type ClipInput = { icon: Blob; lines: { lang: string; text: string }[]; voice: ArrayBuffer; music?: ArrayBuffer; frames?: readonly string[]; gameplay?: string };
 export type Clip = { blob: Blob; ext: 'webm' | 'mp4'; seconds: number };
+import { EXAMPLE } from '../data/example';
 
 /** Game material from the game's own public store page and its recorded play-through. */
-export const GAME_FRAMES = ['/game-frames/first-call.jpg', '/game-frames/hike-day.jpg', '/game-frames/build-a-rule.jpg'];
-export const GAMEPLAY = '/game-frames/gameplay.mp4';
+export const GAME_FRAMES: readonly string[] = EXAMPLE.clip.frames;
+export const GAMEPLAY: string = EXAMPLE.clip.gameplay;
 export const MAX_SECONDS = 15;
 
 function pickType(): { mime: string; ext: 'webm' | 'mp4' } | null {

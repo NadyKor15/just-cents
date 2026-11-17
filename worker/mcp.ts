@@ -1,12 +1,13 @@
 // Remote MCP server (Streamable HTTP, stateless JSON responses) over the same order API.
 // Connect: claude mcp add --transport http justcents https://<host>/mcp
 import { api, type ApiEnv } from './api';
+import { EXAMPLE } from '../src/data/example';
 
 const TOOLS = [
   {
     name: 'create_order',
     description:
-      'Order a kit to list a game in a store: an icon (1024x1024, no text), 15 s of music for the clip (CC0 or CC BY, the licence written into the file), and a 10-15 s voice-over. Returns the rules, prices in cents, previews and the result of each check. Nothing is paid here.',
+      `${EXAMPLE.mcpOrder} Returns the rules, prices in cents, previews and the result of each check. Nothing is paid here.`,
     inputSchema: {
       type: 'object',
       properties: {

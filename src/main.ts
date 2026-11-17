@@ -1,10 +1,14 @@
 /// <reference types="vite/client" />
 import './ui/app.js';
 import { BANNER } from './config';
+import { EXAMPLE } from './data/example';
 import { copyText } from './app/copy';
 import { prepareScene, setWho, WHO, type Orderer } from './app/controller';
 
 prepareScene();
+
+// the example's request in the order field (the same text is in index.html, so nothing flickers)
+document.querySelectorAll<HTMLInputElement>('.order-in').forEach((i) => (i.value = EXAMPLE.request));
 
 // "You / Your assistant" above the order field: same scene, same checks; only who created the order changes
 document.querySelectorAll<HTMLButtonElement>('.who button').forEach((b) => b.addEventListener('click', () => setWho(b.dataset.who as Orderer)));

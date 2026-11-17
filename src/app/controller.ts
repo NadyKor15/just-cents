@@ -2,6 +2,7 @@
 // the real preview has arrived and the real check has run, and its texts come from the real verdicts.
 import qrcode from 'qrcode-generator';
 import { Order, musicKey, SERVICE, ICON_KEY, type Checked, type Who } from './order';
+import { EXAMPLE, pairName } from '../data/example';
 import { preloadOcr } from './measure';
 import { readOrderId } from '../core/orderid';
 import { offerHashHex } from '../core/offer';
@@ -26,8 +27,8 @@ export function prepareScene(): void {
   if (!FIXED) return;
   all('.brk').forEach((b) => (b.style.display = 'none')); // the order is fixed; the person can still read who failed
   if (!SWAPPED) return;
-  all('.tag-sam b').forEach((b) => (b.textContent = 'Lena (demo specialist)'));
-  all('.tag-lena b').forEach((b) => (b.textContent = 'Sam (demo specialist)'));
+  all('.tag-sam b').forEach((b) => (b.textContent = `${pairName('lena')} (demo specialist)`));
+  all('.tag-lena b').forEach((b) => (b.textContent = `${pairName('sam')} (demo specialist)`));
   all('.receipt [data-sam]').forEach((e) => (e.innerHTML = e.dataset.lena ?? e.innerHTML));
 }
 
@@ -91,7 +92,7 @@ function showIconChoice(o: Order) {
         b.type = 'button';
         b.className = `iv${o.iconChoice === v ? ' on' : ''}`;
         b.setAttribute('aria-pressed', String(o.iconChoice === v));
-        b.setAttribute('aria-label', `Icon variant ${v.toUpperCase()}${c && !c.verdict.ok ? ' (rejected)' : ''}`);
+        b.setAttribute('aria-label', `${EXAMPLE.choice.label} variant ${v.toUpperCase()}${c && !c.verdict.ok ? ' (rejected)' : ''}`);
         const img = new Image();
         img.src = o.entry(ICON_KEY[v]).preview as string;
         img.alt = '';
@@ -109,8 +110,8 @@ function showIconChoice(o: Order) {
       }
     });
     const chosen = o.iconChoice.toUpperCase(), other = o.iconChoice === 'a' ? 'B' : 'A';
-    all('.receipt .icon-chosen').forEach((s) => (s.textContent = `Icon (${chosen})`));
-    all('.receipt .icon-other').forEach((s) => (s.textContent = `Icon (${other}) not chosen`));
+    all('.receipt .icon-chosen').forEach((s) => (s.textContent = `${EXAMPLE.choice.label} (${chosen})`));
+    all('.receipt .icon-other').forEach((s) => (s.textContent = `${EXAMPLE.choice.label} (${other}) not chosen`));
   };
   render();
 }
@@ -120,7 +121,7 @@ export function showIconPreview(url: string) {
     e.innerHTML = '';
     const img = new Image();
     img.src = url;
-    img.alt = 'Icon preview, 128 px, watermarked';
+    img.alt = EXAMPLE.choice.previewAlt;
     img.className = 'icon-prev-img';
     e.appendChild(img);
   });
@@ -150,7 +151,7 @@ export function toast(text: string, ms = 6000) {
 export type Orderer = 'you' | 'assistant';
 /** A link from an assistant (?order=…) opens in assistant mode; ?who=assistant does the same for a fresh order. */
 export let WHO: Orderer = FIXED || Q.get('who') === 'assistant' ? 'assistant' : 'you';
-export const ASSISTANT_ASK = 'Asking for: a kit to list my game.';
+export const ASSISTANT_ASK: string = EXAMPLE.assistantAsk;
 export const ASSISTANT_PAY = 'Your assistant asked for this; you sign once in your own wallet';
 export const ASSISTANT_KIT = 'Your assistant can now fetch the kit';
 let youText = '';
@@ -186,10 +187,10 @@ function runChecks(o: Order, careless: Who) {
   const descBad = o.checkMusic(careless);
   const descGood = o.checkMusic(other);
   const voice = o.checkVoice();
-  icon.then(() => showIconChoice(o)).catch((e) => fail('Icon', e));
-  descBad.then((c) => { showMusicPreview(c); if (!c.verdict.ok) setTagReason(careless, c.verdict.reason); }).catch((e) => fail('Music', e));
-  descGood.catch((e) => fail('Music', e));
-  voice.catch((e) => fail('Voice-over', e));
+  icon.then(() => showIconChoice(o)).catch((e) => fail(EXAMPLE.choice.label, e));
+  descBad.then((c) => { showMusicPreview(c); if (!c.verdict.ok) setTagReason(careless, c.verdict.reason); }).catch((e) => fail(EXAMPLE.pair.label, e));
+  descGood.catch((e) => fail(EXAMPLE.pair.label, e));
+  voice.catch((e) => fail(EXAMPLE.single.label, e));
   return { icon, descBad, descGood, voice };
 }
 
@@ -263,7 +264,7 @@ export async function switchCareless(who: Who): Promise<boolean> {
     if (!good.verdict.ok) toast(`${other}: ${good.verdict.reason}`);
     else showMusicPreview(good);
   } catch (e) {
-    fail('Music', e);
+    fail(EXAMPLE.pair.label, e);
   }
   renderReceiptPrices();
   return true;
@@ -291,7 +292,7 @@ function payTable(o: Order): HTMLElement {
   const rows: [string, string, string, string][] = o.accepted().map((c) => [label(c), short(c.offer.offer.payTo), `${c.offer.offer.priceCents}¢`, '']);
   rows.push(['Just Cents service', short(serviceAddr(o.net)), `${SERVICE.cents}¢`, '']);
   const rej = o.results[o.careless];
-  if (rej && !rej.verdict.ok) rows.splice(1, 0, [`Music (${o.careless === 'sam' ? 'Sam' : 'Lena'}) rejected`, 'no output', '0¢', 'rejected']);
+  if (rej && !rej.verdict.ok) rows.splice(1, 0, [`${EXAMPLE.pair.label} (${pairName(o.careless)}) rejected`, 'no output', '0¢', 'rejected']);
   const other = o.notChosenIcon();
   if (other) rows.splice(1, 0, [`${label(other)} not chosen`, 'no output', '—', 'taste']);
   for (const [a, b, c, kind] of rows) {
@@ -514,7 +515,7 @@ async function deliver(o: Order) {
   const otherIcon = o.notChosenIcon();
   if (otherIcon) list.appendChild(el('li', 'taste', `${label(otherIcon)}: not chosen (taste, not a rule: it passed the rules, you picked the other one), nothing paid`));
   const rej = o.results[o.careless];
-  if (rej && !rej.verdict.ok) list.appendChild(el('li', 'zero', `Music (${o.careless === 'sam' ? 'Sam' : 'Lena'}): rejected, 0¢ (${rej.verdict.reason})`));
+  if (rej && !rej.verdict.ok) list.appendChild(el('li', 'zero', `${EXAMPLE.pair.label} (${pairName(o.careless)}): rejected, 0¢ (${rej.verdict.reason})`));
   const receipt = {
     order: o.id,
     network: o.net,
@@ -533,7 +534,7 @@ async function deliver(o: Order) {
     service: { cents: SERVICE.cents, sats: SERVICE.sats.toString() },
     networkFeeSats: o.payment ? o.payment.fee.toString() : null,
     outputs: o.payment ? o.payment.transaction.outputs.map((x) => x.valueSatoshis.toString()) : null,
-    rejected: rej && !rej.verdict.ok ? { part: 'music', specialist: o.careless, cents: 0, reason: rej.verdict.reason } : null,
+    rejected: rej && !rej.verdict.ok ? { part: EXAMPLE.pair.apiPart, specialist: o.careless, cents: 0, reason: rej.verdict.reason } : null,
     note: o.payment?.noteHex,
   };
   files.push({ name: 'receipt.json', data: new TextEncoder().encode(JSON.stringify(receipt, null, 2)) });
@@ -541,9 +542,9 @@ async function deliver(o: Order) {
     const li = el('li', 'pending', 'Clip: Just Cents is putting it together');
     list.appendChild(li);
     try {
-      const credit = musicInfo ? `${musicInfo.title} by ${musicInfo.author} · ${musicInfo.license.replace('-1.0', ' 1.0').replace('-4.0', ' 4.0')}` : 'Music';
+      const credit = musicInfo ? `${musicInfo.title} by ${musicInfo.author} · ${musicInfo.license.replace('-1.0', ' 1.0').replace('-4.0', ' 4.0')}` : EXAMPLE.pair.label;
       const clip = await makeClip(
-        { icon, voice, music, lines: [{ lang: 'Autopilot: Summer Rules', text: 'Your AI. Your rules. Your money.' }, { lang: '♪ Music', text: credit }] },
+        { icon, voice, music, lines: [{ lang: EXAMPLE.clip.title, text: EXAMPLE.clip.tagline }, { lang: `♪ ${EXAMPLE.pair.label}`, text: credit }] },
         (p) => (li.textContent = `Clip: Just Cents is putting it together (${Math.round(p * 100)}%)`),
       );
       files.push({ name: `clip.${clip.ext}`, data: new Uint8Array(await clip.blob.arrayBuffer()) });
@@ -566,8 +567,8 @@ async function deliver(o: Order) {
 }
 
 function label(c: Checked): string {
-  if (c.key.startsWith('icon')) return `Icon (${c.key === ICON_KEY.a ? 'A' : 'B'})`;
-  return c.key === 'voice' ? 'Voice-over' : `Music (${c.who === 'sam' ? 'Sam' : 'Lena'})`;
+  if (c.key.startsWith('icon')) return `${EXAMPLE.choice.label} (${c.key === ICON_KEY.a ? 'A' : 'B'})`;
+  return c.key === 'voice' ? EXAMPLE.single.label : `${EXAMPLE.pair.label} (${pairName(c.who ?? 'sam')})`;
 }
 
 export function currentOrder(): Order | null {

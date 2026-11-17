@@ -8,6 +8,7 @@
 import offers from '../src/data/offers.json';
 import { readOrderId, newOrderId, type OrderMeta } from '../src/core/orderid';
 import { checkMusicDeclared, checkIcon, checkVoice, RULES } from '../src/core/rules';
+import { EXAMPLE, pairName } from '../src/data/example';
 import { PAYOUT } from '../src/config';
 import { readOutputs, readNote, bytesToHex, checkOfferPaid } from './txparse';
 import { bookFor } from './index';
@@ -23,7 +24,7 @@ export interface ApiEnv {
   ORDERS?: { get(k: string): Promise<string | null>; put(k: string, v: string, o?: { expirationTtl?: number }): Promise<void> };
 }
 
-export const REQUEST = 'Make me a kit to list my game.';
+export const REQUEST: string = EXAMPLE.request;
 const SERVICE_CENTS = 1; // Just Cents' own 1¢ for matching and checks
 const RATE_PER_MINUTE = 20;
 
@@ -52,7 +53,7 @@ function describe(meta: OrderMeta, origin: string, txid: string | null, choice: 
   const net = meta.net;
   const book = OFFERS[net];
   const good = meta.careless === 'sam' ? 'lena' : 'sam';
-  const name = (w: string) => (w === 'sam' ? 'Sam' : 'Lena');
+  const name = (w: string) => pairName(w === 'lena' ? 'lena' : 'sam');
   const icon = book[ICON_KEY[choice]]!, voice = book['voice']!;
   const otherIcon = book[ICON_KEY[choice === 'a' ? 'b' : 'a']]!;
   const bad = book[`${meta.careless}:careless`]!, ok = book[`${good}:good`]!;
@@ -74,26 +75,26 @@ function describe(meta: OrderMeta, origin: string, txid: string | null, choice: 
     check: check.ok ? { ok: true, note: check.note, how } : { ok: false, reason: check.reason, how },
   });
   const accepted = [
-    part(`icon (variant ${choice.toUpperCase()})`, 'icon (demo specialist)', icon, iconCheck, 'size from the signed offer here; "no letters" is checked by OCR in the browser on the pay page, before the wallet is asked'),
-    part('music', `${name(good)} (demo specialist)`, ok, okCheck, 'length and licence from the signed offer here; the pay page checks the licence written into the file, and the length is measured again on the full file after payment'),
-    part('voice', 'voice (demo specialist)', voice, voiceCheck, 'length from the signed offer here, measured again on the full file after payment'),
+    part(`${EXAMPLE.choice.apiPart} (variant ${choice.toUpperCase()})`, EXAMPLE.choice.specialist, icon, iconCheck, EXAMPLE.choice.howApi),
+    part(EXAMPLE.pair.apiPart, `${name(good)} (demo specialist)`, ok, okCheck, EXAMPLE.pair.howApi),
+    part(EXAMPLE.single.apiPart, EXAMPLE.single.specialist, voice, voiceCheck, EXAMPLE.single.howApi),
   ];
   const total = accepted.reduce((s, p) => s + p.price_cents, 0) + SERVICE_CENTS;
   return {
     id: meta.id,
     network: net,
     request: REQUEST,
-    rules: { icon: RULES.icon.text, music: RULES.music.text, voice: RULES.voice.text },
+    rules: { [EXAMPLE.choice.apiPart]: RULES.icon.text, [EXAMPLE.pair.apiPart]: RULES.music.text, [EXAMPLE.single.apiPart]: RULES.voice.text },
     icon_choice: {
       chosen: choice,
       note: 'Two icon variants pass the same rules; the person picks one by taste and pays only for that one. Change it with ?choice=a|b on GET /api/orders/{id}, /pay and in pay_url.',
       variants: (['a', 'b'] as Choice[]).map((v) => ({ variant: v, preview: abs(origin, book[ICON_KEY[v]]!.preview as string), offer_fingerprint: book[ICON_KEY[v]]!.offerHashHex, price_cents: book[ICON_KEY[v]]!.signed.offer.priceCents })),
     },
     parts: accepted,
-    not_chosen: [{ part: `icon (variant ${choice === 'a' ? 'B' : 'A'})`, cents: 0, preview: abs(origin, otherIcon.preview as string), reason: 'not chosen by the person (taste, not a rule: it passed the rules)' }],
+    not_chosen: [{ part: `${EXAMPLE.choice.apiPart} (variant ${choice === 'a' ? 'B' : 'A'})`, cents: 0, preview: abs(origin, otherIcon.preview as string), reason: 'not chosen by the person (taste, not a rule: it passed the rules)' }],
     rejected: [
       {
-        part: 'music',
+        part: EXAMPLE.pair.apiPart,
         specialist: `${name(meta.careless)} (demo specialist, careless on purpose)`,
         cents: 0,
         reason: badCheck.ok ? null : badCheck.reason,
@@ -202,7 +203,7 @@ export async function api(request: Request, env: ApiEnv): Promise<Response> {
       txid,
       icon_choice: choice,
       files: keys.map((k) => ({
-        part: k.startsWith('icon') ? 'icon' : k === 'voice' ? 'voice' : 'music',
+        part: k.startsWith('icon') ? EXAMPLE.choice.apiPart : k === 'voice' ? EXAMPLE.single.apiPart : EXAMPLE.pair.apiPart,
         name: book[k]!.file,
         url: `${origin}/full/${encodeURIComponent(k)}?net=${meta.net}&txid=${txid}`,
         sha256: book[k]!.signed.offer.fileSha256,

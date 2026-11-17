@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { newOrderId, readOrderId } from '../src/core/orderid';
 import { api } from '../worker/api';
 import { mcp } from '../worker/mcp';
+import { EXAMPLE } from '../src/data/example';
 
 const O = 'https://jc.test';
 const store = new Map<string, string>();
@@ -33,6 +34,9 @@ describe('order API', () => {
     expect(j.status).toBe('awaiting_payment');
     expect(j.pay_url).toBe(`${O}/?order=${j.id}`);
     expect(j.parts[0].check.how).toMatch(/OCR in the browser/);
+    // what the example is about comes from src/data/example.ts, not from the mechanics
+    expect(j.request).toBe(EXAMPLE.request);
+    expect(Object.keys(j.rules)).toEqual([EXAMPLE.choice.apiPart, EXAMPLE.pair.apiPart, EXAMPLE.single.apiPart]);
   });
   it('makes Lena careless when asked, and Sam is then accepted', async () => {
     const { j } = await call('POST', '/api/orders', { careless: 'lena', network: 'chipnet' });
