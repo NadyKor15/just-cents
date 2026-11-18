@@ -20,6 +20,8 @@
 .stage-m .desc-bar .dl i{display:none}
 .desc-bar .dl b{display:inline-block;min-width:22px;font-weight:800;color:var(--orchid-lo)}
 .stage-m .desc-bar .dl b{min-width:0}
+/* subtitle lines on the computer: up to two lines each, never cut in the middle of a word */
+.stage-d .desc-bar .dl{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;font-size:12px;line-height:1.3}
 .desc-bar .dl.wrong{color:#8a1f2c;text-decoration:line-through;text-decoration-color:rgba(228,70,93,.7)}
 .desc-bar .dl.wrong b{color:var(--pink)}
 /* receipt with the icon choice: one more row ("Icon (B) not chosen 0¢"), the rest moves down */
@@ -69,6 +71,10 @@
 /* kit v3: the cover (16:10) in the choice tile, the logo in the single tile */
 .icon-art .cover-prev{display:block;width:100%;aspect-ratio:16/10;margin-top:12%;object-fit:cover;border-radius:10px}
 .stage-m .icon-art .cover-prev{border-radius:4px}
+/* the tile is a 3D plane (preserve-3d) and can win the hit test over its own children mid-animation: it takes no taps
+   itself, the variant buttons do (a tap anywhere on the stage still walks the character there: read from the stage) */
+.tile{pointer-events:none}
+.tile .iv{pointer-events:auto}
 .icon-art.two.cover .iv img{aspect-ratio:16/10;object-fit:cover;border-radius:10px}
 .stage-m .icon-art.two.cover .iv img{border-radius:4px}
 .stage-m .t-icon .icon-art.two.cover{top:30px}
