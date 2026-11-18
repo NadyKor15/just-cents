@@ -468,6 +468,15 @@ function setTx(net: Net, txid: string) {
 }
 
 // ------------------------------------------------------------------ delivery
+/** Names a person understands, inside the downloaded zip only; the specialists' files keep the names they signed. */
+const KIT_NAME: Record<string, string> = {
+  'cover-a.jpg': 'store-cover.jpg',
+  'cover-b.jpg': 'store-cover.jpg',
+  'logo.svg': 'logo-from-sketch.svg',
+  'subs-lena.srt': 'trailer-subtitles.srt',
+  'subs-sam.srt': 'trailer-subtitles.srt',
+};
+
 async function deliver(o: Order) {
   const kit = document.querySelector<HTMLElement>('#kit');
   if (!kit) return;
@@ -496,7 +505,7 @@ async function deliver(o: Order) {
       const f = await o.fetchFull(c);
       li.className = f.match && f.verdict.ok ? 'ok' : 'bad';
       li.textContent = `${label(c)}: ${f.match ? 'fingerprint matches the offer' : 'fingerprint does NOT match the offer'} · ${f.verdict.ok ? f.verdict.note : f.verdict.reason}`;
-      files.push({ name: f.name, data: new Uint8Array(f.bytes) });
+      files.push({ name: KIT_NAME[f.name] ?? f.name, data: new Uint8Array(f.bytes) });
       if (f.match && f.verdict.ok) showReady(kit, c, f.bytes);
     } catch (e) {
       li.className = 'bad';
