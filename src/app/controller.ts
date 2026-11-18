@@ -7,6 +7,7 @@ import { Order, subsKey, SERVICE, COVER_KEY, type Checked, type Who } from './or
 import { EXAMPLE, pairName } from '../data/example';
 import { readOrderId } from '../core/orderid';
 import { offerHashHex } from '../core/offer';
+import { srtToVtt } from '../core/subtitles';
 import { zip } from './zip';
 import { copyText } from './copy';
 import { WalletLink, type WalletState } from '../core/wallet';
@@ -183,6 +184,7 @@ function noteChangedRequest(): void {
 
 /** Start pressed: Just Cents splits the order and asks the specialists for previews; checks run as they arrive. */
 export function start(careless: Who = 'sam'): void {
+  all('.start-hint').forEach((h) => (h.hidden = true));
   noteChangedRequest();
   if (FIXED) careless = FIXED.careless;
   paid = false;
@@ -473,8 +475,16 @@ async function deliver(o: Order) {
   tx.href = explorerTx(o.net, o.txid);
   tx.textContent = o.txid;
   list.innerHTML = '';
+  const R = EXAMPLE.ready;
+  kit.setAttribute('aria-label', R.title);
+  kit.querySelector('.ready-title')!.textContent = R.title;
+  for (const [part, caption] of [['trailer', R.trailer], ['cover', R.cover], ['logo', R.logo]] as const) {
+    const f = kit.querySelector<HTMLElement>(`.ready-${part}`)!;
+    f.hidden = true; // shown only once its accepted file has arrived and passed
+    f.querySelector('figcaption')!.textContent = caption;
+  }
   btn.disabled = true;
-  btn.textContent = 'Preparing the kit…';
+  btn.textContent = 'Preparing the files…';
   const files: { name: string; data: Uint8Array }[] = [];
   for (const c of o.accepted()) {
     const li = el('li', 'pending', `${label(c)}: waiting for the specialist`);
@@ -484,6 +494,7 @@ async function deliver(o: Order) {
       li.className = f.match && f.verdict.ok ? 'ok' : 'bad';
       li.textContent = `${label(c)}: ${f.match ? 'fingerprint matches the offer' : 'fingerprint does NOT match the offer'} · ${f.verdict.ok ? f.verdict.note : f.verdict.reason}`;
       files.push({ name: f.name, data: new Uint8Array(f.bytes) });
+      if (f.match && f.verdict.ok) showReady(kit, c, f.bytes);
     } catch (e) {
       li.className = 'bad';
       li.textContent = `${label(c)}: ${e instanceof Error ? e.message : e}`;
@@ -517,13 +528,37 @@ async function deliver(o: Order) {
   files.push({ name: 'receipt.json', data: new TextEncoder().encode(JSON.stringify(receipt, null, 2)) });
   const blob = new Blob([zip(files) as BlobPart], { type: 'application/zip' });
   btn.disabled = false;
-  btn.textContent = 'Download kit';
+  btn.textContent = R.download;
   btn.onclick = () => {
     const a = el('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `just-cents-kit-${o.id.slice(0, 8)}.zip`;
+    a.download = `just-cents-${o.id.slice(0, 8)}.zip`;
     a.click();
   };
+}
+
+/** One accepted, checked file on the "ready" screen: the subtitles play over the game's trailer, the cover and logo as they are. */
+function showReady(kit: HTMLElement, c: Checked, bytes: ArrayBuffer) {
+  if (c.key.startsWith('cover') || c.key === 'logo') {
+    const fig = kit.querySelector<HTMLElement>(c.key === 'logo' ? '.ready-logo' : '.ready-cover')!;
+    const img = fig.querySelector('img')!;
+    img.src = URL.createObjectURL(new Blob([bytes], { type: c.key === 'logo' ? 'image/svg+xml' : 'image/jpeg' }));
+    img.alt = label(c);
+    fig.hidden = false;
+    return;
+  }
+  const fig = kit.querySelector<HTMLElement>('.ready-trailer')!;
+  const video = fig.querySelector('video')!;
+  video.querySelectorAll('track').forEach((t) => t.remove());
+  const track = el('track');
+  track.kind = 'subtitles';
+  track.srclang = 'en';
+  track.label = `English (${pairName(c.who ?? 'sam')})`;
+  track.default = true;
+  track.src = URL.createObjectURL(new Blob([srtToVtt(new TextDecoder().decode(bytes))], { type: 'text/vtt' }));
+  video.appendChild(track);
+  video.src = EXAMPLE.trailer.video;
+  fig.hidden = false;
 }
 
 function label(c: Checked): string {

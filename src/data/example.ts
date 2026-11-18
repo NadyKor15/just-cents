@@ -50,14 +50,16 @@ export const EXAMPLE = {
   },
 
   /** The trailer whose words are the subtitles' yardstick (measured once, before any specialist works). */
-  trailer: { title: 'Autopilot: Summer Rules — gameplay trailer', seconds: 116.92 },
+  trailer: { title: 'Autopilot: Summer Rules — gameplay trailer', seconds: 116.92, video: '/game-frames/trailer-720.mp4' },
 
-  /** The clip (end of the scene) is not built for this example yet. */
-  clip: {
-    frames: ['/game-frames/first-call.jpg', '/game-frames/hike-day.jpg', '/game-frames/build-a-rule.jpg'],
-    gameplay: '/game-frames/gameplay.mp4',
-    title: 'Autopilot: Summer Rules',
-    tagline: 'Your AI. Your rules. Your money.',
+  /** The end of the scene, after payment: the accepted parts together, as on the game's page. */
+  ready: {
+    /** her choice, TG 8927 */
+    title: 'Ready for your game page',
+    trailer: 'Trailer with the accepted subtitles',
+    cover: 'Store cover',
+    logo: 'Logo',
+    download: 'Download all files',
   },
 } as const;
 

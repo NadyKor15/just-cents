@@ -119,6 +119,9 @@ function coinFaceTex() {
 
 // ---------------------------------------------------------------- world
 function buildWorld(st, key, W, H, ex = 0) {
+  // every listener of this world (and of its timeline) goes with it: a rebuilt world (phone turned, window resized)
+  // must not leave the old one answering clicks, nor its ticker drawing
+  const ac = new AbortController(), on = { signal: ac.signal };
   const c0 = CFG[key], sh = ex * .42;
   const cfg = { ...c0, podium: { ...c0.podium, cy: c0.podium.cy + sh }, base: { ...c0.base, cy: c0.base.cy + sh } };
   const backCv = st.querySelector('.gl-back'), frontCv = st.querySelector('.gl-front');
@@ -261,7 +264,7 @@ function buildWorld(st, key, W, H, ex = 0) {
     gsap.fromTo(ch.say, { opacity: 0 }, { opacity: 1, duration: .3 });
     gsap.fromTo(ch, { jump: 0 }, { jump: 1, duration: .5, ease: 'sine.inOut', yoyo: true, repeat: 1 });
     gsap.delayedCall(3.5, () => { if (ch.cur === 'help') { ch.cur = ''; gsap.to(ch.say, { opacity: 0, duration: .3 }); } });
-  });
+  }, on);
   syms.onPick((k) => { const tl = syms.select(k); if (STATIC) tl.progress(1); });
 
   // events: { type, t0, ... } — evaluated purely from the clock
@@ -278,8 +281,8 @@ function buildWorld(st, key, W, H, ex = 0) {
   const onLeave = () => { pointer.tx = 0; pointer.ty = 0; if (ch.follow && ch.cur !== 'help' && ch.cur !== 'spec') sayLive(null); };
   if (!STATIC && !CAPTURE) st.addEventListener('pointerdown', (e) => { // touch: tap a tile → the character walks there
     if (!ch.follow) return; const r = st.getBoundingClientRect(); const [k, x] = hoverAt((e.clientX - r.left) / r.width * W, (e.clientY - r.top) / r.height * H);
-    if (k) { if (ch.homeW > .5) goOut(); ch.px = x; sayLive(k); clearTimeout(backTimer); backTimer = setTimeout(() => { sayLive(null); goHome(); }, 4000); } });
-  if (!STATIC && !CAPTURE) { st.addEventListener('pointermove', onMove); st.addEventListener('pointerleave', onLeave); }
+    if (k) { if (ch.homeW > .5) goOut(); ch.px = x; sayLive(k); clearTimeout(backTimer); backTimer = setTimeout(() => { sayLive(null); goHome(); }, 4000); } }, on);
+  if (!STATIC && !CAPTURE) { st.addEventListener('pointermove', onMove, on); st.addEventListener('pointerleave', onLeave, on); }
 
   let pr = 1;
   function resize(s) {
@@ -444,18 +447,20 @@ function buildWorld(st, key, W, H, ex = 0) {
       if (!changed) return;
     }
     if (ch.homeW > .5) goOut(); gsap.delayedCall(ch.homeW > .5 ? 2 : 0, () => { setCareless(b.dataset.c); });
-  }));
+  }, on));
   st.querySelector('.btn-spec').addEventListener('click', () => {
     if (LIVE) { document.querySelector('#specialist')?.scrollIntoView({ behavior: 'smooth' }); return; }
     if (ch.homeW > .5) goOut(); ch.cur = 'spec'; ch.say.classList.remove('side'); ch.say.textContent = 'Anyone can become a Just Cents specialist.';
     gsap.fromTo(ch.say, { opacity: 0 }, { opacity: 1, duration: .3 }); gsap.delayedCall(3.5, () => { if (ch.cur === 'spec') { ch.cur = ''; gsap.to(ch.say, { opacity: 0, duration: .3 }); } });
-  });
+  }, on);
 
   function dispose() {
-    st.removeEventListener('pointermove', onMove); st.removeEventListener('pointerleave', onLeave);
+    ac.abort(); // every listener of this world and of its timeline
+    if (self.tick) { gsap.ticker.remove(self.tick); self.tick = null; }
     rB.dispose(); rF.dispose(); if (master) { master.kill(); master = null; }
   }
-  return { st, key, W, H, ex, A, events, render, resize, payFx, dispose, rimLevel: STATIC ? 0 : 0, k: cfg.k, syms, ch, RULES, goHome, hero, heroX, setCareless, state };
+  const self = { st, key, W, H, ex, A, events, render, resize, payFx, dispose, on, tick: null, rimLevel: STATIC ? 0 : 0, k: cfg.k, syms, ch, RULES, goHome, hero, heroX, setCareless, state };
+  return self;
 }
 
 // ---------------------------------------------------------------- timeline (first ~10 s)
@@ -491,8 +496,8 @@ function startTimeline(w) {
       ctl.start(w.state.careless);
       clock0 = gsap.ticker.time - .45; M.play(.45);
     };
-    $('.btn-start').forEach((b) => b.addEventListener('click', go));
-    $('.order').forEach((f) => f.addEventListener('submit', (e) => { e.preventDefault(); go(); }));
+    $('.btn-start').forEach((b) => b.addEventListener('click', go, w.on));
+    $('.order').forEach((f) => f.addEventListener('submit', (e) => { e.preventDefault(); go(); }, w.on));
   }
   tl.set($('.char-help, .brk, .spec, .foot'), { opacity: 0 }, 0).to($('.char-help, .brk, .spec, .foot'), { opacity: 1, duration: .5, stagger: .12 }, 7.5);
 
@@ -616,10 +621,10 @@ function startTimeline(w) {
   }
   if (!CAPTURE) tl.call(() => { C.follow = true; C.px = C.x; }, null, TOUR ? 24.5 : DEMO ? 12.2 : 7.6);
   const paidFx = () => { pulse.pause(); press(clock(), false); gsap.to($('.txl'), { opacity: 1, duration: .4, delay: .4 }); gsap.to(C, { jump: 1, duration: .2, yoyo: true, repeat: 1 }); gsap.delayedCall(1.2, () => w.goHome()); };
-  if (LIVE) { tl.to($('.txl'), { opacity: 1, duration: .4 }, 7.6); st.querySelectorAll('.btn-pay').forEach((b) => b.addEventListener('click', () => ctl.pay(paidFx))); }
-  else if (!CAPTURE) st.querySelectorAll('.btn-pay').forEach((b) => b.addEventListener('click', paidFx));
+  if (LIVE) { tl.to($('.txl'), { opacity: 1, duration: .4 }, 7.6); st.querySelectorAll('.btn-pay').forEach((b) => b.addEventListener('click', () => ctl.pay(paidFx), w.on)); }
+  else if (!CAPTURE) st.querySelectorAll('.btn-pay').forEach((b) => b.addEventListener('click', paidFx, w.on));
 
-  if (!CAPTURE) gsap.ticker.add(() => w.render(clock()));
+  if (!CAPTURE) { w.tick = () => w.render(clock()); gsap.ticker.add(w.tick); } // removed by w.dispose()
 }
 
 // ---------------------------------------------------------------- boot

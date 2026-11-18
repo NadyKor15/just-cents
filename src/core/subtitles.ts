@@ -41,6 +41,17 @@ export function parseSrt(text: string): { ok: true; cues: Cue[] } | { ok: false;
   return { ok: true, cues };
 }
 
+/** SRT → WebVTT, so a browser <track> can show the accepted subtitles over the trailer. */
+export function srtToVtt(srt: string): string {
+  const p = parseSrt(srt);
+  if (!p.ok) return 'WEBVTT\n';
+  const t = (s: number) => {
+    const ms = Math.round(s * 1000);
+    return `${String(Math.floor(ms / 3600000)).padStart(2, '0')}:${String(Math.floor(ms / 60000) % 60).padStart(2, '0')}:${String(Math.floor(ms / 1000) % 60).padStart(2, '0')}.${String(ms % 1000).padStart(3, '0')}`;
+  };
+  return 'WEBVTT\n\n' + p.cues.map((c) => `${c.n}\n${t(c.start)} --> ${t(c.end)}\n${c.lines.join('\n')}`).join('\n\n') + '\n';
+}
+
 /** Lowercase letters and digits only, so "Friday." and "friday" are the same word. */
 export const token = (w: string) => w.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '');
 const tokens = (lines: string[]) => lines.join(' ').split(/\s+/).map(token).filter(Boolean);

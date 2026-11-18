@@ -36,6 +36,7 @@
     <button class="btn-start" type="button">Start</button>
   </form>
   <p class="demo-note" role="status" hidden>This demo plays one example — <a href="#catalog">more jobs in the catalog →</a></p>
+  <p class="start-hint" aria-hidden="true">Press Start to see it work</p>
 
   <!-- place for the symbol -->
   <div class="sym-pod" data-slot="symbol" aria-hidden="true"></div>
@@ -95,6 +96,7 @@
     <button class="btn-start" type="button">Start</button>
   </form>
   <p class="demo-note" role="status" hidden>This demo plays one example — <a href="#catalog">more jobs in the catalog →</a></p>
+  <p class="start-hint" aria-hidden="true">Press Start to see it work</p>
 
   <div class="sym-pod" data-slot="symbol" aria-hidden="true"></div>
   <div class="char" data-slot="character" aria-hidden="true"><div class="char-shadow"></div><div class="char-fig"></div><div class="char-say"></div></div>
@@ -140,11 +142,17 @@
 
 <p class="sec one-example">This is just one example. <a href="#catalog">More jobs in the catalog →</a></p>
 
-<section id="kit" class="sec kit" hidden aria-label="Your kit">
-  <h2>Your kit</h2>
+<section id="kit" class="sec kit" hidden>
+  <!-- the end of the scene, after payment; titles come from EXAMPLE.ready (src/data/example.ts) -->
+  <h2 class="ready-title"></h2>
+  <div class="ready">
+    <figure class="ready-trailer"><video controls playsinline preload="metadata" crossorigin="anonymous"></video><figcaption></figcaption></figure>
+    <figure class="ready-cover"><img alt=""><figcaption></figcaption></figure>
+    <figure class="ready-logo"><img alt=""><figcaption></figcaption></figure>
+  </div>
   <p class="kit-txline">Transaction: <a class="kit-tx" href="#" target="_blank" rel="noopener"></a></p>
   <ul class="kit-files"></ul>
-  <button type="button" class="kit-download btn-like" disabled>Download kit</button>
+  <button type="button" class="kit-download btn-like" disabled></button>
 </section>
 
 <section class="sec why" aria-label="Why not just ChatGPT or Claude">

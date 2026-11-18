@@ -2,7 +2,7 @@
 // Every rule has a case that must pass and a deliberately wrong case that must fail (the check is not blind).
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { checkSubtitles, parseSrt, SUB_RULES, type Speech } from '../src/core/subtitles';
+import { checkSubtitles, parseSrt, srtToVtt, SUB_RULES, type Speech } from '../src/core/subtitles';
 import { checkCover, measureCover, COVER_RULES } from '../src/core/cover';
 import { checkLogo, inspectSvg, LOGO_RULES } from '../src/core/logo';
 import { likeness, resizeBilinear, sharpness, ssim, toGray, type Gray } from '../src/core/image';
@@ -50,6 +50,10 @@ describe('subtitles', () => {
     expect(checkSubtitles(good.replace('until Friday. No rule for this.', 'see you at the lake soon'), speech)).toEqual({ ok: false, reason: 'subtitle 2: its words are not in the speech' });
     const cut = good.replace('00:00:23,500 --> 00:00:26,300', '00:00:23,500 --> 00:00:25,500');
     expect(checkSubtitles(cut, speech)).toEqual({ ok: false, reason: 'subtitle 3 disappears before its last word is said' });
+  });
+  it('turns SRT into WebVTT for the trailer player', () => {
+    expect(srtToVtt(good)).toBe('WEBVTT\n\n1\n00:00:18.100 --> 00:00:20.400\nOmar wants to borrow 50 dirhams\n\n2\n00:00:20.600 --> 00:00:23.100\nuntil Friday. No rule for this.\n\n3\n00:00:23.500 --> 00:00:26.300\nBy your rule, Omar borrows\n25 dirhams.\n');
+    expect(srtToVtt('not srt')).toBe('WEBVTT\n');
   });
   it('publishes its numbers', () => {
     expect(SUB_RULES).toMatchObject({ maxChars: 42, maxLines: 2, maxCps: 20, toleranceSec: 0.4, maxTailSec: 2 });
