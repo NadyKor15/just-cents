@@ -1,0 +1,507 @@
+{
+ "model": "nova-3",
+ "request_id": "01a1ec7b-bf9a-7221-b419-674ea5376459",
+ "duration": 116.97631,
+ "model_info": {
+  "2187e11a-3532-4498-b076-81fa530bdd49": {
+   "name": "general-nova-3",
+   "version": "2025-07-31.0",
+   "arch": "nova-3"
+  }
+ },
+ "transcript": "Omar wants to borrow 50 dirhams until Friday. No rule for this. By your rule, Omar borrowed 25 dirhams until Friday. You said, when a free trial starts, if it renews, cancel on day six. Autopilot will cancel the Pixel Pass trial on day six before the 29 dirhams charge. When a friend asks for money, if over 20 dirhams lend half. On Thursday, Omar asked you to cover his 100 dirhams deposit until his pocket money comes. He got 50 dirhams.",
+ "words": [
+  {
+   "text": "Omar",
+   "start": 18.475,
+   "end": 18.955,
+   "confidence": 0.99609375
+  },
+  {
+   "text": "wants",
+   "start": 18.955,
+   "end": 19.195,
+   "confidence": 1.0
+  },
+  {
+   "text": "to",
+   "start": 19.195,
+   "end": 19.355,
+   "confidence": 1.0
+  },
+  {
+   "text": "borrow",
+   "start": 19.355,
+   "end": 19.675,
+   "confidence": 1.0
+  },
+  {
+   "text": "50",
+   "start": 19.675,
+   "end": 19.994999,
+   "confidence": 0.9921875
+  },
+  {
+   "text": "dirhams",
+   "start": 19.994999,
+   "end": 20.555,
+   "confidence": 0.9923096
+  },
+  {
+   "text": "until",
+   "start": 20.555,
+   "end": 20.955,
+   "confidence": 0.9921875
+  },
+  {
+   "text": "Friday.",
+   "start": 20.955,
+   "end": 21.675,
+   "confidence": 0.9914551
+  },
+  {
+   "text": "No",
+   "start": 21.835,
+   "end": 22.154999,
+   "confidence": 1.0
+  },
+  {
+   "text": "rule",
+   "start": 22.154999,
+   "end": 22.475,
+   "confidence": 1.0
+  },
+  {
+   "text": "for",
+   "start": 22.475,
+   "end": 22.635,
+   "confidence": 1.0
+  },
+  {
+   "text": "this.",
+   "start": 22.635,
+   "end": 22.875,
+   "confidence": 0.9995117
+  },
+  {
+   "text": "By",
+   "start": 34.940002,
+   "end": 35.18,
+   "confidence": 0.9838867
+  },
+  {
+   "text": "your",
+   "start": 35.18,
+   "end": 35.34,
+   "confidence": 0.9980469
+  },
+  {
+   "text": "rule,",
+   "start": 35.34,
+   "end": 35.98,
+   "confidence": 0.98706055
+  },
+  {
+   "text": "Omar",
+   "start": 35.98,
+   "end": 36.38,
+   "confidence": 0.9970703
+  },
+  {
+   "text": "borrowed",
+   "start": 36.38,
+   "end": 36.86,
+   "confidence": 0.98291016
+  },
+  {
+   "text": "25",
+   "start": 36.86,
+   "end": 37.34,
+   "confidence": 0.9782715
+  },
+  {
+   "text": "dirhams",
+   "start": 37.34,
+   "end": 37.9,
+   "confidence": 0.98620605
+  },
+  {
+   "text": "until",
+   "start": 37.9,
+   "end": 38.3,
+   "confidence": 0.97998047
+  },
+  {
+   "text": "Friday.",
+   "start": 38.3,
+   "end": 38.78,
+   "confidence": 0.9921875
+  },
+  {
+   "text": "You",
+   "start": 83.83,
+   "end": 84.23,
+   "confidence": 0.28833008
+  },
+  {
+   "text": "said,",
+   "start": 84.23,
+   "end": 84.87,
+   "confidence": 0.8574219
+  },
+  {
+   "text": "when",
+   "start": 84.87,
+   "end": 85.11,
+   "confidence": 0.9951172
+  },
+  {
+   "text": "a",
+   "start": 85.11,
+   "end": 85.19,
+   "confidence": 0.9980469
+  },
+  {
+   "text": "free",
+   "start": 85.19,
+   "end": 85.43,
+   "confidence": 1.0
+  },
+  {
+   "text": "trial",
+   "start": 85.43,
+   "end": 85.75,
+   "confidence": 1.0
+  },
+  {
+   "text": "starts,",
+   "start": 85.75,
+   "end": 86.23,
+   "confidence": 0.94921875
+  },
+  {
+   "text": "if",
+   "start": 86.23,
+   "end": 86.31,
+   "confidence": 0.99902344
+  },
+  {
+   "text": "it",
+   "start": 86.31,
+   "end": 86.47,
+   "confidence": 1.0
+  },
+  {
+   "text": "renews,",
+   "start": 86.47,
+   "end": 87.03,
+   "confidence": 0.9977214
+  },
+  {
+   "text": "cancel",
+   "start": 87.03,
+   "end": 87.43,
+   "confidence": 0.9970703
+  },
+  {
+   "text": "on",
+   "start": 87.43,
+   "end": 87.67,
+   "confidence": 1.0
+  },
+  {
+   "text": "day",
+   "start": 87.67,
+   "end": 87.91,
+   "confidence": 0.9892578
+  },
+  {
+   "text": "six.",
+   "start": 87.91,
+   "end": 88.47,
+   "confidence": 0.99658203
+  },
+  {
+   "text": "Autopilot",
+   "start": 88.63,
+   "end": 89.35,
+   "confidence": 0.9926758
+  },
+  {
+   "text": "will",
+   "start": 89.35,
+   "end": 89.67,
+   "confidence": 0.99902344
+  },
+  {
+   "text": "cancel",
+   "start": 89.67,
+   "end": 89.99,
+   "confidence": 1.0
+  },
+  {
+   "text": "the",
+   "start": 89.99,
+   "end": 90.15,
+   "confidence": 1.0
+  },
+  {
+   "text": "Pixel",
+   "start": 90.15,
+   "end": 90.47,
+   "confidence": 0.7475586
+  },
+  {
+   "text": "Pass",
+   "start": 90.47,
+   "end": 90.79,
+   "confidence": 0.5703125
+  },
+  {
+   "text": "trial",
+   "start": 90.79,
+   "end": 91.11,
+   "confidence": 0.99609375
+  },
+  {
+   "text": "on",
+   "start": 91.11,
+   "end": 91.43,
+   "confidence": 1.0
+  },
+  {
+   "text": "day",
+   "start": 91.43,
+   "end": 91.67,
+   "confidence": 0.99902344
+  },
+  {
+   "text": "six",
+   "start": 91.67,
+   "end": 92.15,
+   "confidence": 1.0
+  },
+  {
+   "text": "before",
+   "start": 92.15,
+   "end": 92.55,
+   "confidence": 0.8510742
+  },
+  {
+   "text": "the",
+   "start": 92.55,
+   "end": 92.71,
+   "confidence": 1.0
+  },
+  {
+   "text": "29",
+   "start": 92.71,
+   "end": 93.19,
+   "confidence": 0.9941406
+  },
+  {
+   "text": "dirhams",
+   "start": 93.19,
+   "end": 93.83,
+   "confidence": 0.9822998
+  },
+  {
+   "text": "charge.",
+   "start": 93.83,
+   "end": 94.15,
+   "confidence": 0.9765625
+  },
+  {
+   "text": "When",
+   "start": 94.605,
+   "end": 94.925,
+   "confidence": 0.9980469
+  },
+  {
+   "text": "a",
+   "start": 94.925,
+   "end": 95.005005,
+   "confidence": 0.99902344
+  },
+  {
+   "text": "friend",
+   "start": 95.005005,
+   "end": 95.245,
+   "confidence": 1.0
+  },
+  {
+   "text": "asks",
+   "start": 95.245,
+   "end": 95.565,
+   "confidence": 0.9921875
+  },
+  {
+   "text": "for",
+   "start": 95.565,
+   "end": 95.725006,
+   "confidence": 0.99902344
+  },
+  {
+   "text": "money,",
+   "start": 95.725006,
+   "end": 96.285,
+   "confidence": 0.7602539
+  },
+  {
+   "text": "if",
+   "start": 96.285,
+   "end": 96.445,
+   "confidence": 0.9970703
+  },
+  {
+   "text": "over",
+   "start": 96.445,
+   "end": 96.685005,
+   "confidence": 0.99902344
+  },
+  {
+   "text": "20",
+   "start": 96.685005,
+   "end": 96.925,
+   "confidence": 0.9980469
+  },
+  {
+   "text": "dirhams",
+   "start": 96.925,
+   "end": 97.40501,
+   "confidence": 0.99780273
+  },
+  {
+   "text": "lend",
+   "start": 97.40501,
+   "end": 97.725006,
+   "confidence": 0.9921875
+  },
+  {
+   "text": "half.",
+   "start": 97.725006,
+   "end": 98.365005,
+   "confidence": 0.8442383
+  },
+  {
+   "text": "On",
+   "start": 98.525,
+   "end": 98.685005,
+   "confidence": 0.9970703
+  },
+  {
+   "text": "Thursday,",
+   "start": 98.685005,
+   "end": 99.485,
+   "confidence": 0.99658203
+  },
+  {
+   "text": "Omar",
+   "start": 99.565,
+   "end": 100.045006,
+   "confidence": 0.99316406
+  },
+  {
+   "text": "asked",
+   "start": 100.045006,
+   "end": 100.365005,
+   "confidence": 0.9941406
+  },
+  {
+   "text": "you",
+   "start": 100.365005,
+   "end": 100.525,
+   "confidence": 0.9980469
+  },
+  {
+   "text": "to",
+   "start": 100.525,
+   "end": 100.685005,
+   "confidence": 1.0
+  },
+  {
+   "text": "cover",
+   "start": 100.685005,
+   "end": 100.925,
+   "confidence": 1.0
+  },
+  {
+   "text": "his",
+   "start": 100.925,
+   "end": 101.245,
+   "confidence": 0.99902344
+  },
+  {
+   "text": "100",
+   "start": 101.245,
+   "end": 101.805,
+   "confidence": 0.99365234
+  },
+  {
+   "text": "dirhams",
+   "start": 101.805,
+   "end": 102.445,
+   "confidence": 0.99487305
+  },
+  {
+   "text": "deposit",
+   "start": 102.445,
+   "end": 103.08501,
+   "confidence": 0.9970703
+  },
+  {
+   "text": "until",
+   "start": 103.08501,
+   "end": 103.485,
+   "confidence": 0.94384766
+  },
+  {
+   "text": "his",
+   "start": 103.485,
+   "end": 103.725006,
+   "confidence": 0.99902344
+  },
+  {
+   "text": "pocket",
+   "start": 103.725006,
+   "end": 104.045006,
+   "confidence": 1.0
+  },
+  {
+   "text": "money",
+   "start": 104.045006,
+   "end": 104.44501,
+   "confidence": 0.99902344
+  },
+  {
+   "text": "comes.",
+   "start": 104.44501,
+   "end": 105.085,
+   "confidence": 0.9848633
+  },
+  {
+   "text": "He",
+   "start": 105.165,
+   "end": 105.325005,
+   "confidence": 0.9970703
+  },
+  {
+   "text": "got",
+   "start": 105.325005,
+   "end": 105.565,
+   "confidence": 1.0
+  },
+  {
+   "text": "50",
+   "start": 105.565,
+   "end": 105.805,
+   "confidence": 0.9760742
+  },
+  {
+   "text": "dirhams.",
+   "start": 105.805,
+   "end": 106.44501,
+   "confidence": 0.99746096
+  }
+ ]
+}
