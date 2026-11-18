@@ -168,11 +168,13 @@ body{font-family:"Figtree",system-ui,sans-serif;color:var(--ink);-webkit-font-sm
 .stage-m .t-icon .price{top:72px}
 .stage-m .t-desc .price{top:58px}
 .stage-m .t-voice .price{top:69px}
-.stage-m .tag{top:379px;height:31px;border-radius:6px;padding-top:5px}
+/* height follows the text (a reason can be two lines and longer), both tags at least the same height; was a fixed 31 px that cut the second line */
+.stage-m .tag{top:379px;min-height:35px;border-radius:6px;padding:4px 2px}
+.stage-m .tag.good{padding-top:6px}
 .stage-m .tag-sam{left:111px;width:86px}.stage-m .tag-sam b{color:#8c1222}
-.stage-m .tag-lena{left:202px;width:85px;padding-top:7px}
-.stage-m .tag b{font-size:7.1px}
-.stage-m .tag span{font-size:6.6px;line-height:7.4px;margin-top:1px}
+.stage-m .tag-lena{left:202px;width:85px}
+.stage-m .tag b{font-size:7.1px;line-height:8.4px}
+.stage-m .tag span{font-size:6.6px;line-height:7.8px;margin-top:1px}
 .stage-m .tag-lena .ck{width:11px;height:11px;margin-top:3px}
 .stage-m .rw{left:48px;top:425px;width:294px;height:168px}
 .stage-m .receipt{border-radius:13px}
