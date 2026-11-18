@@ -130,6 +130,9 @@
 .stage-m .foot .sep{display:none}
 /* phone: the row under the foot line is taken by "Break it yourself", so the link sits in the free space above it */
 .stage-m .foot .paid-example{position:absolute;left:0;right:0;bottom:100%;margin-bottom:7px}
+/* short phone screens (ex at its 120 floor, e.g. the Telegram in-app browser): that space is 8 px short, so the line,
+   "Break it yourself" and "Become a specialist" go 12 px lower and the link sits clear of the receipt */
+.stage-m .foot,.stage-m .brk,.stage-m .spec{translate:0 12px}
 /* the end of the scene: "Ready for your game page" */
 .ready-title{text-align:center}
 .ready{display:grid;grid-template-columns:2fr 1.25fr .75fr;gap:16px;align-items:start;margin:8px 0 18px}
