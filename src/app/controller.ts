@@ -636,6 +636,10 @@ function showReading(net: Net, txid: string): HTMLElement | null {
   const btn = kit.querySelector<HTMLButtonElement>('.kit-download')!;
   btn.disabled = true;
   btn.textContent = 'Preparing the files…';
-  requestAnimationFrame(() => kit.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+  // instant, not smooth: on a phone a smooth scroll here was cut off after ~130 px in 3 runs of 4, leaving the screen
+  // below; one more look a moment later, in case the page was still settling (it does not fight someone who scrolled)
+  const go = () => kit.scrollIntoView({ block: 'start' });
+  requestAnimationFrame(go);
+  setTimeout(() => { if (kit.getBoundingClientRect().top > innerHeight / 2) go(); }, 800);
   return line;
 }
