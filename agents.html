@@ -35,7 +35,7 @@
   <h2>How an order goes</h2>
   <ol>
     <li>The assistant calls <code>create_order</code>: three parts, the rules, the prices and the previews come back, and each preview is already checked. One demo subtitles specialist is careless on purpose, so you always see a rejection at 0¢.</li>
-    <li>The assistant gives the person the pay link. The person opens it, sees the same checks, and signs one transaction in their own wallet over WizardConnect (tested with Cashonize).</li>
+    <li>The assistant gives the person the pay link. The person opens it, sees the same checks, and signs one transaction in their own wallet over WizardConnect (tested with Cashonize and Selene).</li>
     <li>Each specialist sees its payment on chain and hands over the full file. The assistant calls <code>get_kit</code> and checks every file's fingerprint against the signed offer.</li>
   </ol>
 

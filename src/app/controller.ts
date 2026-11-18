@@ -284,9 +284,9 @@ function payTable(o: Order): HTMLElement {
   const rows: [string, string, string, string][] = o.accepted().map((c) => [label(c), short(c.offer.offer.payTo), `${c.offer.offer.priceCents}¢`, '']);
   rows.push(['Just Cents service', short(serviceAddr(o.net)), `${SERVICE.cents}¢`, '']);
   const rej = o.results[o.careless];
-  if (rej && !rej.verdict.ok) rows.splice(1, 0, [`${EXAMPLE.pair.label} (${pairName(o.careless)}) rejected`, 'no output', '0¢', 'rejected']);
+  if (rej && !rej.verdict.ok) rows.splice(1, 0, [`${EXAMPLE.pair.label} (${pairName(o.careless)}) rejected`, 'not paid', '0¢', 'rejected']);
   const other = o.notChosenCover();
-  if (other) rows.splice(1, 0, [`${label(other)} not chosen`, 'no output', '—', 'taste']);
+  if (other) rows.splice(1, 0, [`${label(other)} not chosen`, 'not paid', '—', 'taste']);
   for (const [a, b, c, kind] of rows) {
     const tr = el('tr', kind);
     const r = [a, b, c];
@@ -340,7 +340,7 @@ export async function pay(onPaid: () => void): Promise<void> {
   const copy = el('button', 'jc-btn ghost', 'Copy link');
   const open = el('a', 'jc-btn ghost', 'Open wallet app');
   linkRow.append(copy, open);
-  const wallets = el('p', 'jc-wallets', 'Over WizardConnect · tested with Cashonize');
+  const wallets = el('p', 'jc-wallets', 'Over WizardConnect · tested with Cashonize and Selene');
   const status = el('p', 'jc-status', 'Connecting…');
   const close = el('button', 'jc-x', '×');
   close.setAttribute('aria-label', 'Close');

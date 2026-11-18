@@ -10,8 +10,8 @@ Built for BCH BLAZE 2026. MIT licensed.
 
 1. The order is filled in: "Make me a kit to list my game." Press **Start**.
 2. Three parts for the game's store page appear: a store cover from a game frame (two variants), subtitles for the trailer, a logo traced from a sketch. Previews arrive: two 320 px watermarked covers, the first three subtitle lines, a 128 px watermarked logo.
-3. Every preview is checked by code against the published rules. The demo subtitles specialist Sam is careless on purpose: every line of his comes 1.2 s after the voice. Rejected, 0¢. Just Cents then uses Lena's subtitles, which pass. **Break it yourself** lets you make Lena the careless one instead; both files are checked again.
-4. **Pay 5¢ once**: connect a wallet over WizardConnect (tested with Cashonize, on mainnet and chipnet) and sign one transaction.
+3. Every preview is checked by code against the published rules. The demo subtitles specialist Sam is careless on purpose: every line of his comes 1.1 s after the voice. Rejected, 0¢. Just Cents then uses Lena's subtitles, which pass. **Break it yourself** lets you make Lena the careless one instead; both files are checked again.
+4. **Pay 5¢ once**: connect a wallet over WizardConnect (tested with Cashonize on mainnet and chipnet, and with Selene on chipnet) and sign one transaction.
 5. Each specialist sees its own output on chain and hands over the full file. The page checks every file's fingerprint against the signed offer, runs the rules again on the full files, and gives you the files and a receipt with the transaction link.
 
 ## How it works
@@ -32,7 +32,7 @@ Built for BCH BLAZE 2026. MIT licensed.
 
 **Delivery after payment, checked on chain.** `GET /full/<offer>?net=…&txid=…` reads the transaction from a public Fulcrum server and hands over the file only if the transaction pays that specialist's address at least the offer price and the note lists that offer's fingerprint. Full files are never served directly.
 
-**Rules and taste.** The cover specialist sends two variants. Both pass the same rules; the person picks one by taste and pays only for that one. The other shows on the receipt as "not chosen, 0¢" and gets no output. Rules decide what is acceptable; taste decides between acceptable pieces.
+**Rules and taste.** The cover specialist sends two variants. Both pass the same rules; the person picks one by taste and pays only for that one. The other shows on the receipt as "not chosen, 0¢" and is not paid. Rules decide what is acceptable; taste decides between acceptable pieces.
 
 **Paid work instead of reviews.** A specialist's paid work can be read from the network (`GET /api/specialists/<id>/history`): transactions that pay the specialist's address and carry a `JC1` note.
 
