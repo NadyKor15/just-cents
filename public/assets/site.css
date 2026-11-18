@@ -79,6 +79,8 @@
 .stage-m .icon-art.two.cover .iv img{border-radius:4px}
 .stage-m .t-icon .icon-art.two.cover{top:30px}
 .wave .logo-prev{display:block;height:100%;width:auto;margin:0 auto;object-fit:contain}
+/* "Logo from sketch" takes two lines on the phone tile: the preview sits under the second line, above the price */
+.stage-m .t-voice .wave{top:36px;height:28px}
 .txl-pill.live{background:var(--lime-hot)!important;color:var(--ink)!important}
 .txl-pill.live a{color:inherit;font-weight:700;text-decoration:none}
 .brk button:disabled{opacity:.5;cursor:progress}
