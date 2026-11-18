@@ -46,7 +46,6 @@ Built for BCH BLAZE 2026. MIT licensed.
 | `src/core/offer.ts` | signed offers (canonical form, Schnorr sign and verify) |
 | `src/core/rules.ts` | the acceptance rules (pure functions) |
 | `src/core/music.ts` | music rules: decoded length, licence frames (ID3) read from the file |
-| `src/core/mesh.ts` | 3D model rules: watertight (every edge in exactly two triangles), fits a printer bed given as a parameter |
 | `src/core/release.ts` | "my output is on chain" check (libauth) |
 | `src/core/wallet.ts` | WizardConnect, site side: pairing, wallet coins from its shared public keys, sign request |
 | `src/core/chain.ts` | Fulcrum (Electrum) access with a second server |
