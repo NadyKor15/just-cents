@@ -580,6 +580,9 @@ export function currentOrder(): Order | null {
  * The files then come from the specialists exactly as after one's own payment, and the "ready" screen fills.
  */
 export async function openPaidOrder(txid: string, net: Net): Promise<void> {
+  // The ready screen comes up at once, with one line while the order is read, and the page goes there now. Going there
+  // only after the files took 6–17 s on a phone, and all that time the page showed Start, as if the scene had reset.
+  const reading = showReading(net, txid);
   try {
     const raw = await getRawTx(net, txid);
     const tx = decodeTransaction(hexToBin(raw));
@@ -606,8 +609,33 @@ export async function openPaidOrder(txid: string, net: Net): Promise<void> {
     paid = true;
     setTx(net, txid);
     await deliver(o);
-    document.querySelector('#kit')?.scrollIntoView({ behavior: 'smooth' });
   } catch (e) {
+    if (reading?.isConnected) {
+      reading.className = 'bad';
+      reading.textContent = `Paid order: ${e instanceof Error ? e.message : e}`;
+    }
     fail('Paid order', e);
   }
+}
+
+/** The ready screen before anything is known: title, the transaction, one line while the order is read; then go there. */
+function showReading(net: Net, txid: string): HTMLElement | null {
+  const kit = document.querySelector<HTMLElement>('#kit');
+  if (!kit) return null;
+  kit.removeAttribute('hidden');
+  kit.setAttribute('aria-label', EXAMPLE.ready.title);
+  kit.querySelector('.ready-title')!.textContent = EXAMPLE.ready.title;
+  kit.querySelectorAll<HTMLElement>('.ready > figure').forEach((f) => (f.hidden = true)); // no empty frames
+  const tx = kit.querySelector<HTMLAnchorElement>('.kit-tx')!;
+  tx.href = explorerTx(net, txid);
+  tx.textContent = txid;
+  const list = kit.querySelector<HTMLElement>('.kit-files')!;
+  list.innerHTML = '';
+  const line = el('li', 'pending', 'Reading the paid order from the network…');
+  list.appendChild(line);
+  const btn = kit.querySelector<HTMLButtonElement>('.kit-download')!;
+  btn.disabled = true;
+  btn.textContent = 'Preparing the files…';
+  requestAnimationFrame(() => kit.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+  return line;
 }
