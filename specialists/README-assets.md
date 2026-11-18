@@ -25,7 +25,12 @@ Run everything from `code/just-cents`. Service keys come only from the environme
   image), jpeg. Result 4096×2560.
 
 ## Logo (specialist "logo")
-- Input: the author's sketch, `/game-frames/logo-sketch.png`.
+- Input: the author's own sketch, black marker on white paper (a phone with a ring and a coin, AUTOPILOT under it),
+  photographed on a blanket. `python3 specialists/scripts/prepare-sketch.py <photo> assets-v3/logo-sketch.png` finds the
+  sheet, straightens it, evens out the white and crops to the drawing; nothing on the sheet is drawn, removed or retouched.
+  Public at `/game-frames/logo-sketch.png`: the logo rule compares the logo with it.
+- Likeness measured on this pair (SSIM at 32×32, drawn blocks only; the bar is 0.85): the trace 0.976; the same sketch
+  shifted by 12 px 0.84; the sketch mirrored 0.16; another drawing 0.11–0.18.
 - Traced by VTracer 0.6.11 (open source, MIT, https://www.visioncortex.org/vtracer), binary colour mode, run by the
   Just Cents team inside `specialists/scripts/lay-out-v3.py --logo <sketch>` (needs the `vtracer` Python package).
 

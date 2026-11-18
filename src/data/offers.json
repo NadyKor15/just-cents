@@ -137,22 +137,22 @@
         "offer": {
           "v": 1,
           "orderId": "*",
-          "facts": "svg;1;2;3267",
+          "facts": "svg;1;29;46029",
           "specialist": "logo (demo specialist)",
           "part": "logo",
           "priceCents": 1,
           "priceSats": "4756",
-          "fileSha256": "9241e4b5f3acde8a9be56b382a079ab7bb3257dcb0518afbfbfb9d03fb4bb7d3",
+          "fileSha256": "cdb9c0930ef5dce2f7c61218b5f7a61ac3121ce702697beeee336e612a357a6c",
           "expires": 1798761599,
           "payTo": "bitcoincash:qz7t9gc3y9m89wzmj3x7zderx2e9f72lrcusk940hk",
           "pubkey": "026798be40e18f30a32c9394a49da576d3aa939df88b24ffd647b286eed710c5f5"
         },
-        "sig": "4d3e7eb83a5c19cddaa564b90ca314673fac347cfb470d690d825a6e9888549aeb2384aab2541045ff6fd1541fcb48750425c310f2989361215942fca86e9089"
+        "sig": "f51340447e2b4d0e54bea04dd50d1f35bca93a45f1b6b2029a8a8dd6a6751e14d8f95bbf82bbfc71e59d6a709fd089f33029c3edcbb162bbe66a29df6ce80dbc"
       },
       "file": "logo.svg",
       "preview": "/previews/logo-128.png",
       "payToLockingHex": "76a914bcb2a311217672b85b944de1372332b254f95f1e88ac",
-      "offerHashHex": "23f5c4cf7ec34bab0e8e3a7f21e82e32dda641f24f78fb1005d855718e25f1a9"
+      "offerHashHex": "861f6692e34fb0639a0dd3ad2e00a2bec62947edd9b06d4fdd317235f410351b"
     }
   },
   "chipnet": {
@@ -293,22 +293,22 @@
         "offer": {
           "v": 1,
           "orderId": "*",
-          "facts": "svg;1;2;3267",
+          "facts": "svg;1;29;46029",
           "specialist": "logo (demo specialist)",
           "part": "logo",
           "priceCents": 1,
           "priceSats": "4756",
-          "fileSha256": "9241e4b5f3acde8a9be56b382a079ab7bb3257dcb0518afbfbfb9d03fb4bb7d3",
+          "fileSha256": "cdb9c0930ef5dce2f7c61218b5f7a61ac3121ce702697beeee336e612a357a6c",
           "expires": 1798761599,
           "payTo": "bchtest:qz7t9gc3y9m89wzmj3x7zderx2e9f72lrcczjzhcs2",
           "pubkey": "026798be40e18f30a32c9394a49da576d3aa939df88b24ffd647b286eed710c5f5"
         },
-        "sig": "f4412b2a7b00728aba4fad198d693b967989643c9b759e8d0087ad6e188fb2f22395281477578bf227710e1fa2c283630654ed40eded3316af58956c3f6e0c44"
+        "sig": "8c47c6b023128ae912bb1883a3c776bf19b1f18d6a63fc60855f52adff22c58fb9b505000984e4950b225b8358f885661e8804cd2089f5b85cdefbc67a1cb4f3"
       },
       "file": "logo.svg",
       "preview": "/previews/logo-128.png",
       "payToLockingHex": "76a914bcb2a311217672b85b944de1372332b254f95f1e88ac",
-      "offerHashHex": "bc7697fd5a04ad797c6b0058e8a0e4ad1632c7bbfa3055e2ce41b0926ad32514"
+      "offerHashHex": "d93d236b88414d52d588d8bf13970f2e926f9dd0c0a912b8e50dcfc6539f7f49"
     }
   },
   "_meta": {

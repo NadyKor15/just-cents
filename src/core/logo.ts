@@ -54,5 +54,5 @@ export function checkLogo(svg: string, likeness: number): Verdict {
   if (f.colors.length > R.maxColors) return { ok: false, reason: `${f.colors.length} colours, at most ${R.maxColors}` };
   if (f.contours > R.maxContours) return { ok: false, reason: `${f.contours} outlines, at most ${R.maxContours}` };
   if (!(likeness >= R.minSsim)) return { ok: false, reason: `not like the sketch: similarity ${likeness.toFixed(2)}, at least ${R.minSsim}` };
-  return { ok: true, note: `${f.colors.length} colours, ${f.contours} outlines, similarity ${likeness.toFixed(2)}` };
+  return { ok: true, note: `${f.colors.length} colour${f.colors.length === 1 ? '' : 's'}, ${f.contours} outlines, similarity ${likeness.toFixed(2)}` };
 }
