@@ -126,7 +126,8 @@
 /* "See a paid order (no wallet)": next to Pay, quieter than it */
 .foot .paid-example{color:var(--orchid-lo);font-weight:600;text-decoration:underline;text-underline-offset:2px}
 .stage-m .foot .sep{display:none}
-.stage-m .foot .paid-example{display:block;margin-top:5px}
+/* phone: the row under the foot line is taken by "Break it yourself", so the link sits in the free space above it */
+.stage-m .foot .paid-example{position:absolute;left:0;right:0;bottom:100%;margin-bottom:7px}
 /* the end of the scene: "Ready for your game page" */
 .ready-title{text-align:center}
 .ready{display:grid;grid-template-columns:2fr 1.25fr .75fr;gap:16px;align-items:start;margin:8px 0 18px}
