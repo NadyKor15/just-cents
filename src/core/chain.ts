@@ -11,7 +11,7 @@ export const FULCRUM: Record<Net, string[]> = {
 export const PREFIX: Record<Net, 'bitcoincash' | 'bchtest'> = { mainnet: 'bitcoincash', chipnet: 'bchtest' };
 
 const EXPLORER: Record<Net, string> = {
-  mainnet: 'https://bch.loping.net',
+  mainnet: 'https://explorer.bch.ninja', // bch.loping.net put a "checking you are not a bot" wall in front of the transaction
   chipnet: 'https://chipnet.imaginary.cash',
 };
 
