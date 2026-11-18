@@ -30,13 +30,13 @@ $('pay').onclick = async () => {
   const coins = await link.coins(net);
   log(`coins: ${coins.length}, total ${coins.reduce((s, c) => s + c.sats, 0n)} sat`);
   const orderId = binToHex(sha256.hash(utf8ToBin(`lab-${Date.now()}`)).slice(0, 16));
-  const hashes = ['icon', 'lena', 'voice'].map((s) => binToHex(sha256.hash(utf8ToBin(`${orderId}-${s}`))));
+  const hashes = ['cover', 'lena', 'logo'].map((s) => binToHex(sha256.hash(utf8ToBin(`${orderId}-${s}`))));
   const p = buildPayment({
     utxos: coins,
     payouts: [
-      { label: 'Icon', address: PAYOUT.icon[net], sats: 1500n },
-      { label: 'Description (Lena)', address: PAYOUT.lena[net], sats: 1000n },
-      { label: 'Voice-over', address: PAYOUT.voice[net], sats: 1000n },
+      { label: 'Cover', address: PAYOUT.cover[net], sats: 1500n },
+      { label: 'Subtitles (Lena)', address: PAYOUT.lena[net], sats: 1000n },
+      { label: 'Logo', address: PAYOUT.logo[net], sats: 1000n },
       { label: 'Service', address: PAYOUT.service[net], sats: 600n },
     ],
     note: noteText(orderId, hashes),

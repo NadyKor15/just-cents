@@ -26,45 +26,16 @@ const easeOut = (x) => 1 - Math.pow(1 - x, 3);
 const easeInOut = (x) => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
 function bez(a, c, b, t) { const u = 1 - t; return [u * u * a[0] + 2 * u * t * c[0] + t * t * b[0], u * u * a[1] + 2 * u * t * c[1] + t * t * b[1]]; }
 
-// ---------------------------------------------------------------- inline art
-const ICON_SVG = `<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-<defs>
- <linearGradient id="sky" x1="0" y1="0" x2="0.35" y2="1"><stop offset="0" stop-color="#9b8ff0"/><stop offset=".55" stop-color="#c79be6"/><stop offset="1" stop-color="#f3a7b4"/></linearGradient>
- <linearGradient id="m1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8a74c9"/><stop offset="1" stop-color="#5d4a9a"/></linearGradient>
- <linearGradient id="m2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7d62b8"/><stop offset="1" stop-color="#4c3a86"/></linearGradient>
- <radialGradient id="sun" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#ffe2a6"/><stop offset="1" stop-color="#f8c58c"/></radialGradient>
- <clipPath id="rr"><rect width="120" height="120" rx="24"/></clipPath>
-</defs>
-<g clip-path="url(#rr)">
- <rect width="120" height="120" fill="url(#sky)"/>
- <circle cx="80" cy="42" r="17" fill="url(#sun)"/>
- <path d="M-4 120 L40 50 L62 78 L76 62 L124 120 Z" fill="url(#m1)"/>
- <path d="M-4 120 L30 84 L52 104 L70 86 L124 120 Z" fill="url(#m2)" opacity=".9"/>
- <path d="M40 50 L33 62 L40 58 L46 64 Z" fill="#fff" opacity=".55"/>
- <text x="58" y="98" transform="rotate(-17 58 98)" text-anchor="middle" font-family="Figtree, sans-serif" font-weight="600" font-size="17" fill="#fff" fill-opacity=".72">Just Cents</text>
-</g>
-<rect x=".75" y=".75" width="118.5" height="118.5" rx="23.5" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="1.5"/>
-</svg>`;
-
-function waveSVG(n) {
-  // symmetric speech-like envelope, as in the image
-  const H = [.18, .32, .5, .38, .62, .44, .8, 1, .7, .5, .86, .58, .4, .66, .48, .3, .2];
-  const hs = n === 17 ? H : [.3, .55, .4, .75, .5, .95, 1, .7, .45, .8, .55, .35, .22];
-  const w = 100, bw = w / (hs.length * 2 - 1);
-  let r = '';
-  hs.forEach((h, i) => {
-    const x = i * bw * 2, hh = Math.max(8, h * 100);
-    r += `<rect class="wb" x="${x.toFixed(2)}" y="${(50 - hh / 2).toFixed(2)}" width="${bw.toFixed(2)}" height="${hh.toFixed(2)}" rx="${(bw / 2).toFixed(2)}"/>`;
-  });
-  return `<svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><g fill="#93b52b">${r}</g></svg>`;
-}
+// ---------------------------------------------------------------- tile art before the order: the specialists' own previews
+// .icon-art holds the cover (choice), .wave the logo (single); the controller swaps in the checked previews later
+const COVER_PREVIEW = '/previews/cover-a.jpg';
+const LOGO_PREVIEW = '/previews/logo-128.png';
 
 // ---------------------------------------------------------------- stage
 const STAGES = { d: document.querySelector('.stage-d'), m: document.querySelector('.stage-m') };
 const page = document.querySelector('.page');
-document.querySelectorAll('.icon-art').forEach((e, i) => (e.innerHTML = ICON_SVG.replace(/id="(\w+)"/g, `id="$1${i}"`).replace(/url\(#(\w+)\)/g, `url(#$1${i})`)));
-document.querySelectorAll('.stage-d .wave').forEach((e) => (e.innerHTML = waveSVG(17)));
-document.querySelectorAll('.stage-m .wave').forEach((e) => (e.innerHTML = waveSVG(13)));
+document.querySelectorAll('.icon-art').forEach((e) => (e.innerHTML = `<img class="cover-prev" src="${COVER_PREVIEW}" alt="">`));
+document.querySelectorAll('.wave').forEach((e) => (e.innerHTML = `<img class="logo-prev" src="${LOGO_PREVIEW}" alt="">`));
 { // phone: the scene block lives in one wrapper (it fills the lower third before the receipt prints)
   const sm = document.querySelector('.stage-m'); const sc = document.createElement('div'); sc.className = 'scene';
   sm.querySelectorAll(':scope > .gl-back, :scope > .podium-glow, :scope > .sym-pod, :scope > .tw, :scope > .tag, :scope > .rw, :scope > .char, :scope > .char-help, :scope > .gl-front').forEach((e) => sc.appendChild(e));
@@ -254,9 +225,9 @@ function buildWorld(st, key, W, H, ex = 0) {
   const ch = { el: st.querySelector('.char'), say: st.querySelector('.char-say'), help: st.querySelector('.char-help'), shadow: st.querySelector('.char-shadow'),
     x: key === 'm' ? 70 : 330, homeW: 1, hidden: 1, signOn: 0, checkOn: 0, jump: 0, follow: false, px: null, cur: '', vx: 0, face: 1, pose: '', idleT: 0 };
   const RULES = {
-    icon: 'Image size and whether the image contains text',
-    desc: 'The length of the music and its licence',
-    voice: 'The length of the audio',
+    icon: 'Big enough, the frame\'s proportions, sharper than a plain stretch',
+    desc: 'Every line starts on its spoken word',
+    voice: 'Clean outlines that look like the sketch',
     help: 'Only the accepted pieces get paid. A rejected piece costs 0¢.',
   };
   const state = { careless: 'sam' };   // the visitor can pick who is careless ("Break it yourself")
@@ -530,7 +501,7 @@ function startTimeline(w) {
     .set($('.prev'), { opacity: 0 }, 0)
     .set($('.icon-art'), { clipPath: 'inset(50% 50% 50% 50% round 20%)', scale: .9 }, 0)
     .set($('.desc-bar'), { scaleX: 0 }, 0)
-    .set($('.wb'), { scaleY: .08, transformOrigin: '50% 50%' }, 0)
+    .set($('.logo-prev'), { scale: .4, opacity: 0, transformOrigin: '50% 50%' }, 0)
     .set($('.rim, .ok'), { opacity: 0 }, 0)
     .set($('.ok'), { scale: .4 }, 0)
     .set($('.tag-sam'), { opacity: 0, y: -8, backgroundColor: 'rgba(247,245,243,.85)' }, 0)
@@ -593,7 +564,7 @@ function startTimeline(w) {
   tl.to(st.querySelector('.t-icon .prev'), { opacity: 1, clipPath: 'inset(0% 0% 0% 0% round 20%)', scale: 1, duration: .7 }, 2.3)
     .to(st.querySelector('.t-desc .prev'), { opacity: 1, duration: .2 }, 2.5).to($('.desc-bar'), { scaleX: 1, duration: .6 }, 2.5)
     .to(st.querySelector('.t-voice .prev'), { opacity: 1, duration: .2 }, 2.7)
-    .to($('.wb'), { scaleY: 1, duration: .5, stagger: { each: .025, from: 'center' }, ease: 'back.out(2)' }, 2.7);
+    .to($('.logo-prev'), { scale: 1, opacity: 1, duration: .5, ease: 'back.out(2)' }, 2.7);
   // 3.3 Sam: plate turns red with the reason
   tl.to($('.tag-sam'), { opacity: 1, y: 0, duration: .4 }, 3.3)
     .to($('.tag-sam'), { backgroundColor: '#f7b1b5', duration: .35, ease: 'power1.out' }, 3.8)

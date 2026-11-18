@@ -41,7 +41,7 @@ async function rawTx(net: Net, txid: string): Promise<string | null> {
 }
 
 export async function release(url: URL, env: Env): Promise<Response> {
-  // /full/<entry>   e.g. /full/icon, /full/lena:good
+  // /full/<entry>   e.g. /full/cover, /full/lena:good
   const entryKey = decodeURIComponent(url.pathname.slice('/full/'.length));
   const net = url.searchParams.get('net') as Net | null;
   const txid = url.searchParams.get('txid') ?? '';

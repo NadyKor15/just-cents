@@ -23,7 +23,7 @@ const addr = encodeCashAddress({ prefix: 'bchtest', type: 'p2pkh', payload: hash
 
 function readyOrder(): Order {
   const o = new Order('chipnet', 'sam');
-  for (const [slot, key] of [['icon', 'icon'], ['lena', 'lena:good'], ['voice', 'voice']] as const) {
+  for (const [slot, key] of [['cover', 'cover'], ['lena', 'lena:good'], ['logo', 'logo']] as const) {
     o.results[slot] = { key, who: slot === 'lena' ? 'lena' : undefined, verdict: { ok: true, note: '' }, offer: OFFERS.chipnet[key]!.signed, detail: '' };
   }
   return o;
@@ -72,7 +72,7 @@ describe('paying once, even when sending fails', () => {
     const tx = decodeTransaction(hexToBin(sent[0]!));
     if (typeof tx === 'string') throw new Error(tx);
     const outs = tx.outputs.map((x) => binToHex(x.lockingBytecode));
-    for (const k of ['icon', 'lena:good', 'voice']) expect(outs).toContain(binToHex(lockingFor(OFFERS.chipnet[k]!.signed.offer.payTo)));
+    for (const k of ['cover', 'lena:good', 'logo']) expect(outs).toContain(binToHex(lockingFor(OFFERS.chipnet[k]!.signed.offer.payTo)));
     expect(outs).not.toContain(binToHex(lockingFor(OFFERS.chipnet['sam:careless']!.signed.offer.payTo))); // the rejected one gets nothing
   });
 

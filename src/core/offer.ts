@@ -8,10 +8,10 @@ export const ANY_ORDER = '*';
 export type Offer = {
   v: 1;
   orderId: string; // 16 bytes hex, or ANY_ORDER for a standing offer
-  /** What the specialist promises about the full file, checked again after download (e.g. "1024x1024", "12.34s", "es,fr,de"). */
+  /** What the specialist promises about the full file, checked again after download (e.g. "4096x2560;4488737", "srt;9;18.375"). */
   facts: string;
-  specialist: string; // e.g. "lena"
-  part: 'icon' | 'music' | 'voice' | 'model';
+  specialist: string; // e.g. "Lena (demo specialist)"
+  part: 'cover' | 'subtitles' | 'logo';
   priceCents: number;
   priceSats: string; // decimal string, satoshis
   fileSha256: string; // 32 bytes hex of the full file

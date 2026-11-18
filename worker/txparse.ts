@@ -80,7 +80,7 @@ export type Paid = { ok: true; paidSats: bigint; orderIdHex: string } | { ok: fa
 export type BookEntry = { payToLockingHex: string; offerHashHex: string; priceSats: string };
 
 /**
- * One payment must not unlock two offers of the same specialist (two icon variants share one address).
+ * One payment must not unlock two offers of the same specialist (two cover variants share one address).
  * The amount paid to this offer's address must cover the prices of ALL offers in the note that pay to
  * that same address.
  */

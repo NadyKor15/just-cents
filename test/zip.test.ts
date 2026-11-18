@@ -12,8 +12,9 @@ describe('kit zip', () => {
   it('is a valid archive that unzip accepts and extracts byte for byte', () => {
     const files = [
       { name: 'receipt.json', data: new TextEncoder().encode('{"ok":true}') },
-      { name: 'icon-1024.png', data: readFileSync('public/files/icon-1024.png') },
-      { name: 'voice-full.mp3', data: readFileSync('public/files/voice-full.mp3') },
+      { name: 'cover-a.jpg', data: readFileSync('public/files/cover-a.jpg') },
+      { name: 'subs-lena.srt', data: readFileSync('public/files/subs-lena.srt') },
+      { name: 'logo.svg', data: readFileSync('public/files/logo.svg') },
     ];
     const dir = mkdtempSync(join(tmpdir(), 'jczip-'));
     try {

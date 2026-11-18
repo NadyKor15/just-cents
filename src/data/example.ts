@@ -1,12 +1,12 @@
 // The example order shown on the home page and served to assistants. Everything an example is "about" lives here:
-// the request, the names and labels of its three parts, the demo specialists' names, the clip's lines and game material.
+// the request, the names and labels of its three parts, the demo specialists and the tools they use, the order's inputs.
 // The mechanics (offers, rules, the careless specialist, the choice by taste, receipt, payment, delivery) do not depend
 // on it. Another example = another version of this file + the specialists' files and offers (scripts/sign-offers.ts).
 //
 // Three roles, fixed by the mechanics:
-//   choice — two variants pass the same rules; the person picks one by taste (offer keys `icon`, `icon:b`)
+//   choice — two variants pass the same rules; the person picks one by taste (offer keys `cover`, `cover:b`)
 //   pair   — two specialists, one careless on purpose; the careless one is rejected at 0¢ (`sam:good|careless`, `lena:…`)
-//   single — one specialist (`voice`)
+//   single — one specialist (`logo`)
 
 export type Who = 'sam' | 'lena';
 
@@ -17,33 +17,42 @@ export const EXAMPLE = {
   assistantAsk: 'Asking for: a kit to list my game.',
   /** MCP tool description for create_order. */
   mcpOrder:
-    'Order a kit to list a game in a store: an icon (1024x1024, no text), 15 s of music for the clip (CC0 or CC BY, the licence written into the file), and a 10-15 s voice-over.',
+    'Order a kit to list a game in a store: subtitles for its trailer (SRT, every line on its spoken words), a big store cover from a game frame (at least 2560x1600, two variants, the person picks one), and its logo traced from a sketch into a clean SVG.',
 
-  // The choice slot shows the icon A/B as a working placeholder until the main example is chosen again
-  // (a 3D figure was tried here and dropped; its rules stay in src/core/mesh.ts, not in the scene).
   choice: {
-    /** label in receipt, kit and API, e.g. "Icon (A)" */
-    label: 'Icon',
-    apiPart: 'icon',
-    specialist: 'icon (demo specialist)',
+    /** label in receipt, kit and API, e.g. "Cover (A)" */
+    label: 'Cover',
+    apiPart: 'cover',
+    specialist: 'cover (demo specialist)',
+    tool: 'Stability AI Fast Upscaler',
     /** how the API checks it (shown to assistants) */
-    howApi: 'size from the signed offer here; "no letters" is checked by OCR in the browser on the pay page, before the wallet is asked',
-    previewAlt: 'Icon preview, 128 px, watermarked',
+    howApi: 'size, proportions and file size from the signed offer here; after payment the page measures the full file again, including that it is sharper than the frame simply stretched',
+    previewAlt: 'Cover preview, 320 px, watermarked',
+    /** the game frames the two variants were made from (the order's own input) */
+    frames: { a: '/game-frames/cover-frame-a.png', b: '/game-frames/cover-frame-b.png' },
+    frameSize: { width: 1024, height: 640 },
+    variants: { a: 'Your first call', b: 'Sticker stall' },
   },
   pair: {
-    label: 'Music',
-    apiPart: 'music',
+    label: 'Subtitles',
+    apiPart: 'subtitles',
     names: { sam: 'Sam', lena: 'Lena' } as Record<Who, string>,
-    howApi: 'length and licence from the signed offer here; the pay page checks the licence written into the file, and the length is measured again on the full file after payment',
+    tools: { sam: 'Deepgram Nova-3', lena: 'Deepgram Nova-2' } as Record<Who, string>,
+    howApi: 'the start of the first line from the signed offer here, against the trailer\'s first spoken word; the pay page checks the first three lines of the file, and the whole file after payment',
   },
   single: {
-    label: 'Voice-over',
-    apiPart: 'voice',
-    specialist: 'voice (demo specialist)',
-    howApi: 'length from the signed offer here, measured again on the full file after payment',
+    label: 'Logo',
+    apiPart: 'logo',
+    specialist: 'logo (demo specialist)',
+    tool: 'VTracer (open source, MIT), run by the Just Cents team',
+    howApi: 'SVG, colours, outlines and file size from the signed offer here; after payment the page reads the SVG itself and compares it with the sketch',
+    sketch: '/game-frames/logo-sketch.png',
   },
 
-  /** The clip: game material first (not sold by anyone), then the chosen part and these lines. */
+  /** The trailer whose words are the subtitles' yardstick (measured once, before any specialist works). */
+  trailer: { title: 'Autopilot: Summer Rules — gameplay trailer', seconds: 116.92 },
+
+  /** The clip (end of the scene) is not built for this example yet. */
   clip: {
     frames: ['/game-frames/first-call.jpg', '/game-frames/hike-day.jpg', '/game-frames/build-a-rule.jpg'],
     gameplay: '/game-frames/gameplay.mp4',

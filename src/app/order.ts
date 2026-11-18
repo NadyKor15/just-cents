@@ -1,29 +1,44 @@
 // One order, end to end: previews → checks against the published rules → one payment → full files.
 import { verifyOffer, offerHashHex, type SignedOffer } from '../core/offer';
-import { checkIcon, checkVoice, countLetters, checkMusicDeclared, checkMusicFile, type Verdict } from '../core/rules';
-import { MUSIC_SECONDS, readId3 } from '../core/music';
+import { checkCoverDeclared, checkLogoDeclared, checkSubtitlesDeclared, type Verdict } from '../core/rules';
+import { checkSubtitles, parseSrt, type Speech } from '../core/subtitles';
+import { checkCover, measureCover } from '../core/cover';
+import { checkLogo } from '../core/logo';
+import { likeness } from '../core/image';
 import { buildPayment, noteText, type BuiltPayment } from '../core/tx';
 import { broadcast, type Net } from '../core/chain';
 import type { WalletLink } from '../core/wallet';
 import { OFFERS, type OfferEntry } from '../data/offers';
+import { EXAMPLE } from '../data/example';
+import TRAILER_WORDS from '../data/trailer-words.json';
 import { PAYOUT } from '../config';
-import { audioSeconds, loadImage, readText, sha256Hex } from './measure';
-
-export type Who = 'sam' | 'lena';
-export type IconChoice = 'a' | 'b';
-/** Offer keys of the two icon variants (variant A keeps the original key). */
-export const ICON_KEY: Record<IconChoice, string> = { a: 'icon', b: 'icon:b' };
-export const SERVICE = { cents: 1, sats: 4756n }; // Just Cents' own 1¢ for matching and checks; at $210.27/BCH (CoinGecko, 16.11.2026 22:19Z), fixed with the offers
-
-export type Checked = { key: string; who?: Who; verdict: Verdict; offer: SignedOffer; detail: string; music?: { title: string; author: string; license: string; seconds: number } };
-
+import { drawing, pixels, sha256Hex } from './measure';
 import { newOrderId } from '../core/orderid';
 import { txidOf } from '../core/release';
 import { binToHex, decodeTransaction, hexToBin } from '@bitauth/libauth';
 
+export type Who = 'sam' | 'lena';
+export type CoverChoice = 'a' | 'b';
+/** Offer keys of the two cover variants (variant A keeps the plain key). */
+export const COVER_KEY: Record<CoverChoice, string> = { a: 'cover', b: 'cover:b' };
+export const SERVICE = { cents: 1, sats: 4756n }; // Just Cents' own 1¢ for matching and checks; at $210.27/BCH (CoinGecko, 16.11.2026 22:19Z), fixed with the offers
+
+/** The trailer's spoken words with their times: the yardstick for subtitle timing. */
+export const SPEECH = TRAILER_WORDS as unknown as Speech;
+
+export type Checked = {
+  key: string;
+  who?: Who;
+  verdict: Verdict;
+  offer: SignedOffer;
+  detail: string;
+  /** subtitles: the preview's lines, for the scene */
+  lines?: { start: number; text: string }[];
+};
+
 const nowSec = () => Math.floor(Date.now() / 1000);
 
-export function musicKey(who: Who, careless: Who): string {
+export function subsKey(who: Who, careless: Who): string {
   return `${who}:${who === careless ? 'careless' : 'good'}`;
 }
 
@@ -54,67 +69,52 @@ export class Order {
     return e.signed;
   }
 
-  /** Which icon variant the person picked (taste); both are checked by the same rules. */
-  iconChoice: IconChoice = 'a';
+  /** Which cover variant the person picked (taste); both are checked by the same rules. */
+  coverChoice: CoverChoice = 'a';
 
-  async checkIcon(variant: IconChoice = 'a'): Promise<Checked> {
-    const key = ICON_KEY[variant];
+  /** Cover: size, proportions and file size as signed; sharpness is measured on the full file after payment. */
+  async checkCover(variant: CoverChoice = 'a'): Promise<Checked> {
+    const key = COVER_KEY[variant];
     const offer = this.verify(key);
-    const [w, h] = offer.offer.facts.split('x').map(Number) as [number, number];
-    const img = await loadImage(this.entry(key).preview as string);
-    const ocr = await readText(img);
-    const letters = countLetters(ocr.words);
-    const verdict = checkIcon({ width: w, height: h, letters, preview: false });
-    const detail = `declared ${w}×${h} (signed); OCR on the ${img.naturalWidth}px preview: ${letters} letters`;
+    const verdict = checkCoverDeclared(offer.offer.facts, EXAMPLE.choice.frameSize);
+    const detail = `declared ${offer.offer.facts.split(';')[0]} (signed); the full file is measured after payment`;
     return (this.results[key] = { key, verdict, offer, detail });
   }
 
-  /** The icon that will be paid for: the chosen variant. */
-  chosenIcon(): Checked | undefined {
-    return this.results[ICON_KEY[this.iconChoice]];
+  chosenCover(): Checked | undefined {
+    return this.results[COVER_KEY[this.coverChoice]];
   }
 
-  notChosenIcon(): Checked | undefined {
-    return this.results[ICON_KEY[this.iconChoice === 'a' ? 'b' : 'a']];
+  notChosenCover(): Checked | undefined {
+    return this.results[COVER_KEY[this.coverChoice === 'a' ? 'b' : 'a']];
   }
 
-  /** Music piece by Sam or Lena: the length and licence they declare in the signed offer, and the licence written into the preview file. */
-  async checkMusic(who: Who): Promise<Checked> {
-    const key = musicKey(who, this.careless);
+  /** Subtitles by Sam or Lena: the first line as signed, then the preview's first lines against the spoken words. */
+  async checkSubtitles(who: Who): Promise<Checked> {
+    const key = subsKey(who, this.careless);
     const offer = this.verify(key);
-    const [sec, license = '', author = ''] = offer.offer.facts.split(';');
-    const seconds = parseFloat(sec ?? '');
-    let verdict = checkMusicDeclared(offer.offer.facts);
-    const preview = await (await fetch(this.entry(key).preview as string)).arrayBuffer();
-    const tags = readId3(preview);
-    // the preview carries the same licence frames as the full piece: check them on the file, not only the promise
-    if (verdict.ok) {
-      const inFile = checkMusicFile(preview, MUSIC_SECONDS);
-      if (!inFile.ok) verdict = inFile;
-      else if (tags?.txxx['LICENSE'] !== license) verdict = { ok: false, reason: `the file says ${tags?.txxx['LICENSE'] ?? 'no licence'}, the offer says ${license}` };
-    }
-    const title = (tags?.title ?? '').replace(/\s*\((15 s cut|cut|preview)\)$/, '');
-    const detail = `declared ${seconds} s and ${license} (signed); licence in the preview file: ${tags?.txxx['LICENSE'] ?? 'none'}`;
-    return (this.results[who] = { key, who, verdict, offer, detail, music: { title, author, license, seconds } });
+    let verdict = checkSubtitlesDeclared(offer.offer.facts, SPEECH);
+    const text = await (await fetch(this.entry(key).preview as string)).text();
+    const p = parseSrt(text);
+    if (verdict.ok) verdict = checkSubtitles(text, SPEECH);
+    const lines = p.ok ? p.cues.map((c) => ({ start: c.start, text: c.lines.join(' ') })) : [];
+    const detail = `declared first line at ${offer.offer.facts.split(';')[2]} s (signed); ${lines.length} lines of the preview checked against the trailer's words`;
+    return (this.results[who] = { key, who, verdict, offer, detail, lines });
   }
 
-  async checkVoice(): Promise<Checked> {
-    const offer = this.verify('voice');
-    const declared = parseFloat(offer.offer.facts);
-    const preview = await (await fetch(this.entry('voice').preview as string)).arrayBuffer();
-    const prevSec = await audioSeconds(preview);
-    const verdict = checkVoice({ seconds: declared, preview: false });
-    const detail = `declared ${declared} s (signed); preview plays ${prevSec.toFixed(1)} s`;
-    return (this.results.voice = { key: 'voice', verdict, offer, detail });
+  async checkLogo(): Promise<Checked> {
+    const offer = this.verify('logo');
+    const verdict = checkLogoDeclared(offer.offer.facts);
+    return (this.results.logo = { key: 'logo', verdict, offer, detail: `declared ${offer.offer.facts} (signed); likeness to the sketch is measured after payment` });
   }
 
-  /** The musician that ended up accepted. */
+  /** The subtitles specialist that ended up accepted. */
   goodWho(): Who {
     return this.careless === 'sam' ? 'lena' : 'sam';
   }
 
   accepted(): Checked[] {
-    return [this.chosenIcon(), this.results[this.goodWho()], this.results.voice].filter((c): c is Checked => !!c && c.verdict.ok);
+    return [this.chosenCover(), this.results[this.goodWho()], this.results.logo].filter((c): c is Checked => !!c && c.verdict.ok);
   }
 
   totalCents(): number {
@@ -156,7 +156,7 @@ export class Order {
     return { txid, payment: this.payment! };
   }
 
-  /** Ask each accepted specialist for the full file, check its fingerprint, then re-check the rules on the full file. */
+  /** Ask each accepted specialist for the full file, check its fingerprint, then check the rules on the full file. */
   async fetchFull(c: Checked): Promise<{ bytes: ArrayBuffer; name: string; match: boolean; verdict: Verdict }> {
     const r = await fetch(`/full/${encodeURIComponent(c.key)}?net=${this.net}&txid=${this.txid}`);
     if (!r.ok) {
@@ -165,16 +165,21 @@ export class Order {
     }
     const bytes = await r.arrayBuffer();
     const match = (await sha256Hex(bytes)) === c.offer.offer.fileSha256;
-    let verdict: Verdict;
-    if (c.key.startsWith('icon')) {
-      const img = await loadImage(new Blob([bytes], { type: 'image/png' }));
-      const ocr = await readText(img);
-      verdict = checkIcon({ width: img.naturalWidth, height: img.naturalHeight, letters: countLetters(ocr.words), preview: false });
-    } else if (c.key === 'voice') {
-      verdict = checkVoice({ seconds: await audioSeconds(bytes), preview: false });
-    } else {
-      verdict = checkMusicFile(bytes, await audioSeconds(bytes));
-    }
-    return { bytes, name: this.entry(c.key).file, match, verdict };
+    return { bytes, name: this.entry(c.key).file, match, verdict: await checkFull(c.key, bytes) };
   }
+}
+
+/** The rules on a full file, as delivered. */
+export async function checkFull(key: string, bytes: ArrayBuffer): Promise<Verdict> {
+  if (key.startsWith('cover')) {
+    const frameUrl = key === COVER_KEY.b ? EXAMPLE.choice.frames.b : EXAMPLE.choice.frames.a;
+    const [cover, frame] = await Promise.all([pixels(new Blob([bytes], { type: 'image/jpeg' })), pixels(frameUrl)]);
+    return checkCover(measureCover({ ...cover, bytes: bytes.byteLength }, frame), frame);
+  }
+  if (key === 'logo') {
+    const svg = new TextDecoder().decode(bytes);
+    const [traced, sketch] = await Promise.all([drawing(new Blob([bytes], { type: 'image/svg+xml' })), drawing(EXAMPLE.single.sketch)]);
+    return checkLogo(svg, likeness(sketch, traced));
+  }
+  return checkSubtitles(new TextDecoder().decode(bytes), SPEECH);
 }

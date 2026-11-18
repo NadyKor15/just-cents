@@ -14,7 +14,7 @@ import { buildPayment, DUST_SATS, estimateSize, lockingFor, noteText, opReturnBy
 import { ANY_ORDER, offerHashHex, signOffer, verifyOffer, type Offer } from '../src/core/offer';
 import { checkPaid, txidOf } from '../src/core/release';
 import { signLocally } from './helpers/signer';
-import { checkIcon, checkMusicDeclared, checkVoice, countLetters } from '../src/core/rules';
+import { checkCoverDeclared, checkLogoDeclared, checkSubtitlesDeclared } from '../src/core/rules';
 
 function keyAddr(seed: number, prefix: 'bitcoincash' | 'bchtest' = 'bchtest') {
   const priv = sha256.hash(utf8ToBin(`test-key-${seed}`));
@@ -56,9 +56,9 @@ describe('note (OP_RETURN)', () => {
 describe('payment transaction', () => {
   const payees = [2, 3, 4, 5].map((i) => keyAddr(i));
   const payouts = [
-    { label: 'Icon', address: payees[0]!.address, sats: 14000n },
-    { label: 'Description (Lena)', address: payees[1]!.address, sats: 9500n },
-    { label: 'Voice-over', address: payees[2]!.address, sats: 9500n },
+    { label: 'Cover', address: payees[0]!.address, sats: 14000n },
+    { label: 'Subtitles (Lena)', address: payees[1]!.address, sats: 9500n },
+    { label: 'Logo', address: payees[2]!.address, sats: 9500n },
     { label: 'Service', address: payees[3]!.address, sats: 4800n },
   ];
   const note = noteText(ORDER, [1, 2, 3].map((i) => binToHex(sha256.hash(utf8ToBin(`o${i}`)))));
@@ -118,7 +118,7 @@ describe('payment transaction', () => {
   });
 
   it('a rejected specialist simply has no output', () => {
-    const p = buildPayment({ utxos: [coin(100000n)], payouts: payouts.filter((x) => x.label !== 'Description (Lena)'), note });
+    const p = buildPayment({ utxos: [coin(100000n)], payouts: payouts.filter((x) => x.label !== 'Subtitles (Lena)'), note });
     const lena = binToHex(lockingFor(payees[1]!.address));
     expect(p.transaction.outputs.some((o) => binToHex(o.lockingBytecode) === lena)).toBe(false);
   });
@@ -129,9 +129,9 @@ describe('offers', () => {
   const offer: Offer = {
     v: 1,
     orderId: ORDER,
-    facts: 'es,fr,de',
+    facts: 'srt;9;18.375',
     specialist: 'lena',
-    part: 'music',
+    part: 'subtitles',
     priceCents: 2,
     priceSats: '9500',
     fileSha256: binToHex(sha256.hash(utf8ToBin('full file'))),
@@ -160,13 +160,13 @@ describe('offers', () => {
 describe('release on chain', () => {
   const spec = keyAddr(8);
   const offer: Offer = {
-    v: 1, orderId: ORDER, facts: '1024x1024', specialist: 'icon-studio', part: 'icon', priceCents: 3, priceSats: '14000',
+    v: 1, orderId: ORDER, facts: '4096x2560;4488737', specialist: 'cover-studio', part: 'cover', priceCents: 3, priceSats: '14000',
     fileSha256: '11'.repeat(32), expires: 2_000_000_000, payTo: spec.address, pubkey: binToHex(spec.pub),
   };
   const h = offerHashHex(offer);
   const other = binToHex(sha256.hash(utf8ToBin('other')));
   const raw = (sats: bigint, hashes: string[], order = ORDER) =>
-    binToHex(encodeTransaction(buildPayment({ utxos: [coin(100000n)], payouts: [{ label: 'Icon', address: spec.address, sats }], note: noteText(order, hashes) }).transaction));
+    binToHex(encodeTransaction(buildPayment({ utxos: [coin(100000n)], payouts: [{ label: 'Cover', address: spec.address, sats }], note: noteText(order, hashes) }).transaction));
 
   it('pays out when my output and my offer are there', () => {
     const r = checkPaid(raw(14000n, [other, h]), { payTo: spec.address, minSats: 14000n, orderIdHex: ORDER, offerHashHex: h });
@@ -188,25 +188,26 @@ describe('release on chain', () => {
 });
 
 describe('rules', () => {
-  it('icon: size and letters', () => {
-    expect(checkIcon({ width: 1024, height: 1024, letters: 0, preview: false }).ok).toBe(true);
-    expect(checkIcon({ width: 512, height: 512, letters: 0, preview: false })).toEqual({ ok: false, reason: 'asked for 1024×1024, got 512×512' });
-    expect(checkIcon({ width: 128, height: 128, letters: 4, preview: true })).toEqual({ ok: false, reason: 'asked for no text, the icon has letters' });
-    expect(countLetters([{ text: 'PLAY', confidence: 77 }])).toBe(4);
-    expect(countLetters([{ text: 'PLAY', confidence: 30 }])).toBe(0);
-    expect(countLetters([{ text: 'LJ', confidence: 73 }, { text: 'i', confidence: 88 }, { text: 'RZ', confidence: 25 }])).toBe(0); // shapes in a clean icon
-    expect(countLetters([{ text: '—~·', confidence: 95 }])).toBe(0);
+  const frame = { width: 1024, height: 640 };
+  it('cover as declared in the signed offer: size, proportions, file size', () => {
+    expect(checkCoverDeclared('4096x2560;4488737', frame)).toEqual({ ok: true, note: '4096×2560' });
+    expect(checkCoverDeclared('1920x1200;800000', frame)).toEqual({ ok: false, reason: 'asked for at least 2560×1600, got 1920×1200' });
+    expect(checkCoverDeclared('2880x1620;800000', frame)).toMatchObject({ ok: false, reason: expect.stringContaining('proportions') });
+    expect(checkCoverDeclared('4096x2560;30000000', frame)).toMatchObject({ ok: false, reason: expect.stringContaining('at most 25 MB') });
+    expect(checkCoverDeclared('4096x2560', frame).ok).toBe(false);
   });
-  it('voice: length', () => {
-    expect(checkVoice({ seconds: 12.4, preview: false })).toEqual({ ok: true, note: '12.4 s' });
-    expect(checkVoice({ seconds: 32, preview: false })).toEqual({ ok: false, reason: 'asked for up to 15 s, got 32 s' });
-    expect(checkVoice({ seconds: 3, preview: true, declaredSeconds: 8 }).ok).toBe(false);
+  it('subtitles as declared: the first line on the first spoken word, within 0.4 s', () => {
+    const speech = { audioEnd: 30, words: [{ text: 'Omar', start: 18.48, end: 18.95 }] };
+    expect(checkSubtitlesDeclared('srt;9;18.375', speech)).toEqual({ ok: true, note: '9 subtitles, the first on time' });
+    expect(checkSubtitlesDeclared('srt;9;19.575', speech)).toEqual({ ok: false, reason: 'subtitle 1 starts 1.1 s late' });
+    expect(checkSubtitlesDeclared('srt;9;17.9', speech)).toEqual({ ok: false, reason: 'subtitle 1 starts 0.6 s early' });
+    expect(checkSubtitlesDeclared('vtt;9;18.4', speech).ok).toBe(false);
   });
-  it('music as declared in the signed offer: length, licence from the list, author for CC BY', () => {
-    expect(checkMusicDeclared('15.00s;CC0-1.0;cynicmusic')).toEqual({ ok: true, note: '15.0 s, CC0 1.0 by cynicmusic' });
-    expect(checkMusicDeclared('17.20s;CC0-1.0;cynicmusic')).toEqual({ ok: false, reason: 'asked for 15.0 s, got 17.2 s' });
-    expect(checkMusicDeclared('15.05s;CC-BY-4.0;')).toEqual({ ok: false, reason: "CC BY 4.0 needs the author's name" });
-    expect(checkMusicDeclared('15.00s;CC-BY-NC-4.0;x').ok).toBe(false);
-    expect(checkMusicDeclared('15.00s').ok).toBe(false);
+  it('logo as declared: SVG, colours, outlines, file size', () => {
+    expect(checkLogoDeclared('svg;2;37;12000')).toEqual({ ok: true, note: 'SVG, 2 colours, 37 outlines' });
+    expect(checkLogoDeclared('svg;5;37;12000')).toEqual({ ok: false, reason: '5 colours, at most 3' });
+    expect(checkLogoDeclared('svg;2;400;12000')).toEqual({ ok: false, reason: '400 outlines, at most 200' });
+    expect(checkLogoDeclared('svg;2;37;200000')).toMatchObject({ ok: false, reason: expect.stringContaining('at most 100 KB') });
+    expect(checkLogoDeclared('png;1;1;1').ok).toBe(false);
   });
 });

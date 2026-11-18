@@ -1,0 +1,498 @@
+{
+ "_note": "Spoken words of Autopilot-Summer-Rules-gameplay.mp4 (trailer v5a, 116.9 s), measured once with faster-whisper 1.2.1 small.en int8 + VAD, locally, 2026-11-18. Yardstick for the subtitle timing rule; not a subtitle file. Starts refined to speech onsets by specialists/scripts/refine-onsets.py (8 moved).",
+ "audioEnd": 116.92,
+ "words": [
+  {
+   "text": "Omar",
+   "start": 18.48,
+   "end": 18.75,
+   "start_model": 18.13
+  },
+  {
+   "text": "wants",
+   "start": 18.75,
+   "end": 19.05,
+   "start_model": 18.75
+  },
+  {
+   "text": "to",
+   "start": 19.05,
+   "end": 19.25,
+   "start_model": 19.05
+  },
+  {
+   "text": "borrow",
+   "start": 19.25,
+   "end": 19.43,
+   "start_model": 19.25
+  },
+  {
+   "text": "50",
+   "start": 19.43,
+   "end": 19.91,
+   "start_model": 19.43
+  },
+  {
+   "text": "durhams",
+   "start": 19.91,
+   "end": 20.57,
+   "start_model": 19.91
+  },
+  {
+   "text": "until",
+   "start": 20.57,
+   "end": 20.81,
+   "start_model": 20.57
+  },
+  {
+   "text": "Friday.",
+   "start": 20.81,
+   "end": 21.21,
+   "start_model": 20.81
+  },
+  {
+   "text": "No",
+   "start": 21.58,
+   "end": 22.05,
+   "start_model": 21.75
+  },
+  {
+   "text": "rule",
+   "start": 22.05,
+   "end": 22.27,
+   "start_model": 22.05
+  },
+  {
+   "text": "for",
+   "start": 22.27,
+   "end": 22.47,
+   "start_model": 22.27
+  },
+  {
+   "text": "this.",
+   "start": 22.47,
+   "end": 22.83,
+   "start_model": 22.47
+  },
+  {
+   "text": "By",
+   "start": 34.6,
+   "end": 35.07,
+   "start_model": 34.69
+  },
+  {
+   "text": "your",
+   "start": 35.07,
+   "end": 35.23,
+   "start_model": 35.07
+  },
+  {
+   "text": "rule,",
+   "start": 35.23,
+   "end": 35.57,
+   "start_model": 35.23
+  },
+  {
+   "text": "Omar",
+   "start": 36.02,
+   "end": 36.27,
+   "start_model": 36.11
+  },
+  {
+   "text": "borrowed",
+   "start": 36.27,
+   "end": 36.63,
+   "start_model": 36.27
+  },
+  {
+   "text": "25",
+   "start": 36.63,
+   "end": 37.23,
+   "start_model": 36.63
+  },
+  {
+   "text": "durhams",
+   "start": 37.23,
+   "end": 37.93,
+   "start_model": 37.23
+  },
+  {
+   "text": "until",
+   "start": 37.93,
+   "end": 38.17,
+   "start_model": 37.93
+  },
+  {
+   "text": "Friday.",
+   "start": 38.17,
+   "end": 38.63,
+   "start_model": 38.17
+  },
+  {
+   "text": "You",
+   "start": 83.8,
+   "end": 84.14,
+   "start_model": 83.8
+  },
+  {
+   "text": "said,",
+   "start": 84.14,
+   "end": 84.44,
+   "start_model": 84.14
+  },
+  {
+   "text": "when",
+   "start": 84.9,
+   "end": 84.96,
+   "start_model": 84.9
+  },
+  {
+   "text": "a",
+   "start": 84.96,
+   "end": 85.08,
+   "start_model": 84.96
+  },
+  {
+   "text": "free",
+   "start": 85.08,
+   "end": 85.26,
+   "start_model": 85.08
+  },
+  {
+   "text": "trial",
+   "start": 85.26,
+   "end": 85.6,
+   "start_model": 85.26
+  },
+  {
+   "text": "starts",
+   "start": 85.6,
+   "end": 85.94,
+   "start_model": 85.6
+  },
+  {
+   "text": "if",
+   "start": 85.94,
+   "end": 86.2,
+   "start_model": 85.94
+  },
+  {
+   "text": "it",
+   "start": 86.2,
+   "end": 86.32,
+   "start_model": 86.2
+  },
+  {
+   "text": "renews,",
+   "start": 86.32,
+   "end": 87.02,
+   "start_model": 86.32
+  },
+  {
+   "text": "cancel",
+   "start": 87.1,
+   "end": 87.24,
+   "start_model": 87.1
+  },
+  {
+   "text": "on",
+   "start": 87.24,
+   "end": 87.54,
+   "start_model": 87.24
+  },
+  {
+   "text": "day",
+   "start": 87.54,
+   "end": 87.68,
+   "start_model": 87.54
+  },
+  {
+   "text": "6.",
+   "start": 87.68,
+   "end": 88.06,
+   "start_model": 87.68
+  },
+  {
+   "text": "Autopilot",
+   "start": 88.6,
+   "end": 89.2,
+   "start_model": 88.6
+  },
+  {
+   "text": "will",
+   "start": 89.2,
+   "end": 89.48,
+   "start_model": 89.2
+  },
+  {
+   "text": "cancel",
+   "start": 89.48,
+   "end": 89.86,
+   "start_model": 89.48
+  },
+  {
+   "text": "the",
+   "start": 89.86,
+   "end": 90.06,
+   "start_model": 89.86
+  },
+  {
+   "text": "pixel",
+   "start": 90.06,
+   "end": 90.3,
+   "start_model": 90.06
+  },
+  {
+   "text": "pass",
+   "start": 90.3,
+   "end": 90.62,
+   "start_model": 90.3
+  },
+  {
+   "text": "trial",
+   "start": 90.62,
+   "end": 91.0,
+   "start_model": 90.62
+  },
+  {
+   "text": "on",
+   "start": 91.0,
+   "end": 91.28,
+   "start_model": 91.0
+  },
+  {
+   "text": "day",
+   "start": 91.28,
+   "end": 91.46,
+   "start_model": 91.28
+  },
+  {
+   "text": "6,",
+   "start": 91.46,
+   "end": 91.9,
+   "start_model": 91.46
+  },
+  {
+   "text": "before",
+   "start": 92.26,
+   "end": 92.44,
+   "start_model": 92.18
+  },
+  {
+   "text": "the",
+   "start": 92.44,
+   "end": 92.58,
+   "start_model": 92.44
+  },
+  {
+   "text": "29",
+   "start": 92.58,
+   "end": 93.12,
+   "start_model": 92.58
+  },
+  {
+   "text": "durhams",
+   "start": 93.12,
+   "end": 93.72,
+   "start_model": 93.12
+  },
+  {
+   "text": "charge.",
+   "start": 93.72,
+   "end": 93.98,
+   "start_model": 93.72
+  },
+  {
+   "text": "When",
+   "start": 94.72,
+   "end": 94.8,
+   "start_model": 94.64
+  },
+  {
+   "text": "a",
+   "start": 94.8,
+   "end": 94.92,
+   "start_model": 94.8
+  },
+  {
+   "text": "friend",
+   "start": 94.92,
+   "end": 95.08,
+   "start_model": 94.92
+  },
+  {
+   "text": "asks",
+   "start": 95.08,
+   "end": 95.38,
+   "start_model": 95.08
+  },
+  {
+   "text": "for",
+   "start": 95.38,
+   "end": 95.64,
+   "start_model": 95.38
+  },
+  {
+   "text": "money,",
+   "start": 95.64,
+   "end": 95.9,
+   "start_model": 95.64
+  },
+  {
+   "text": "if",
+   "start": 96.22,
+   "end": 96.32,
+   "start_model": 96.18
+  },
+  {
+   "text": "over",
+   "start": 96.32,
+   "end": 96.52,
+   "start_model": 96.32
+  },
+  {
+   "text": "20",
+   "start": 96.52,
+   "end": 96.84,
+   "start_model": 96.52
+  },
+  {
+   "text": "durhams",
+   "start": 96.84,
+   "end": 97.4,
+   "start_model": 96.84
+  },
+  {
+   "text": "lend",
+   "start": 97.4,
+   "end": 97.54,
+   "start_model": 97.4
+  },
+  {
+   "text": "half.",
+   "start": 97.54,
+   "end": 97.9,
+   "start_model": 97.54
+  },
+  {
+   "text": "On",
+   "start": 98.66,
+   "end": 98.6,
+   "start_model": 98.36
+  },
+  {
+   "text": "Thursday,",
+   "start": 98.6,
+   "end": 98.94,
+   "start_model": 98.6
+  },
+  {
+   "text": "Omar",
+   "start": 99.64,
+   "end": 99.82,
+   "start_model": 99.64
+  },
+  {
+   "text": "asked",
+   "start": 99.82,
+   "end": 100.18,
+   "start_model": 99.82
+  },
+  {
+   "text": "you",
+   "start": 100.18,
+   "end": 100.4,
+   "start_model": 100.18
+  },
+  {
+   "text": "to",
+   "start": 100.4,
+   "end": 100.58,
+   "start_model": 100.4
+  },
+  {
+   "text": "cover",
+   "start": 100.58,
+   "end": 100.8,
+   "start_model": 100.58
+  },
+  {
+   "text": "his",
+   "start": 100.8,
+   "end": 101.06,
+   "start_model": 100.8
+  },
+  {
+   "text": "100",
+   "start": 101.06,
+   "end": 101.72,
+   "start_model": 101.06
+  },
+  {
+   "text": "durhams",
+   "start": 101.72,
+   "end": 102.34,
+   "start_model": 101.72
+  },
+  {
+   "text": "deposit",
+   "start": 102.34,
+   "end": 102.64,
+   "start_model": 102.34
+  },
+  {
+   "text": "until",
+   "start": 102.64,
+   "end": 103.42,
+   "start_model": 102.64
+  },
+  {
+   "text": "his",
+   "start": 103.42,
+   "end": 103.58,
+   "start_model": 103.42
+  },
+  {
+   "text": "pocket",
+   "start": 103.58,
+   "end": 103.94,
+   "start_model": 103.58
+  },
+  {
+   "text": "money",
+   "start": 103.94,
+   "end": 104.2,
+   "start_model": 103.94
+  },
+  {
+   "text": "comes.",
+   "start": 104.2,
+   "end": 104.66,
+   "start_model": 104.2
+  },
+  {
+   "text": "He",
+   "start": 105.2,
+   "end": 105.28,
+   "start_model": 105.2
+  },
+  {
+   "text": "got",
+   "start": 105.28,
+   "end": 105.42,
+   "start_model": 105.28
+  },
+  {
+   "text": "50",
+   "start": 105.42,
+   "end": 105.72,
+   "start_model": 105.42
+  },
+  {
+   "text": "durhams.",
+   "start": 105.72,
+   "end": 106.52,
+   "start_model": 105.72
+  }
+ ]
+}

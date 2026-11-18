@@ -41,7 +41,7 @@ export function inspectSvg(svg: string): SvgFacts {
   contours += (body.match(/<(polygon|polyline|rect|circle|ellipse|line)\b/gi) ?? []).length;
   const raster = /<image\b/i.test(body) || /data:image\//i.test(body) || /<foreignObject\b/i.test(body);
   const active = /<script\b/i.test(body) || /\son[a-z]+\s*=/i.test(body) || /javascript:/i.test(body);
-  const root = /^\s*(<\?xml[^>]*>\s*)?(<!DOCTYPE[^>]*>\s*)?<svg\b/i.test(svg);
+  const root = /^\s*(<\?xml[^>]*>\s*)?(<!DOCTYPE[^>]*>\s*)?<svg\b/i.test(body); // comments (e.g. a generator line) may come first
   return { bytes, colors: [...colors], contours, raster, active, root };
 }
 

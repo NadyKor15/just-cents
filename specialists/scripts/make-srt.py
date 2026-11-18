@@ -73,8 +73,11 @@ def main():
             end = min(end, nxt)
         if len(text) / (end - start) > MAX_CPS:
             raise SystemExit(f"subtitle {i + 1} cannot be read in time: {text!r}")
+        lines = two_lines(text)
+        if lines is None:
+            raise SystemExit(f"subtitle {i + 1} does not fit {MAX_LINES} lines of {MAX_LINE}: {text!r}")
         out_end.append(end)
-        out.append(f"{i + 1}\n{ts(start + a.shift)} --> {ts(end + a.shift)}\n" + "\n".join(two_lines(text)) + "\n")
+        out.append(f"{i + 1}\n{ts(start + a.shift)} --> {ts(end + a.shift)}\n" + "\n".join(lines) + "\n")
     open(a.out, "w").write("\n".join(out))
     print(f"{a.out}: {len(out)} subtitles, shift {a.shift}")
 

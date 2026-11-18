@@ -1,54 +1,58 @@
-// Builds the demo specialists' public offer book and lays out their files.
-//   KEYS_FILE=<json {"ICON":hex,"SAM":hex,"LENA":hex,"VOICE":hex}> npx vite-node scripts/sign-offers.ts
-// Outputs: src/data/offers.json (signed standing offers, public), public/previews/* (public),
-// public/files/* (full files, served only through the worker after payment).
-// Keys are read from KEYS_FILE and never written anywhere.
-import { readFileSync, writeFileSync, mkdirSync, copyFileSync } from 'node:fs';
+// Builds the demo specialists' public offer book from the files laid out by specialists/scripts/lay-out-v3.py.
+//   JC_OFFER_ICON_KEY=… JC_OFFER_SAM_KEY=… JC_OFFER_LENA_KEY=… JC_OFFER_VOICE_KEY=… node <bundle of this file>
+// The keys come only from the environment (e.g. `infisical run`), are checked against the public keys in config,
+// and are never printed or written. Output: src/data/offers.json (signed standing offers, public).
+// Key names are historical: ICON signs the cover offers, VOICE the logo offer.
+import { readFileSync, statSync, writeFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { binToHex, hexToBin, secp256k1, sha256, utf8ToBin } from '@bitauth/libauth';
 import { ANY_ORDER, offerHashHex, signOffer, type Offer } from '../src/core/offer';
 import { lockingFor } from '../src/core/tx';
+import { parseSrt } from '../src/core/subtitles';
+import { inspectSvg } from '../src/core/logo';
 import { PAYOUT, OFFER_PUBKEY } from '../src/config';
 
-const A = 'specialists/assets';
-const keys = JSON.parse(readFileSync(process.env.KEYS_FILE!, 'utf8')) as Record<'ICON' | 'SAM' | 'LENA' | 'VOICE', string>;
-for (const [k, v] of Object.entries(keys)) {
-  const pub = binToHex(secp256k1.derivePublicKeyCompressed(hexToBin(v)) as Uint8Array);
-  if (pub !== OFFER_PUBKEY[k.toLowerCase() as 'icon']) throw new Error(`key ${k} does not match its public key in config`);
+type Slot = 'cover' | 'sam' | 'lena' | 'logo';
+const ENV: Record<Slot, string> = { cover: 'JC_OFFER_ICON_KEY', sam: 'JC_OFFER_SAM_KEY', lena: 'JC_OFFER_LENA_KEY', logo: 'JC_OFFER_VOICE_KEY' };
+const keys = {} as Record<Slot, Uint8Array>;
+for (const slot of Object.keys(ENV) as Slot[]) {
+  const hex = process.env[ENV[slot]];
+  if (!hex || !/^[0-9a-f]{64}$/i.test(hex)) throw new Error(`${ENV[slot]} is missing or not 32 bytes of hex`);
+  const priv = hexToBin(hex);
+  if (binToHex(secp256k1.derivePublicKeyCompressed(priv) as Uint8Array) !== OFFER_PUBKEY[slot]) throw new Error(`${ENV[slot]} does not match the ${slot} public key in config`);
+  keys[slot] = priv;
 }
 
-// Prices, fixed with the offers: cents at $210.27/BCH (CoinGecko, 2026-11-16 22:19:45Z).
+// Prices, fixed with the offers: cents at $210.27/BCH (CoinGecko, 2026-11-16 22:19:45Z), the same rate as the service's 1¢.
 const RATE = 210.27;
 const sats = (cents: number) => String(Math.round((cents / 100 / RATE) * 1e8));
 const EXPIRES = Math.floor(Date.parse('2026-12-31T23:59:59Z') / 1000);
 
-mkdirSync('public/files', { recursive: true });
-mkdirSync('public/previews', { recursive: true });
-for (const f of ['icon-1024.png', 'icon-b-1024.png', 'voice-full.mp3', 'music-sam-good.mp3', 'music-sam-careless.mp3', 'music-lena-good.mp3', 'music-lena-careless.mp3']) copyFileSync(`${A}/${f}`, `public/files/${f}`);
-copyFileSync(`${A}/icon-preview-128.png`, 'public/previews/icon-128.png');
-copyFileSync(`${A}/icon-b-preview-128.png`, 'public/previews/icon-b-128.png');
-copyFileSync(`${A}/voice-preview-3s.mp3`, 'public/previews/voice-3s.mp3');
-copyFileSync(`${A}/music-sam-preview-3s.mp3`, 'public/previews/music-sam-3s.mp3');
-copyFileSync(`${A}/music-lena-preview-3s.mp3`, 'public/previews/music-lena-3s.mp3');
+const F = (f: string) => `public/files/${f}`;
+const fileHash = (f: string) => binToHex(sha256.hash(readFileSync(F(f))));
+const coverFacts = (f: string) => {
+  const [w, h] = execFileSync('ffprobe', ['-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=width,height', '-of', 'csv=p=0', F(f)], { encoding: 'utf8' }).trim().split(',');
+  return `${w}x${h};${statSync(F(f)).size}`;
+};
+const subsFacts = (f: string) => {
+  const p = parseSrt(readFileSync(F(f), 'utf8'));
+  if (!p.ok) throw new Error(`${f}: ${p.reason}`);
+  return `srt;${p.cues.length};${p.cues[0]!.start.toFixed(3)}`;
+};
+const logoFacts = (f: string) => {
+  const s = inspectSvg(readFileSync(F(f), 'utf8'));
+  return `svg;${s.colors.length};${s.contours};${s.bytes}`;
+};
 
-const fileHash = (p: string) => binToHex(sha256.hash(readFileSync(p)));
-const seconds = (p: string) =>
-  Number(execFileSync('ffprobe', ['-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', p], { encoding: 'utf8' }).trim()).toFixed(2);
-
-const tag = (p: string, k: string) =>
-  execFileSync('ffprobe', ['-v', 'error', '-show_entries', `format_tags=${k}`, '-of', 'default=nw=1:nk=1', p], { encoding: 'utf8' }).trim();
-const musicFacts = (f: string) => `${seconds(`public/files/${f}`)}s;${tag(`public/files/${f}`, 'LICENSE')};${tag(`public/files/${f}`, 'artist')}`;
-
-type Spec = { key: string; who: 'ICON' | 'SAM' | 'LENA' | 'VOICE'; specialist: string; part: Offer['part']; cents: number; file: string; facts: string; preview: string };
+type Spec = { key: string; slot: Slot; specialist: string; part: Offer['part']; cents: number; file: string; facts: string; preview: string };
 const specs: Spec[] = [
-  { key: 'icon', who: 'ICON', specialist: 'icon (demo specialist)', part: 'icon', cents: 3, file: 'icon-1024.png', facts: '1024x1024', preview: '/previews/icon-128.png' },
-  { key: 'icon:b', who: 'ICON', specialist: 'icon (demo specialist)', part: 'icon', cents: 3, file: 'icon-b-1024.png', facts: '1024x1024', preview: '/previews/icon-b-128.png' },
-  // music: "<seconds>s;<licence>;<author>" as measured on the full file and read from its licence frames
-  { key: 'sam:good', who: 'SAM', specialist: 'Sam (demo specialist)', part: 'music', cents: 2, file: 'music-sam-good.mp3', facts: musicFacts('music-sam-good.mp3'), preview: '/previews/music-sam-3s.mp3' },
-  { key: 'sam:careless', who: 'SAM', specialist: 'Sam (demo specialist)', part: 'music', cents: 2, file: 'music-sam-careless.mp3', facts: musicFacts('music-sam-careless.mp3'), preview: '/previews/music-sam-3s.mp3' },
-  { key: 'lena:good', who: 'LENA', specialist: 'Lena (demo specialist)', part: 'music', cents: 2, file: 'music-lena-good.mp3', facts: musicFacts('music-lena-good.mp3'), preview: '/previews/music-lena-3s.mp3' },
-  { key: 'lena:careless', who: 'LENA', specialist: 'Lena (demo specialist)', part: 'music', cents: 2, file: 'music-lena-careless.mp3', facts: musicFacts('music-lena-careless.mp3'), preview: '/previews/music-lena-3s.mp3' },
-  { key: 'voice', who: 'VOICE', specialist: 'voice (demo specialist)', part: 'voice', cents: 2, file: 'voice-full.mp3', facts: `${seconds('public/files/voice-full.mp3')}s`, preview: '/previews/voice-3s.mp3' },
+  { key: 'cover', slot: 'cover', specialist: 'cover (demo specialist)', part: 'cover', cents: 2, file: 'cover-a.jpg', facts: coverFacts('cover-a.jpg'), preview: '/previews/cover-a.jpg' },
+  { key: 'cover:b', slot: 'cover', specialist: 'cover (demo specialist)', part: 'cover', cents: 2, file: 'cover-b.jpg', facts: coverFacts('cover-b.jpg'), preview: '/previews/cover-b.jpg' },
+  { key: 'sam:good', slot: 'sam', specialist: 'Sam (demo specialist)', part: 'subtitles', cents: 1, file: 'subs-sam.srt', facts: subsFacts('subs-sam.srt'), preview: '/previews/subs-sam.srt' },
+  { key: 'sam:careless', slot: 'sam', specialist: 'Sam (demo specialist)', part: 'subtitles', cents: 1, file: 'subs-sam-careless.srt', facts: subsFacts('subs-sam-careless.srt'), preview: '/previews/subs-sam-careless.srt' },
+  { key: 'lena:good', slot: 'lena', specialist: 'Lena (demo specialist)', part: 'subtitles', cents: 1, file: 'subs-lena.srt', facts: subsFacts('subs-lena.srt'), preview: '/previews/subs-lena.srt' },
+  { key: 'lena:careless', slot: 'lena', specialist: 'Lena (demo specialist)', part: 'subtitles', cents: 1, file: 'subs-lena-careless.srt', facts: subsFacts('subs-lena-careless.srt'), preview: '/previews/subs-lena-careless.srt' },
+  { key: 'logo', slot: 'logo', specialist: 'logo (demo specialist)', part: 'logo', cents: 1, file: 'logo.svg', facts: logoFacts('logo.svg'), preview: '/previews/logo-128.png' },
 ];
 
 const book: Record<string, Record<string, unknown>> = { mainnet: {}, chipnet: {} };
@@ -62,14 +66,14 @@ for (const net of ['mainnet', 'chipnet'] as const) {
       part: s.part,
       priceCents: s.cents,
       priceSats: sats(s.cents),
-      fileSha256: fileHash(`public/files/${s.file}`),
+      fileSha256: fileHash(s.file),
       expires: EXPIRES,
-      payTo: PAYOUT[s.who.toLowerCase() as 'icon'][net],
-      pubkey: OFFER_PUBKEY[s.who.toLowerCase() as 'icon'],
+      payTo: PAYOUT[s.slot][net],
+      pubkey: OFFER_PUBKEY[s.slot],
     };
     // payToLockingHex and offerHashHex are derived here so the worker needs no crypto library at all
-    book[net]![s.key] = { signed: signOffer(offer, hexToBin(keys[s.who])), file: s.file, preview: s.preview, payToLockingHex: binToHex(lockingFor(offer.payTo)), offerHashHex: offerHashHex(offer) };
+    book[net]![s.key] = { signed: signOffer(offer, keys[s.slot]), file: s.file, preview: s.preview, payToLockingHex: binToHex(lockingFor(offer.payTo)), offerHashHex: offerHashHex(offer) };
   }
 }
 writeFileSync('src/data/offers.json', JSON.stringify({ ...book, _meta: { rateUsd: RATE, rateAt: '2026-11-16T22:19:45Z', source: 'CoinGecko simple/price' } }, null, 2) + '\n');
-console.log('offers:', Object.keys(book.mainnet!).join(', '), '| service 1¢ =', sats(1), 'sat | check:', binToHex(sha256.hash(utf8ToBin(JSON.stringify(book)))).slice(0, 12));
+console.log('offers:', specs.map((s) => `${s.key}=${s.facts}`).join(' | '), '| check:', binToHex(sha256.hash(utf8ToBin(JSON.stringify(book)))).slice(0, 12));

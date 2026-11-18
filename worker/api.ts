@@ -6,8 +6,10 @@
 // The only stored fact is "this order was paid by txid", written after the transaction is read from the
 // network and its JC1 note names this order.
 import offers from '../src/data/offers.json';
+import speech from '../src/data/trailer-words.json';
 import { readOrderId, newOrderId, type OrderMeta } from '../src/core/orderid';
-import { checkMusicDeclared, checkIcon, checkVoice, RULES } from '../src/core/rules';
+import { checkCoverDeclared, checkLogoDeclared, checkSubtitlesDeclared, RULES, type Verdict } from '../src/core/rules';
+import type { Speech } from '../src/core/subtitles';
 import { EXAMPLE, pairName } from '../src/data/example';
 import { PAYOUT } from '../src/config';
 import { readOutputs, readNote, bytesToHex, checkOfferPaid } from './txparse';
@@ -19,6 +21,7 @@ import { history } from './history';
 type Net = 'mainnet' | 'chipnet';
 type Entry = { signed: { offer: { priceCents: number; priceSats: string; fileSha256: string; facts: string; specialist: string; payTo: string } }; file: string; preview: string | Record<string, string>; payToLockingHex: string; offerHashHex: string };
 const OFFERS = offers as unknown as Record<Net, Record<string, Entry>>;
+const SPEECH = speech as unknown as Speech;
 
 export interface ApiEnv {
   ORDERS?: { get(k: string): Promise<string | null>; put(k: string, v: string, o?: { expirationTtl?: number }): Promise<void> };
@@ -47,25 +50,25 @@ function abs(origin: string, p: string) {
 }
 
 type Choice = 'a' | 'b';
-const ICON_KEY: Record<Choice, string> = { a: 'icon', b: 'icon:b' };
+const COVER_KEY: Record<Choice, string> = { a: 'cover', b: 'cover:b' };
 
 function describe(meta: OrderMeta, origin: string, txid: string | null, choice: Choice = 'a') {
   const net = meta.net;
   const book = OFFERS[net];
   const good = meta.careless === 'sam' ? 'lena' : 'sam';
   const name = (w: string) => pairName(w === 'lena' ? 'lena' : 'sam');
-  const icon = book[ICON_KEY[choice]]!, voice = book['voice']!;
-  const otherIcon = book[ICON_KEY[choice === 'a' ? 'b' : 'a']]!;
+  const cover = book[COVER_KEY[choice]]!, logo = book['logo']!;
+  const otherCover = book[COVER_KEY[choice === 'a' ? 'b' : 'a']]!;
   const bad = book[`${meta.careless}:careless`]!, ok = book[`${good}:good`]!;
-  const [w, h] = icon.signed.offer.facts.split('x').map(Number) as [number, number];
-  const iconCheck = checkIcon({ width: w, height: h, letters: 0, preview: false });
-  const badCheck = checkMusicDeclared(bad.signed.offer.facts);
-  const okCheck = checkMusicDeclared(ok.signed.offer.facts);
-  const voiceCheck = checkVoice({ seconds: parseFloat(voice.signed.offer.facts), preview: false });
-  const part = (label: string, specialist: string, e: Entry, check: ReturnType<typeof checkIcon>, how: string) => ({
+  const coverCheck = checkCoverDeclared(cover.signed.offer.facts, EXAMPLE.choice.frameSize);
+  const badCheck = checkSubtitlesDeclared(bad.signed.offer.facts, SPEECH);
+  const okCheck = checkSubtitlesDeclared(ok.signed.offer.facts, SPEECH);
+  const logoCheck = checkLogoDeclared(logo.signed.offer.facts);
+  const part = (label: string, specialist: string, tool: string, e: Entry, check: Verdict, how: string) => ({
     part: label,
     specialist,
     demo_specialist: true,
+    made_with: tool,
     price_cents: e.signed.offer.priceCents,
     price_sats: Number(e.signed.offer.priceSats),
     pay_to: e.signed.offer.payTo,
@@ -75,23 +78,28 @@ function describe(meta: OrderMeta, origin: string, txid: string | null, choice: 
     check: check.ok ? { ok: true, note: check.note, how } : { ok: false, reason: check.reason, how },
   });
   const accepted = [
-    part(`${EXAMPLE.choice.apiPart} (variant ${choice.toUpperCase()})`, EXAMPLE.choice.specialist, icon, iconCheck, EXAMPLE.choice.howApi),
-    part(EXAMPLE.pair.apiPart, `${name(good)} (demo specialist)`, ok, okCheck, EXAMPLE.pair.howApi),
-    part(EXAMPLE.single.apiPart, EXAMPLE.single.specialist, voice, voiceCheck, EXAMPLE.single.howApi),
+    part(`${EXAMPLE.choice.apiPart} (variant ${choice.toUpperCase()})`, EXAMPLE.choice.specialist, EXAMPLE.choice.tool, cover, coverCheck, EXAMPLE.choice.howApi),
+    part(EXAMPLE.pair.apiPart, `${name(good)} (demo specialist)`, EXAMPLE.pair.tools[good], ok, okCheck, EXAMPLE.pair.howApi),
+    part(EXAMPLE.single.apiPart, EXAMPLE.single.specialist, EXAMPLE.single.tool, logo, logoCheck, EXAMPLE.single.howApi),
   ];
   const total = accepted.reduce((s, p) => s + p.price_cents, 0) + SERVICE_CENTS;
   return {
     id: meta.id,
     network: net,
     request: REQUEST,
-    rules: { [EXAMPLE.choice.apiPart]: RULES.icon.text, [EXAMPLE.pair.apiPart]: RULES.music.text, [EXAMPLE.single.apiPart]: RULES.voice.text },
-    icon_choice: {
+    rules: { [EXAMPLE.choice.apiPart]: RULES.cover.text, [EXAMPLE.pair.apiPart]: RULES.subtitles.text, [EXAMPLE.single.apiPart]: RULES.logo.text },
+    inputs: {
+      trailer_words: `${origin}/api/inputs/trailer-words`,
+      cover_frames: { a: abs(origin, EXAMPLE.choice.frames.a), b: abs(origin, EXAMPLE.choice.frames.b) },
+      logo_sketch: abs(origin, EXAMPLE.single.sketch),
+    },
+    cover_choice: {
       chosen: choice,
-      note: 'Two icon variants pass the same rules; the person picks one by taste and pays only for that one. Change it with ?choice=a|b on GET /api/orders/{id}, /pay and in pay_url.',
-      variants: (['a', 'b'] as Choice[]).map((v) => ({ variant: v, preview: abs(origin, book[ICON_KEY[v]]!.preview as string), offer_fingerprint: book[ICON_KEY[v]]!.offerHashHex, price_cents: book[ICON_KEY[v]]!.signed.offer.priceCents })),
+      note: 'Two cover variants pass the same rules; the person picks one by taste and pays only for that one. Change it with ?choice=a|b on GET /api/orders/{id}, /pay and in pay_url.',
+      variants: (['a', 'b'] as Choice[]).map((v) => ({ variant: v, frame: EXAMPLE.choice.variants[v], preview: abs(origin, book[COVER_KEY[v]]!.preview as string), offer_fingerprint: book[COVER_KEY[v]]!.offerHashHex, price_cents: book[COVER_KEY[v]]!.signed.offer.priceCents })),
     },
     parts: accepted,
-    not_chosen: [{ part: `${EXAMPLE.choice.apiPart} (variant ${choice === 'a' ? 'B' : 'A'})`, cents: 0, preview: abs(origin, otherIcon.preview as string), reason: 'not chosen by the person (taste, not a rule: it passed the rules)' }],
+    not_chosen: [{ part: `${EXAMPLE.choice.apiPart} (variant ${choice === 'a' ? 'B' : 'A'})`, cents: 0, preview: abs(origin, otherCover.preview as string), reason: 'not chosen by the person (taste, not a rule: it passed the rules)' }],
     rejected: [
       {
         part: EXAMPLE.pair.apiPart,
@@ -121,9 +129,9 @@ async function paidTx(env: ApiEnv, id: string): Promise<Paid | null> {
   return { txid: v, choice: 'a' };
 }
 
-/** Which icon variant a payment's note lists. */
+/** Which cover variant a payment's note lists. */
 function choiceFromNote(net: Net, prefixes: string[]): Choice {
-  return prefixes.includes(OFFERS[net][ICON_KEY.b]!.offerHashHex.slice(0, 32)) ? 'b' : 'a';
+  return prefixes.includes(OFFERS[net][COVER_KEY.b]!.offerHashHex.slice(0, 32)) ? 'b' : 'a';
 }
 
 const askChoice = (url: URL): Choice => (url.searchParams.get('choice') === 'b' ? 'b' : 'a');
@@ -134,6 +142,7 @@ export async function api(request: Request, env: ApiEnv): Promise<Response> {
   const origin = url.origin;
   const parts = url.pathname.replace(/\/+$/, '').split('/').slice(2); // ['orders', id?, action?]
   if (parts[0] === 'specialists' && parts[2] === 'history' && request.method === 'GET') return history(request);
+  if (parts[0] === 'inputs' && parts[1] === 'trailer-words' && request.method === 'GET') return json({ note: 'the trailer\'s spoken words with their times: the yardstick for subtitle timing, measured before any specialist worked', ...SPEECH });
   if (parts[0] !== 'orders') return json({ ok: false, reason: 'see /llms.txt' }, 404);
 
   if (parts.length === 1) {
@@ -165,7 +174,7 @@ export async function api(request: Request, env: ApiEnv): Promise<Response> {
     if (!txid || !/^[0-9a-f]{64}$/.test(txid)) return json({ ok: false, reason: 'txid must be 64 hex characters' }, 400);
     if (await rateLimited(request, 'paid')) return json({ ok: false, reason: `at most ${RATE_PER_MINUTE} reports per minute` }, 429);
     const existing = await paidTx(env, meta.id);
-    if (existing) return existing.txid === txid ? json({ ok: true, id: meta.id, txid, icon_choice: existing.choice }) : json({ ok: false, reason: 'this order is already paid by another transaction' }, 409);
+    if (existing) return existing.txid === txid ? json({ ok: true, id: meta.id, txid, cover_choice: existing.choice }) : json({ ok: false, reason: 'this order is already paid by another transaction' }, 409);
     let raw: string;
     try {
       raw = await rpc<string>(meta.net, 'blockchain.transaction.get', [txid, false]);
@@ -186,7 +195,7 @@ export async function api(request: Request, env: ApiEnv): Promise<Response> {
     if (!paidAny) return json({ ok: false, reason: 'this transaction pays none of the offers in its note' }, 409);
     const choice = choiceFromNote(meta.net, note.offerPrefixes);
     if (env.ORDERS) await env.ORDERS.put(`paid:${meta.id}`, JSON.stringify({ txid, choice }), { expirationTtl: 60 * 60 * 24 * 30 });
-    return json({ ok: true, id: meta.id, txid, icon_choice: choice });
+    return json({ ok: true, id: meta.id, txid, cover_choice: choice });
   }
 
   if (action === 'kit' && request.method === 'GET') {
@@ -197,18 +206,18 @@ export async function api(request: Request, env: ApiEnv): Promise<Response> {
     const d = describe(meta, origin, txid, choice);
     const book = OFFERS[meta.net];
     const good = meta.careless === 'sam' ? 'lena' : 'sam';
-    const keys = [ICON_KEY[choice], `${good}:good`, 'voice'];
+    const keys = [COVER_KEY[choice], `${good}:good`, 'logo'];
     return json({
       id: meta.id,
       txid,
-      icon_choice: choice,
+      cover_choice: choice,
       files: keys.map((k) => ({
-        part: k.startsWith('icon') ? EXAMPLE.choice.apiPart : k === 'voice' ? EXAMPLE.single.apiPart : EXAMPLE.pair.apiPart,
+        part: k.startsWith('cover') ? EXAMPLE.choice.apiPart : k === 'logo' ? EXAMPLE.single.apiPart : EXAMPLE.pair.apiPart,
         name: book[k]!.file,
         url: `${origin}/full/${encodeURIComponent(k)}?net=${meta.net}&txid=${txid}`,
         sha256: book[k]!.signed.offer.fileSha256,
       })),
-      note: 'Each file is handed over only if this transaction pays its specialist; compare sha256 with the signed offer. The page also builds a short clip from the accepted parts.',
+      note: 'Each file is handed over only if this transaction pays its specialist; compare sha256 with the signed offer.',
       rejected: d.rejected,
       not_chosen: d.not_chosen,
     });

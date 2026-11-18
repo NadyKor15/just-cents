@@ -2,7 +2,7 @@
 
 > Cents for work you accept. Nothing else. An AI helper hires several AI specialists and checks each piece of their work against rules that are set before the work starts. A person pays in Bitcoin Cash with one signature in their own wallet, and only the accepted pieces get paid. A rejected piece costs 0¢.
 
-Assistants can place orders here. An assistant never holds money and never pays: it gives the person a pay link, the person signs once in their own wallet over WizardConnect (tested with Cashonize), then the assistant fetches the kit.
+Assistants can place orders here. An assistant never holds money and never pays: it gives the person a pay link, the person signs once in their own wallet over WizardConnect (tested with Cashonize), then the assistant fetches the files.
 
 ## Connect
 
@@ -12,35 +12,39 @@ Assistants can place orders here. An assistant never holds money and never pays:
 
 ## What can be ordered
 
-One template today: "Make me a kit to list my game."
-- Icon: 1024×1024, no text. 3¢.
-- Music for the clip: exactly 15 seconds (±0.1 s), CC0 or CC BY, the licence written into the file. 2¢.
-- Voice-over: 10 to 15 seconds. 2¢.
+One example today: "Make me a kit to list my game." Three parts for the game's store page:
+- Trailer subtitles: an SRT file; up to 42 characters a line, 2 lines a subtitle, 20 characters a second; lines never overlap; each line starts within 0.4 s of its first spoken word; the last one ends within 2 s of the end of the sound. 1¢.
+- Store cover from a game frame: at least 2560×1600, the frame's proportions, no transparency, up to 25 MB, sharper than the frame simply stretched. Two variants; the person picks one by taste and pays only for that one. 2¢.
+- Logo traced from a sketch: an SVG of clean outlines, up to 3 colours and 200 outlines, no picture pasted inside, no scripts, up to 100 KB, like the sketch when drawn. 1¢.
 - The service: 1¢ per order, only if at least one part is accepted.
 
-The specialists in the demo are ours, each labeled "demo specialist, run by the Just Cents team". One demo musician is careless on purpose, so every order shows a rejection at 0¢. All the checks are real.
+The specialists in the demo are ours, each labeled "demo specialist, run by the Just Cents team", and each names what really made its file:
+- Subtitles: Sam uses Deepgram Nova-3, Lena uses Deepgram Nova-2. One of them is careless on purpose (every time 1.2 s late), so every order shows a rejection at 0¢.
+- Cover: Stability AI Fast Upscaler, from two frames of the game.
+- Logo: VTracer (open source, MIT), run by the Just Cents team.
+All the checks are real.
 
 ## How the rules are checked
 
-- Music: length and licence declared in the signed offer; the pay page reads the licence written into the file (ID3: licence id, full licence text, source page), and the length is measured on the full file after payment.
-- Length of the voice-over: declared in the specialist's signed offer, measured again on the full file after payment.
-- Icon size: declared in the signed offer, measured on the full file after payment.
-- "No text on the icon": OCR, which runs in the person's browser on the pay page, before the wallet is asked; the API does not run OCR.
+- Subtitles: the first line's start is declared in the signed offer and compared with the trailer's first spoken word. The pay page checks the first three lines of the file, and after payment the whole file. The yardstick (the trailer's spoken words with their times) was measured once, before any specialist worked: `GET /api/inputs/trailer-words`.
+- Cover: size, proportions and file size are declared in the signed offer. After payment the page measures the full file: size, proportions, transparency, and sharpness against the game frame stretched to the same size.
+- Logo: colours, outlines and file size are declared in the signed offer. After payment the page reads the SVG itself (outlines, colours, nothing pasted in, no scripts) and compares it with the sketch when both are drawn.
 
 ## HTTP API
 
-- `POST /api/orders` with JSON `{"network": "mainnet" | "chipnet", "careless": "sam" | "lena"}` (both optional) → the order: id, rules, prices in cents and satoshis, previews, signed offers, checks, the rejected piece, `pay_url`.
-- `GET /api/orders/{id}` → the same, with `status` = `awaiting_payment` or `paid` and the `txid`.
+- `POST /api/orders` with JSON `{"network": "mainnet" | "chipnet", "careless": "sam" | "lena", "choice": "a" | "b"}` (all optional) → the order: id, rules, inputs, prices in cents and satoshis, previews, signed offers, checks, the rejected piece, the cover variant not chosen, `pay_url`.
+- `GET /api/orders/{id}` → the same, with `status` = `awaiting_payment` or `paid` and the `txid`. `?choice=b` switches the cover variant.
 - `GET /api/orders/{id}/pay` → `pay_url` for the person. The wallet shows "Just Cents: pay 3 specialists + service".
 - `GET /api/orders/{id}/kit` → after payment: a link and a sha256 fingerprint for each file. Before payment: HTTP 409, `awaiting_payment`.
+- `GET /api/inputs/trailer-words` → the subtitles' yardstick.
 - Order creation is limited per address; nothing is stored until an order is paid.
 
 ## Example
 
 User: "Make me a kit to list my game."
-Assistant: calls `create_order` → "Three specialists sent previews. Sam's music runs 17.2 s instead of 15, so he gets 0¢ and Lena's piece is used. The total is 8¢. Open this link and sign once in your wallet: <pay_url>."
-User: "Done."
-Assistant: calls `get_kit` → downloads the icon, the music and the voice-over, and checks every file's sha256 against the signed offer.
+Assistant: calls `create_order` → "Three specialists sent previews. Sam's subtitles start 1.1 s after the voice, so he gets 0¢ and Lena's are used. The cover has two variants: A, the first call by the lake, or B, the sticker stall. Which one? The total is 5¢. Open this link and sign once in your wallet: <pay_url>."
+User: "A. Done."
+Assistant: calls `get_kit` → downloads the subtitles, the cover and the logo, and checks every file's sha256 against the signed offer.
 
 ## Become a specialist
 

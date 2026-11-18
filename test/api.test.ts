@@ -28,12 +28,15 @@ describe('order API', () => {
     const { status, j } = await call('POST', '/api/orders', {});
     expect(status).toBe(201);
     expect(j.network).toBe('mainnet');
-    expect(j.parts.map((p: any) => [p.part, p.price_cents, p.check.ok])).toEqual([['icon (variant A)', 3, true], ['music', 2, true], ['voice', 2, true]]);
-    expect(j.rejected[0]).toMatchObject({ part: 'music', cents: 0, reason: 'asked for 15.0 s, got 17.2 s' });
-    expect(j.total_cents).toBe(8);
+    expect(j.parts.map((p: any) => [p.part, p.price_cents, p.check.ok])).toEqual([['cover (variant A)', 2, true], ['subtitles', 1, true], ['logo', 1, true]]);
+    expect(j.rejected[0]).toMatchObject({ part: 'subtitles', cents: 0, reason: 'subtitle 1 starts 1.1 s late' });
+    expect(j.total_cents).toBe(5);
     expect(j.status).toBe('awaiting_payment');
     expect(j.pay_url).toBe(`${O}/?order=${j.id}`);
-    expect(j.parts[0].check.how).toMatch(/OCR in the browser/);
+    expect(j.parts[0].check.how).toMatch(/sharper than the frame simply stretched/);
+    // who did the work is named only as what was really used
+    expect(j.parts.map((p: any) => p.made_with)).toEqual(['Stability AI Fast Upscaler', 'Deepgram Nova-2', 'VTracer (open source, MIT), run by the Just Cents team']);
+    expect(j.inputs.trailer_words).toBe(`${O}/api/inputs/trailer-words`);
     // what the example is about comes from src/data/example.ts, not from the mechanics
     expect(j.request).toBe(EXAMPLE.request);
     expect(Object.keys(j.rules)).toEqual([EXAMPLE.choice.apiPart, EXAMPLE.pair.apiPart, EXAMPLE.single.apiPart]);
@@ -59,26 +62,26 @@ describe('order API', () => {
     store.set(`paid:${id}`, 'ab'.repeat(32));
     const kit = await call('GET', `/api/orders/${id}/kit`);
     expect(kit.status).toBe(200);
-    expect(kit.j.files.map((f: any) => f.part)).toEqual(['icon', 'music', 'voice']);
+    expect(kit.j.files.map((f: any) => f.part)).toEqual(['cover', 'subtitles', 'logo']);
     expect(kit.j.files[1].url).toContain('/full/lena%3Agood?net=chipnet&txid=');
     expect(kit.j.files.every((f: any) => /^[0-9a-f]{64}$/.test(f.sha256))).toBe(true);
   });
-  it('offers two icon variants; only the chosen one is a paid part, the other is "not chosen, 0 cents"', async () => {
+  it('offers two cover variants; only the chosen one is a paid part, the other is "not chosen, 0 cents"', async () => {
     const a = (await call('POST', '/api/orders', {})).j;
-    expect(a.icon_choice.chosen).toBe('a');
-    expect(a.icon_choice.variants.map((v: any) => v.variant)).toEqual(['a', 'b']);
-    expect(a.parts[0].part).toBe('icon (variant A)');
-    expect(a.not_chosen[0]).toMatchObject({ part: 'icon (variant B)', cents: 0 });
-    expect(a.total_cents).toBe(8);
+    expect(a.cover_choice.chosen).toBe('a');
+    expect(a.cover_choice.variants.map((v: any) => v.variant)).toEqual(['a', 'b']);
+    expect(a.parts[0].part).toBe('cover (variant A)');
+    expect(a.not_chosen[0]).toMatchObject({ part: 'cover (variant B)', cents: 0 });
+    expect(a.total_cents).toBe(5);
     const b = (await call('GET', `/api/orders/${a.id}?choice=b`)).j;
-    expect(b.parts[0].part).toBe('icon (variant B)');
-    expect(b.parts[0].offer_fingerprint).toBe(a.icon_choice.variants[1].offer_fingerprint);
+    expect(b.parts[0].part).toBe('cover (variant B)');
+    expect(b.parts[0].offer_fingerprint).toBe(a.cover_choice.variants[1].offer_fingerprint);
     expect(b.pay_url).toBe(`${O}/?order=${a.id}&choice=b`);
     const id = newOrderId('chipnet', 'sam');
     store.set(`paid:${id}`, JSON.stringify({ txid: 'cd'.repeat(32), choice: 'b' }));
     const kit = (await call('GET', `/api/orders/${id}/kit`)).j;
-    expect(kit.icon_choice).toBe('b');
-    expect(kit.files[0].url).toContain('/full/icon%3Ab?');
+    expect(kit.cover_choice).toBe('b');
+    expect(kit.files[0].url).toContain('/full/cover%3Ab?');
   });
   it('rejects bad ids and bad txids', async () => {
     expect((await call('GET', '/api/orders/nothex')).status).toBe(400);
@@ -99,7 +102,7 @@ describe('MCP', () => {
     expect(tools.j.result.tools.map((t: any) => t.name)).toEqual(['create_order', 'get_order', 'get_pay_link', 'get_kit']);
     const created = await rpc({ jsonrpc: '2.0', id: 3, method: 'tools/call', params: { name: 'create_order', arguments: {} } });
     const order = JSON.parse(created.j.result.content[0].text);
-    expect(order.total_cents).toBe(8);
+    expect(order.total_cents).toBe(5);
     const kit = await rpc({ jsonrpc: '2.0', id: 4, method: 'tools/call', params: { name: 'get_kit', arguments: { order_id: order.id } } });
     expect(JSON.parse(kit.j.result.content[0].text).status).toBe('awaiting_payment');
     expect(kit.j.result.isError).toBe(false);

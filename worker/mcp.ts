@@ -12,8 +12,8 @@ const TOOLS = [
       type: 'object',
       properties: {
         network: { type: 'string', enum: ['mainnet', 'chipnet'], description: 'Bitcoin Cash network, mainnet by default' },
-        careless: { type: 'string', enum: ['sam', 'lena'], description: 'Which demo musician is careless on purpose (default sam)' },
-        choice: { type: 'string', enum: ['a', 'b'], description: 'Which of the two icon variants the person prefers (default a); only the chosen one is paid' },
+        careless: { type: 'string', enum: ['sam', 'lena'], description: 'Which demo subtitles specialist is careless on purpose (default sam)' },
+        choice: { type: 'string', enum: ['a', 'b'], description: 'Which of the two cover variants the person prefers (default a); only the chosen one is paid' },
       },
     },
   },
@@ -25,7 +25,7 @@ const TOOLS = [
   {
     name: 'get_pay_link',
     description:
-      'Get the link a person opens to pay the order with one signature in their own wallet over WizardConnect (tested with Cashonize). The assistant never holds money and cannot pay; give this link to the person. Pass choice to set the icon variant the person picked.',
+      'Get the link a person opens to pay the order with one signature in their own wallet over WizardConnect (tested with Cashonize). The assistant never holds money and cannot pay; give this link to the person. Pass choice to set the cover variant the person picked.',
     inputSchema: { type: 'object', properties: { order_id: { type: 'string' }, choice: { type: 'string', enum: ['a', 'b'] } }, required: ['order_id'] },
   },
   {

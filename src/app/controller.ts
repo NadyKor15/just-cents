@@ -1,12 +1,12 @@
 // Glue between the animated scene (ui/app.js) and the real order: the scene waits at gates until
 // the real preview has arrived and the real check has run, and its texts come from the real verdicts.
+// The scene's element names are older than this example: .t-icon holds the cover choice, .t-desc the subtitles,
+// .t-voice the logo (gate names likewise: icon → cover, descBad/descGood → subtitles, voice → logo).
 import qrcode from 'qrcode-generator';
-import { Order, musicKey, SERVICE, ICON_KEY, type Checked, type Who } from './order';
+import { Order, subsKey, SERVICE, COVER_KEY, type Checked, type Who } from './order';
 import { EXAMPLE, pairName } from '../data/example';
-import { preloadOcr } from './measure';
 import { readOrderId } from '../core/orderid';
 import { offerHashHex } from '../core/offer';
-import { makeClip } from './clip';
 import { zip } from './zip';
 import { copyText } from './copy';
 import { WalletLink, type WalletState } from '../core/wallet';
@@ -40,91 +40,72 @@ let paid = false;
 
 const all = (sel: string) => [...document.querySelectorAll<HTMLElement>(sel)];
 const short = (a: string) => `${a.split(':')[1]!.slice(0, 6)}…${a.slice(-6)}`;
+const mmss = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 
-function setTagReason(who: Who, text: string) {
-  all(`.tag-${plate(who)} span`).forEach((s) => (s.innerHTML = text.replace(/, /, ',<br>')));
+/** The careless plate's two lines: what was asked, what came. "subtitle 1 starts 1.1 s late" → "line 1 is 1.1 s late". */
+export function tagText(reason: string): string {
+  const m = /^subtitle (\d+) starts (.+)$/.exec(reason);
+  return m ? `asked: on the voice,<br>line ${m[1]} is ${m[2]}` : reason.replace(/, /, ',<br>');
 }
 
-/** Music preview: what the musician declares (title, author, licence, length), checked against the rules; tap to hear 3 s. */
-let previewAudio: HTMLAudioElement | null = null;
-function showMusicPreview(c: Checked) {
-  const m = c.music;
-  if (!m) return;
-  const lenOk = Math.abs(m.seconds - 15) <= 0.1;
-  const rows: [string, string, boolean][] = [
-    ['♪', m.title, true],
-    ['CC', `${m.license.replace('-1.0', ' 1.0').replace('-4.0', ' 4.0')} · ${m.author}`, c.verdict.ok || lenOk],
-    ['⏱', `${m.seconds.toFixed(1)} s`, lenOk],
-  ];
-  const url = order!.entry(c.key).preview as string;
+function setTagReason(who: Who, reason: string) {
+  all(`.tag-${plate(who)} span`).forEach((s) => (s.innerHTML = tagText(reason)));
+}
+
+/** Subtitles preview in the tile: the first lines with their times; a line off the voice is marked. */
+function showSubsPreview(c: Checked) {
+  const lines = c.lines ?? [];
   all('.t-desc .desc-bar').forEach((bar) => {
     bar.classList.add('has-text');
     bar.innerHTML = '';
-    for (const [code, text, ok] of rows) {
+    lines.slice(0, 2).forEach((l, i) => {
       const row = document.createElement('span');
-      row.className = `dl${ok ? '' : ' wrong'}`;
+      row.className = `dl${!c.verdict.ok && i === 0 ? ' wrong' : ''}`;
       const b = document.createElement('b');
-      b.textContent = code;
-      const i = document.createElement('i');
-      i.textContent = ` ${text}`;
-      row.append(b, i);
+      b.textContent = mmss(l.start);
+      const t = document.createElement('i');
+      t.textContent = ` ${l.text}`;
+      row.append(b, t);
       bar.appendChild(row);
-    }
-    bar.title = `${m.title} by ${m.author}, ${m.license}, ${m.seconds.toFixed(1)} s. Tap to hear the first 3 seconds.`;
-    bar.onclick = (e) => {
-      e.stopPropagation();
-      previewAudio?.pause();
-      previewAudio = new Audio(url);
-      void previewAudio.play().catch(() => {});
-    };
+    });
+    bar.title = `${c.offer.offer.specialist}: first ${lines.length} lines of the SRT. ${c.verdict.ok ? 'On the voice.' : c.verdict.reason}`;
   });
 }
 
-/** Two icon previews; the person picks one by taste. Only the chosen one gets an output in the payment. */
-function showIconChoice(o: Order) {
+/** Two cover previews; the person picks one by taste. Only the chosen one gets an output in the payment. */
+function showCoverChoice(o: Order) {
   const render = () => {
     all('.icon-art').forEach((e) => {
-      e.classList.add('two');
+      e.classList.add('two', 'cover');
       e.innerHTML = '';
       for (const v of ['a', 'b'] as const) {
-        const c = o.results[ICON_KEY[v]];
+        const c = o.results[COVER_KEY[v]];
         const b = document.createElement('button');
         b.type = 'button';
-        b.className = `iv${o.iconChoice === v ? ' on' : ''}`;
-        b.setAttribute('aria-pressed', String(o.iconChoice === v));
-        b.setAttribute('aria-label', `${EXAMPLE.choice.label} variant ${v.toUpperCase()}${c && !c.verdict.ok ? ' (rejected)' : ''}`);
+        b.className = `iv${o.coverChoice === v ? ' on' : ''}`;
+        b.setAttribute('aria-pressed', String(o.coverChoice === v));
+        b.setAttribute('aria-label', `${EXAMPLE.choice.label} variant ${v.toUpperCase()}: ${EXAMPLE.choice.variants[v]}${c && !c.verdict.ok ? ' (rejected)' : ''}`);
         const img = new Image();
-        img.src = o.entry(ICON_KEY[v]).preview as string;
+        img.src = o.entry(COVER_KEY[v]).preview as string;
         img.alt = '';
         const tag = document.createElement('b');
         tag.textContent = v.toUpperCase();
         b.append(img, tag);
         b.onclick = (ev) => {
           ev.stopPropagation();
-          if (paid || o.iconChoice === v || !c?.verdict.ok) return;
-          o.iconChoice = v;
+          if (paid || o.coverChoice === v || !c?.verdict.ok) return;
+          o.coverChoice = v;
           render();
           renderReceiptPrices();
         };
         e.appendChild(b);
       }
     });
-    const chosen = o.iconChoice.toUpperCase(), other = o.iconChoice === 'a' ? 'B' : 'A';
+    const chosen = o.coverChoice.toUpperCase(), other = o.coverChoice === 'a' ? 'B' : 'A';
     all('.receipt .icon-chosen').forEach((s) => (s.textContent = `${EXAMPLE.choice.label} (${chosen})`));
     all('.receipt .icon-other').forEach((s) => (s.textContent = `${EXAMPLE.choice.label} (${other}) not chosen`));
   };
   render();
-}
-
-export function showIconPreview(url: string) {
-  all('.icon-art').forEach((e) => {
-    e.innerHTML = '';
-    const img = new Image();
-    img.src = url;
-    img.alt = EXAMPLE.choice.previewAlt;
-    img.className = 'icon-prev-img';
-    e.appendChild(img);
-  });
 }
 
 function fail(where: string, e: unknown) {
@@ -181,22 +162,28 @@ async function createByAssistant(careless: Who): Promise<Order> {
 
 function runChecks(o: Order, careless: Who) {
   const other: Who = careless === 'sam' ? 'lena' : 'sam';
-  if (Q.get('choice') === 'b') o.iconChoice = 'b';
-  const icons = [o.checkIcon('a'), o.checkIcon('b')] as const;
-  const icon = Promise.all(icons).then(([a]) => a);
-  const descBad = o.checkMusic(careless);
-  const descGood = o.checkMusic(other);
-  const voice = o.checkVoice();
-  icon.then(() => showIconChoice(o)).catch((e) => fail(EXAMPLE.choice.label, e));
-  descBad.then((c) => { showMusicPreview(c); if (!c.verdict.ok) setTagReason(careless, c.verdict.reason); }).catch((e) => fail(EXAMPLE.pair.label, e));
+  if (Q.get('choice') === 'b') o.coverChoice = 'b';
+  const covers = [o.checkCover('a'), o.checkCover('b')] as const;
+  const icon = Promise.all(covers).then(([a]) => a);
+  const descBad = o.checkSubtitles(careless);
+  const descGood = o.checkSubtitles(other);
+  const voice = o.checkLogo();
+  icon.then(() => showCoverChoice(o)).catch((e) => fail(EXAMPLE.choice.label, e));
+  descBad.then((c) => { showSubsPreview(c); if (!c.verdict.ok) setTagReason(careless, c.verdict.reason); }).catch((e) => fail(EXAMPLE.pair.label, e));
   descGood.catch((e) => fail(EXAMPLE.pair.label, e));
   voice.catch((e) => fail(EXAMPLE.single.label, e));
   return { icon, descBad, descGood, voice };
 }
 
+/** The request was changed: the scene still plays the one example, and one line under the field says so. */
+function noteChangedRequest(): void {
+  const changed = WHO === 'you' && all('.order-in').some((i) => (i as HTMLInputElement).value.trim() !== EXAMPLE.request);
+  all('.demo-note').forEach((n) => (n.hidden = !changed));
+}
+
 /** Start pressed: Just Cents splits the order and asks the specialists for previews; checks run as they arrive. */
 export function start(careless: Who = 'sam'): void {
-  preloadOcr();
+  noteChangedRequest();
   if (FIXED) careless = FIXED.careless;
   paid = false;
   all('.who button').forEach((b) => ((b as HTMLButtonElement).disabled = true));
@@ -226,7 +213,7 @@ export function wait(name: GateName): Promise<void> {
   // ?hold=<gate> keeps the scene on that moment (for screenshots and the demo video), e.g. ?hold=descGood shows Sam's rejection
   if (Q.get('hold') === name) return new Promise(() => {});
   // the replacement's preview takes the tile when the scene reaches it
-  if (name === 'descGood') return gates.descGood.then((c) => showMusicPreview(c), () => undefined);
+  if (name === 'descGood') return gates.descGood.then((c) => showSubsPreview(c), () => undefined);
   return gates[name].then(() => undefined, () => undefined);
 }
 
@@ -238,12 +225,12 @@ function renderReceiptPrices() {
   if (!order) return;
   const good = order.careless === 'sam' ? 'lena' : 'sam';
   // once every check has answered, the total counts only accepted pieces; before that, the planned total
-  const settled = order.chosenIcon() && order.results[good] && order.results.voice;
-  const total = settled ? order.totalCents() : cents('icon') + cents(musicKey(good, order.careless)) + cents('voice') + SERVICE.cents;
+  const settled = order.chosenCover() && order.results[good] && order.results.logo;
+  const total = settled ? order.totalCents() : cents(COVER_KEY[order.coverChoice]) + cents(subsKey(good, order.careless)) + cents('logo') + SERVICE.cents;
   all('.btn-pay').forEach((b) => (b.textContent = `Pay ${total}¢ once`));
 }
 
-/** "Break it yourself": the judge picks who is careless; both music pieces are checked again for real. */
+/** "Break it yourself": the judge picks who is careless; both subtitle files are checked again for real. */
 export async function switchCareless(who: Who): Promise<boolean> {
   if (!order || order.careless === who) return false;
   if (paid) {
@@ -251,18 +238,18 @@ export async function switchCareless(who: Who): Promise<boolean> {
     resetPayment();
   }
   // the careless specialist is part of the order id, so another choice is another order (new id);
-  // icon and voice checks carry over (same offers), music pieces are checked again below
+  // cover and logo checks carry over (same offers), subtitles are checked again below
   const prev = order;
   const fresh = WHO === 'assistant' ? await createByAssistant(who).catch(() => new Order(NET, who)) : new Order(NET, who);
-  fresh.iconChoice = prev.iconChoice;
-  for (const k of Object.keys(prev.results)) if (k.startsWith('icon') || k === 'voice') fresh.results[k] = prev.results[k]!;
+  fresh.coverChoice = prev.coverChoice;
+  for (const k of Object.keys(prev.results)) if (k.startsWith('cover') || k === 'logo') fresh.results[k] = prev.results[k]!;
   order = fresh;
   const other: Who = who === 'sam' ? 'lena' : 'sam';
   try {
-    const [bad, good] = await Promise.all([order.checkMusic(who), order.checkMusic(other)]);
+    const [bad, good] = await Promise.all([order.checkSubtitles(who), order.checkSubtitles(other)]);
     if (!bad.verdict.ok) setTagReason(who, bad.verdict.reason);
     if (!good.verdict.ok) toast(`${other}: ${good.verdict.reason}`);
-    else showMusicPreview(good);
+    else showSubsPreview(good);
   } catch (e) {
     fail(EXAMPLE.pair.label, e);
   }
@@ -293,7 +280,7 @@ function payTable(o: Order): HTMLElement {
   rows.push(['Just Cents service', short(serviceAddr(o.net)), `${SERVICE.cents}¢`, '']);
   const rej = o.results[o.careless];
   if (rej && !rej.verdict.ok) rows.splice(1, 0, [`${EXAMPLE.pair.label} (${pairName(o.careless)}) rejected`, 'no output', '0¢', 'rejected']);
-  const other = o.notChosenIcon();
+  const other = o.notChosenCover();
   if (other) rows.splice(1, 0, [`${label(other)} not chosen`, 'no output', '—', 'taste']);
   for (const [a, b, c, kind] of rows) {
     const tr = el('tr', kind);
@@ -489,10 +476,6 @@ async function deliver(o: Order) {
   btn.disabled = true;
   btn.textContent = 'Preparing the kit…';
   const files: { name: string; data: Uint8Array }[] = [];
-  let icon: Blob | null = null;
-  let voice: ArrayBuffer | null = null;
-  let music: ArrayBuffer | null = null;
-  let musicInfo: Checked['music'] | undefined;
   for (const c of o.accepted()) {
     const li = el('li', 'pending', `${label(c)}: waiting for the specialist`);
     list.appendChild(li);
@@ -501,19 +484,13 @@ async function deliver(o: Order) {
       li.className = f.match && f.verdict.ok ? 'ok' : 'bad';
       li.textContent = `${label(c)}: ${f.match ? 'fingerprint matches the offer' : 'fingerprint does NOT match the offer'} · ${f.verdict.ok ? f.verdict.note : f.verdict.reason}`;
       files.push({ name: f.name, data: new Uint8Array(f.bytes) });
-      if (c.key.startsWith('icon')) icon = new Blob([f.bytes], { type: 'image/png' });
-      else if (c.key === 'voice') voice = f.bytes;
-      else {
-        music = f.bytes;
-        musicInfo = c.music;
-      }
     } catch (e) {
       li.className = 'bad';
       li.textContent = `${label(c)}: ${e instanceof Error ? e.message : e}`;
     }
   }
-  const otherIcon = o.notChosenIcon();
-  if (otherIcon) list.appendChild(el('li', 'taste', `${label(otherIcon)}: not chosen (taste, not a rule: it passed the rules, you picked the other one), nothing paid`));
+  const otherCover = o.notChosenCover();
+  if (otherCover) list.appendChild(el('li', 'taste', `${label(otherCover)}: not chosen (taste, not a rule: it passed the rules, you picked the other one), nothing paid`));
   const rej = o.results[o.careless];
   if (rej && !rej.verdict.ok) list.appendChild(el('li', 'zero', `${EXAMPLE.pair.label} (${pairName(o.careless)}): rejected, 0¢ (${rej.verdict.reason})`));
   const receipt = {
@@ -538,23 +515,6 @@ async function deliver(o: Order) {
     note: o.payment?.noteHex,
   };
   files.push({ name: 'receipt.json', data: new TextEncoder().encode(JSON.stringify(receipt, null, 2)) });
-  if (icon && voice && music) {
-    const li = el('li', 'pending', 'Clip: Just Cents is putting it together');
-    list.appendChild(li);
-    try {
-      const credit = musicInfo ? `${musicInfo.title} by ${musicInfo.author} · ${musicInfo.license.replace('-1.0', ' 1.0').replace('-4.0', ' 4.0')}` : EXAMPLE.pair.label;
-      const clip = await makeClip(
-        { icon, voice, music, lines: [{ lang: EXAMPLE.clip.title, text: EXAMPLE.clip.tagline }, { lang: `♪ ${EXAMPLE.pair.label}`, text: credit }] },
-        (p) => (li.textContent = `Clip: Just Cents is putting it together (${Math.round(p * 100)}%)`),
-      );
-      files.push({ name: `clip.${clip.ext}`, data: new Uint8Array(await clip.blob.arrayBuffer()) });
-      li.className = 'ok';
-      li.textContent = `Clip: ${clip.seconds.toFixed(1)} s, made from the accepted parts`;
-    } catch (e) {
-      li.className = 'bad';
-      li.textContent = `Clip: ${e instanceof Error ? e.message : e}`;
-    }
-  }
   const blob = new Blob([zip(files) as BlobPart], { type: 'application/zip' });
   btn.disabled = false;
   btn.textContent = 'Download kit';
@@ -567,8 +527,8 @@ async function deliver(o: Order) {
 }
 
 function label(c: Checked): string {
-  if (c.key.startsWith('icon')) return `${EXAMPLE.choice.label} (${c.key === ICON_KEY.a ? 'A' : 'B'})`;
-  return c.key === 'voice' ? EXAMPLE.single.label : `${EXAMPLE.pair.label} (${pairName(c.who ?? 'sam')})`;
+  if (c.key.startsWith('cover')) return `${EXAMPLE.choice.label} (${c.key === COVER_KEY.a ? 'A' : 'B'})`;
+  return c.key === 'logo' ? EXAMPLE.single.label : `${EXAMPLE.pair.label} (${pairName(c.who ?? 'sam')})`;
 }
 
 export function currentOrder(): Order | null {

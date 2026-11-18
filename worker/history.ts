@@ -6,11 +6,11 @@ import { rpc, type Net } from './fulcrum';
 import { json } from './http';
 import offers from '../src/data/offers.json';
 
-type Who = 'icon' | 'sam' | 'lena' | 'voice';
+type Who = 'cover' | 'sam' | 'lena' | 'logo';
 const OFFERS = offers as unknown as Record<Net, Record<string, { payToLockingHex: string; signed: { offer: { payTo: string } } }>>;
 
 function lockingHex(net: Net, who: Who): string {
-  const key = who === 'icon' ? 'icon' : who === 'voice' ? 'voice' : `${who}:good`;
+  const key = who === 'cover' || who === 'logo' ? who : `${who}:good`;
   return OFFERS[net][key]!.payToLockingHex;
 }
 
@@ -18,7 +18,7 @@ export async function history(request: Request): Promise<Response> {
   const url = new URL(request.url);
   const who = url.pathname.split('/')[3] as Who;
   const net: Net = url.searchParams.get('net') === 'chipnet' ? 'chipnet' : 'mainnet';
-  if (!['icon', 'sam', 'lena', 'voice'].includes(who)) return json({ ok: false, reason: 'unknown specialist' }, 404);
+  if (!['cover', 'sam', 'lena', 'logo'].includes(who)) return json({ ok: false, reason: 'unknown specialist' }, 404);
   const address = PAYOUT[who][net];
   const mine = lockingHex(net, who);
   let hist: { tx_hash: string; height: number }[];

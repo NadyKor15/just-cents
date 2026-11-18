@@ -1,0 +1,13 @@
+1
+00:00:18,375 --> 00:00:21,675
+Omar wants to borrow 50
+dirhams until Friday.
+
+2
+00:00:21,735 --> 00:00:22,875
+No rule for this.
+
+3
+00:00:34,840 --> 00:00:38,780
+By your rule, Omar borrowed
+25 dirhams until Friday.
