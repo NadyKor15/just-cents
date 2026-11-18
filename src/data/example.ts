@@ -41,7 +41,7 @@ export const EXAMPLE = {
     howApi: 'the start of the first line from the signed offer here, against the trailer\'s first spoken word; the pay page checks the first three lines of the file, and the whole file after payment',
   },
   single: {
-    label: 'Logo',
+    label: 'Logo from sketch',
     apiPart: 'logo',
     specialist: 'logo (demo specialist)',
     tool: 'VTracer (open source, MIT), run by the Just Cents team',
@@ -58,7 +58,7 @@ export const EXAMPLE = {
     title: 'Ready for your game page',
     trailer: 'Trailer with the accepted subtitles',
     cover: 'Store cover',
-    logo: 'Logo',
+    logo: 'Logo from sketch',
     download: 'Download all files',
   },
 } as const;
