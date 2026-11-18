@@ -11,7 +11,10 @@ import { srtToVtt } from '../core/subtitles';
 import { zip } from './zip';
 import { copyText } from './copy';
 import { WalletLink, type WalletState } from '../core/wallet';
-import { explorerTx, type Net } from '../core/chain';
+import { explorerTx, getRawTx, type Net } from '../core/chain';
+import { parseNote } from '../core/tx';
+import { checkPaid } from '../core/release';
+import { decodeTransaction, hexToBin } from '@bitauth/libauth';
 import { OFFERS } from '../data/offers';
 import { PAYOUT } from '../config';
 
@@ -568,4 +571,43 @@ function label(c: Checked): string {
 
 export function currentOrder(): Order | null {
   return order;
+}
+
+// ------------------------------------------------------------------ a paid order, without a wallet (/?paid=<txid>)
+/**
+ * Shows an order someone already paid: the transaction is read from the network, its JC1 note names the order and the
+ * offers it lists; a part counts as paid only if the transaction really pays it (same check as the specialists').
+ * The files then come from the specialists exactly as after one's own payment, and the "ready" screen fills.
+ */
+export async function openPaidOrder(txid: string, net: Net): Promise<void> {
+  try {
+    const raw = await getRawTx(net, txid);
+    const tx = decodeTransaction(hexToBin(raw));
+    if (typeof tx === 'string') throw new Error(tx);
+    const note = tx.outputs.map((x) => parseNote(x.lockingBytecode)).find((n) => n);
+    const meta = note ? readOrderId(note.orderIdHex) : null;
+    if (!note || !meta || meta.net !== net) throw new Error('this transaction is not a Just Cents order on this network');
+    const o = new Order(net, meta.careless, meta.id);
+    for (const [key, e] of Object.entries(OFFERS[net])) {
+      const h = offerHashHex(e.signed.offer);
+      if (!note.offerPrefixes.includes(h.slice(0, 32))) continue;
+      if (!checkPaid(raw, { payTo: e.signed.offer.payTo, minSats: BigInt(e.signed.offer.priceSats), orderIdHex: meta.id, offerHashHex: h }).ok) continue;
+      const slot = key.startsWith('cover') ? key : key === 'logo' ? 'logo' : key.split(':')[0]!;
+      o.results[slot] = { key, who: key.startsWith('sam') ? 'sam' : key.startsWith('lena') ? 'lena' : undefined, verdict: { ok: true, note: '' }, offer: e.signed, detail: 'paid on chain' };
+    }
+    if (o.results[COVER_KEY.b]) o.coverChoice = 'b';
+    if (!o.accepted().length) throw new Error('this transaction pays none of the current offers');
+    // the careless specialist's rejection, checked again on its preview, for the receipt
+    await o.checkSubtitles(o.careless).catch(() => undefined);
+    // the other cover variant, for "not chosen"
+    await o.checkCover(o.coverChoice === 'a' ? 'b' : 'a').catch(() => undefined);
+    o.txid = txid;
+    order = o;
+    paid = true;
+    setTx(net, txid);
+    await deliver(o);
+    document.querySelector('#kit')?.scrollIntoView({ behavior: 'smooth' });
+  } catch (e) {
+    fail('Paid order', e);
+  }
 }

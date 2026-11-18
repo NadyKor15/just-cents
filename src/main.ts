@@ -1,9 +1,9 @@
 /// <reference types="vite/client" />
 import './ui/app.js';
-import { BANNER } from './config';
+import { BANNER, PAID_EXAMPLE } from './config';
 import { EXAMPLE } from './data/example';
 import { copyText } from './app/copy';
-import { prepareScene, setWho, WHO, type Orderer } from './app/controller';
+import { NET, openPaidOrder, prepareScene, setWho, WHO, type Orderer } from './app/controller';
 
 prepareScene();
 
@@ -13,6 +13,22 @@ document.querySelectorAll<HTMLInputElement>('.order-in').forEach((i) => (i.value
 // "You / Your assistant" above the order field: same scene, same checks; only who created the order changes
 document.querySelectorAll<HTMLButtonElement>('.who button').forEach((b) => b.addEventListener('click', () => setWho(b.dataset.who as Orderer)));
 setWho(WHO);
+
+// no wallet? a real paid order, next to Pay (only when one is configured: no placeholder link)
+if (PAID_EXAMPLE.txid) {
+  document.querySelectorAll<HTMLElement>('.foot').forEach((f) => {
+    const a = document.createElement('a');
+    a.className = 'paid-example';
+    a.href = `/?paid=${PAID_EXAMPLE.txid}${PAID_EXAMPLE.net === 'chipnet' ? '&net=chipnet' : ''}`;
+    a.textContent = 'See a paid order (no wallet)';
+    const sep = document.createElement('span');
+    sep.className = 'sep';
+    sep.textContent = ' · ';
+    f.append(sep, a);
+  });
+}
+const paidTx = new URLSearchParams(location.search).get('paid');
+if (paidTx && /^[0-9a-f]{64}$/.test(paidTx)) void openPaidOrder(paidTx, NET);
 
 // BLAZE banner: slides, code, CashTokens address (copy on click).
 document.querySelectorAll<HTMLAnchorElement>('[data-banner]').forEach((a) => {

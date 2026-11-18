@@ -15,6 +15,12 @@ export const PAYOUT: Record<'cover' | 'sam' | 'lena' | 'logo' | 'service', ByNet
   service: { mainnet: 'bitcoincash:qqczcf6dcqm62u0prm2qnre4655w5236qy0mrh6734', chipnet: 'bchtest:qqczcf6dcqm62u0prm2qnre4655w5236qytf8scfkf' },
 };
 
+/**
+ * A real order paid on chain, shown to anyone without a wallet ("See a paid order"). Empty txid = the link is not shown
+ * at all. Set only to a payment of the current offers (the page reads it from the network and checks it).
+ */
+export const PAID_EXAMPLE: { net: Net; txid: string } = { net: 'mainnet', txid: '' };
+
 /** BLAZE banner links. Empty until they exist; the banner then shows the link as not ready yet. */
 export const BANNER = {
   slides: '', // Widget Factory slides

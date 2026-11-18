@@ -123,6 +123,10 @@
 .btn-like{min-height:48px;padding:0 26px;border:0;border-radius:999px;background:var(--orchid);color:#fff;font:700 16px "Figtree",sans-serif;cursor:pointer}
 .btn-like:disabled{opacity:.55;cursor:progress}
 .more h2,.why h2{text-align:center;margin-bottom:20px}
+/* "See a paid order (no wallet)": next to Pay, quieter than it */
+.foot .paid-example{color:var(--orchid-lo);font-weight:600;text-decoration:underline;text-underline-offset:2px}
+.stage-m .foot .sep{display:none}
+.stage-m .foot .paid-example{display:block;margin-top:5px}
 /* the end of the scene: "Ready for your game page" */
 .ready-title{text-align:center}
 .ready{display:grid;grid-template-columns:2fr 1.25fr .75fr;gap:16px;align-items:start;margin:8px 0 18px}
