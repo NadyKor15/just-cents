@@ -24,6 +24,15 @@ The specialists in the demo are ours, each labeled "demo specialist, run by the 
 - Logo: VTracer (open source, MIT), run by the Just Cents team.
 All the checks are real.
 
+## How the money and the files move
+
+- The person's one payment puts each accepted part's price, plus 500 satoshis for the specialist's network fee, into its own small contract (P2SH32), and pays the service 1¢. A note in the payment (`JC2 …`) names the order.
+- Before paying, the page downloads each full file sealed (AES-256-GCM) and checks its fingerprint against the specialist's signed offer.
+- The specialist takes the money only by putting the file's key on chain, in the same transaction (its claim). The page and the API read the key from that claim and open the sealed file; its sha256 must match the signed offer.
+- If the specialist never claims, after about an hour anyone can send the money back to the person's own address. No signature is needed.
+- The contract makes "key for money" atomic. That the key opens the promised file is checked by the sealed file's fingerprint, which the specialist's claim signs, and by the page.
+- Orders paid before the contracts (a `JC1` note, straight to the specialists) still open as before.
+
 ## How the rules are checked
 
 - Subtitles: the first line's start is declared in the signed offer and compared with the trailer's first spoken word. The pay page checks the first three lines of the file, and after payment the whole file. The yardstick (the trailer's spoken words with their times) was measured once, before any specialist worked: `GET /api/inputs/trailer-words`.
@@ -35,7 +44,8 @@ All the checks are real.
 - `POST /api/orders` with JSON `{"network": "mainnet" | "chipnet", "careless": "sam" | "lena", "choice": "a" | "b"}` (all optional) → the order: id, rules, inputs, prices in cents and satoshis, previews, signed offers, checks, the rejected piece, the cover variant not chosen, `pay_url`.
 - `GET /api/orders/{id}` → the same, with `status` = `awaiting_payment` or `paid` and the `txid`. `?choice=b` switches the cover variant.
 - `GET /api/orders/{id}/pay` → `pay_url` for the person. The wallet shows "Just Cents: pay 3 specialists + service".
-- `GET /api/orders/{id}/kit` → after payment: a link and a sha256 fingerprint for each file. Before payment: HTTP 409, `awaiting_payment`.
+- `GET /api/orders/{id}/kit` → after payment: for each file, the sealed file's URL, its sha256 and the plain file's sha256, the key lock (sha256 of the key), the contract, and the key itself once the specialist's claim is on chain. Before payment: HTTP 409, `awaiting_payment`.
+- `POST /claim/{offer}?net=…&txid=…` → asks a demo specialist to claim its contract (the same request gives the same claim). The key is then on chain.
 - `GET /api/inputs/trailer-words` → the subtitles' yardstick.
 - Order creation is limited per address; nothing is stored until an order is paid.
 
@@ -44,7 +54,7 @@ All the checks are real.
 User: "Get my game ready to list."
 Assistant: calls `create_order` → "Three specialists sent previews. Sam's subtitles start 1.1 s after the voice, so he gets 0¢ and Lena's are used. The cover has two variants: A, the first call by the lake, or B, the sticker stall. Which one? The total is 5¢. Open this link and sign once in your wallet: <pay_url>."
 User: "A. Done."
-Assistant: calls `get_kit` → downloads the subtitles, the cover and the logo, and checks every file's sha256 against the signed offer.
+Assistant: calls `get_kit` → downloads the sealed subtitles, cover and logo, opens each with the key from the specialist's claim on chain, and checks every file's sha256 against the signed offer.
 
 ## Become a specialist
 

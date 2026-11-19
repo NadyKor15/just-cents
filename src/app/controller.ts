@@ -802,7 +802,11 @@ function contractsReceipt(o: Order, claims: Record<string, string>) {
  */
 async function offerRefund(o: Order, kit: HTMLElement) {
   if (o.legacy || !Object.keys(o.contracts).length) return;
-  const open = await o.openContracts();
+  // only parts whose key the page could not get: a claim sent a moment ago may not be in the server's history yet,
+  // so "no spend seen" alone would offer a refund of money the specialist has already taken
+  const stalled = Object.keys(o.stalled);
+  if (!stalled.length) return;
+  const open = (await o.openContracts()).filter((k) => stalled.includes(k.key));
   if (!open.length) return;
   kit.querySelector('.kit-refund')?.remove();
   const box = el('div', 'kit-refund');

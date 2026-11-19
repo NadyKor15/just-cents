@@ -1,8 +1,35 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import { binToHex, encodeTransaction, encodeLockingBytecodeP2pkh, hash160, secp256k1, sha256, utf8ToBin } from '@bitauth/libauth';
+
+// the network, replaced: /kit reads the paying transaction to tell an older JC1 order from a JC2 one
+const chain = new Map<string, string>();
+vi.mock('../worker/fulcrum', () => ({
+  rpc: vi.fn(async (_net: string, method: string, params: unknown[]) => {
+    const raw = method === 'blockchain.transaction.get' ? chain.get(params[0] as string) : undefined;
+    if (!raw) throw new Error('No such mempool or blockchain transaction');
+    return raw;
+  }),
+}));
+
 import { newOrderId, readOrderId } from '../src/core/orderid';
 import { api } from '../worker/api';
 import { mcp } from '../worker/mcp';
 import { EXAMPLE } from '../src/data/example';
+import { buildPayment, noteText, type Utxo } from '../src/core/tx';
+import { txidOf } from '../src/core/release';
+import offers from '../src/data/offers.json';
+
+/** An older (JC1) payment of this order straight to the listed specialists, on the stub network; returns its txid. */
+function jc1(id: string, keys: string[]): string {
+  const b = (offers as any).chipnet;
+  const lock = encodeLockingBytecodeP2pkh(hash160(secp256k1.derivePublicKeyCompressed(sha256.hash(utf8ToBin('api jc1'))) as Uint8Array));
+  const coin: Utxo = { txid: '56'.repeat(32), vout: 0, sats: 100_000n, lockingBytecode: lock, path: 'receive', index: 0 };
+  const p = buildPayment({ utxos: [coin], payouts: keys.map((k) => ({ label: k, address: b[k].signed.offer.payTo, sats: BigInt(b[k].signed.offer.priceSats) })), note: noteText(id, keys.map((k) => b[k].offerHashHex)) });
+  const raw = binToHex(encodeTransaction(p.transaction));
+  const txid = txidOf(raw);
+  chain.set(txid, raw);
+  return txid;
+}
 
 const O = 'https://jc.test';
 const store = new Map<string, string>();
@@ -57,9 +84,9 @@ describe('order API', () => {
     const kit = await call('GET', `/api/orders/${id}/kit`);
     expect(kit.status).toBe(409);
   });
-  it('gives file links and fingerprints once a txid is known', async () => {
+  it('gives file links and fingerprints once a txid is known (an older JC1 order: /full/ links)', async () => {
     const id = newOrderId('chipnet', 'sam');
-    store.set(`paid:${id}`, 'ab'.repeat(32));
+    store.set(`paid:${id}`, jc1(id, ['cover', 'lena:good', 'logo']));
     const kit = await call('GET', `/api/orders/${id}/kit`);
     expect(kit.status).toBe(200);
     expect(kit.j.files.map((f: any) => f.part)).toEqual(['cover', 'subtitles', 'logo']);
@@ -78,10 +105,15 @@ describe('order API', () => {
     expect(b.parts[0].offer_fingerprint).toBe(a.cover_choice.variants[1].offer_fingerprint);
     expect(b.pay_url).toBe(`${O}/?order=${a.id}&choice=b`);
     const id = newOrderId('chipnet', 'sam');
-    store.set(`paid:${id}`, JSON.stringify({ txid: 'cd'.repeat(32), choice: 'b' }));
+    store.set(`paid:${id}`, JSON.stringify({ txid: jc1(id, ['cover:b', 'lena:good', 'logo']), choice: 'b' }));
     const kit = (await call('GET', `/api/orders/${id}/kit`)).j;
     expect(kit.cover_choice).toBe('b');
     expect(kit.files[0].url).toContain('/full/cover%3Ab?');
+    // a transaction the network does not know: said so, no links
+    const id2 = newOrderId('chipnet', 'sam');
+    store.set(`paid:${id2}`, 'cd'.repeat(32));
+    const none = await call('GET', `/api/orders/${id2}/kit`);
+    expect(none.status).toBe(404);
   });
   it('rejects bad ids and bad txids', async () => {
     expect((await call('GET', '/api/orders/nothex')).status).toBe(400);

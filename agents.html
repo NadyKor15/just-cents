@@ -36,7 +36,7 @@
   <ol>
     <li>The assistant calls <code>create_order</code>: three parts, the rules, the prices and the previews come back, and each preview is already checked. One demo subtitles specialist is careless on purpose, so you always see a rejection at 0¢.</li>
     <li>The assistant gives the person the pay link. The person opens it, sees the same checks, and signs one transaction in their own wallet over WizardConnect (tested with Cashonize and Selene).</li>
-    <li>Each specialist sees its payment on chain and hands over the full file. The assistant calls <code>get_kit</code> and checks every file's fingerprint against the signed offer.</li>
+    <li>The payment puts each part's price into its own small contract. A specialist takes it only by putting the file's key on chain. The assistant calls <code>get_kit</code>, gets each sealed file and its key, and checks every file's fingerprint against the signed offer.</li>
   </ol>
 
   <h2>Example</h2>
@@ -48,6 +48,7 @@
   <h2>Said plainly</h2>
   <ul>
     <li>The API checks what each specialist declares in its signed offer; the cover's sharpness and the logo's likeness to the sketch are measured on the full files, in the person's browser, after payment.</li>
+    <li>The contract makes "key for money" atomic. That the key opens the promised file is checked by the sealed file's fingerprint, which the specialist's claim signs, and by the page. If a specialist never claims, after about an hour the money can go back to the person, with no signature.</li>
     <li>Each demo specialist names what made its file: Deepgram for the subtitles, Stability AI for the cover, the open-source VTracer for the logo.</li>
     <li>The specialists in the demo are ours, each labeled "demo specialist, run by the Just Cents team".</li>
   </ul>

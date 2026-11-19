@@ -4,8 +4,9 @@
 //
 // Nothing is stored when an order is created: the order id carries its network and its careless specialist.
 // The only stored fact is "this order was paid by txid", written after the transaction is read from the
-// network and its JC1 note names this order.
+// network and its note names this order: JC2 (into one hash-lock contract per specialist) or, for older orders, JC1.
 import offers from '../src/data/offers.json';
+import { contractsInPayment, decodeTx, FEE_SATS, hex, parseNote2, readSpend, scripthashOf, unhex, type FoundContract } from '../src/core/htlc';
 import speech from '../src/data/trailer-words.json';
 import { readOrderId, newOrderId, type OrderMeta } from '../src/core/orderid';
 import { checkCoverDeclared, checkLogoDeclared, checkSubtitlesDeclared, RULES, type Verdict } from '../src/core/rules';
@@ -19,9 +20,51 @@ import { json } from './http';
 import { history } from './history';
 
 type Net = 'mainnet' | 'chipnet';
-type Entry = { signed: { offer: { priceCents: number; priceSats: string; fileSha256: string; facts: string; specialist: string; payTo: string } }; file: string; preview: string | Record<string, string>; payToLockingHex: string; offerHashHex: string };
+type V2 = { signed: { offer: { priceSats: string; fileSha256: string; cipherSha256: string; keyHash: string; claimPubkey: string }; sig: string }; offerHashHex: string; sealed: string };
+type Entry = { signed: { offer: { priceCents: number; priceSats: string; fileSha256: string; facts: string; specialist: string; payTo: string } }; file: string; preview: string | Record<string, string>; payToLockingHex: string; offerHashHex: string; v2: V2 };
 const OFFERS = offers as unknown as Record<Net, Record<string, Entry>>;
 const SPEECH = speech as unknown as Speech;
+
+/** The contracts a JC2 payment really funds (at least the price plus the claim's fee), by offer key. */
+export function fundedContracts(net: Net, rawHex: string): Record<string, FoundContract> {
+  const keys = Object.keys(OFFERS[net]).filter((k) => OFFERS[net][k]!.v2);
+  const found = contractsInPayment(
+    unhex(rawHex),
+    keys.map((k) => {
+      const o = OFFERS[net][k]!.v2.signed.offer;
+      return { offerHashHex: OFFERS[net][k]!.v2.offerHashHex, lock: { cipherSha256: o.cipherSha256, keyHash: o.keyHash, sellerPubkey: o.claimPubkey } };
+    }),
+  );
+  const out: Record<string, FoundContract> = {};
+  for (const c of found?.contracts ?? []) {
+    const k = keys.find((x) => OFFERS[net][x]!.v2.offerHashHex === c.offerHashHex)!;
+    if (c.value >= BigInt(OFFERS[net][k]!.v2.signed.offer.priceSats) + FEE_SATS) out[k] = c;
+  }
+  return out;
+}
+
+/** The JC2 note of a payment, if it has exactly one. */
+function note2Of(rawHex: string) {
+  try {
+    const notes = decodeTx(unhex(rawHex)).outputs.map((o) => parseNote2(o.locking)).filter((n) => n !== null);
+    return notes.length === 1 ? notes[0]! : null;
+  } catch {
+    return null;
+  }
+}
+
+/** How a contract ended, from the chain: claimed (with the key from the claim's input), refunded, or still open. */
+async function contractOutcome(net: Net, paymentTxid: string, c: FoundContract): Promise<{ status: 'key_on_chain'; key: string; claim_txid: string } | { status: 'refunded'; refund_txid: string } | { status: 'waiting_for_specialist' }> {
+  const hist = await rpc<{ tx_hash: string }[]>(net, 'blockchain.scripthash.get_history', [scripthashOf(unhex(c.lockingHex))]);
+  for (const h of hist) {
+    if (h.tx_hash === paymentTxid) continue;
+    const raw = await rpc<string>(net, 'blockchain.transaction.get', [h.tx_hash, false]);
+    const s = readSpend(unhex(raw), { txid: paymentTxid, vout: c.vout });
+    if (s?.kind === 'claim') return { status: 'key_on_chain', key: hex(s.key), claim_txid: h.tx_hash };
+    if (s?.kind === 'refund') return { status: 'refunded', refund_txid: h.tx_hash };
+  }
+  return { status: 'waiting_for_specialist' };
+}
 
 export interface ApiEnv {
   ORDERS?: { get(k: string): Promise<string | null>; put(k: string, v: string, o?: { expirationTtl?: number }): Promise<void> };
@@ -74,6 +117,11 @@ function describe(meta: OrderMeta, origin: string, txid: string | null, choice: 
     pay_to: e.signed.offer.payTo,
     offer: e.signed,
     offer_fingerprint: e.offerHashHex,
+    // how it is paid now: into a contract that only opens when the specialist puts the file's key on chain
+    contract_offer: e.v2.signed,
+    contract_offer_fingerprint: e.v2.offerHashHex,
+    sealed_file: abs(origin, e.v2.sealed),
+    key_lock: e.v2.signed.offer.keyHash,
     preview: typeof e.preview === 'string' ? abs(origin, e.preview) : e.preview,
     check: check.ok ? { ok: true, note: check.note, how } : { ok: false, reason: check.reason, how },
   });
@@ -114,7 +162,7 @@ function describe(meta: OrderMeta, origin: string, txid: string | null, choice: 
     status: txid ? 'paid' : 'awaiting_payment',
     txid,
     pay_url: `${origin}/?order=${meta.id}${choice === 'b' ? '&choice=b' : ''}`,
-    pay_note: 'A person opens pay_url and signs one transaction in their own wallet over WizardConnect (tested with Cashonize and Selene). The assistant never holds money.',
+    pay_note: 'A person opens pay_url and signs one transaction in their own wallet over WizardConnect (tested with Cashonize and Selene). The assistant never holds money. Each accepted part\'s price goes into its own small contract; the specialist takes it only by putting the file\'s key on chain, and after about an hour without that, the money can go back to the person.',
     kit_url: `${origin}/api/orders/${meta.id}/kit`,
   };
 }
@@ -188,7 +236,17 @@ export async function api(request: Request, env: ApiEnv): Promise<Response> {
       return json({ ok: false, reason: `cannot read the transaction: ${e instanceof Error ? e.message : e}` }, 400);
     }
     const note = notes.length === 1 ? notes[0]! : null;
-    if (!note || note.orderIdHex !== meta.id) return json({ ok: false, reason: 'this transaction is not a payment for this order' }, 409);
+    if (!note) {
+      // JC2: one contract per accepted specialist; it counts if it funds at least one listed contract fully
+      const n2 = note2Of(raw);
+      if (!n2 || n2.orderIdHex !== meta.id) return json({ ok: false, reason: 'this transaction is not a payment for this order' }, 409);
+      const funded = fundedContracts(meta.net, raw);
+      if (!Object.keys(funded).length) return json({ ok: false, reason: 'this transaction funds none of the contracts in its note' }, 409);
+      const choice2: Choice = funded[COVER_KEY.b] ? 'b' : 'a';
+      if (env.ORDERS) await env.ORDERS.put(`paid:${meta.id}`, JSON.stringify({ txid, choice: choice2 }), { expirationTtl: 60 * 60 * 24 * 30 });
+      return json({ ok: true, id: meta.id, txid, cover_choice: choice2, contracts: Object.keys(funded) });
+    }
+    if (note.orderIdHex !== meta.id) return json({ ok: false, reason: 'this transaction is not a payment for this order' }, 409);
     // it must actually pay at least one listed offer, not just carry the order id
     const book = bookFor(meta.net);
     const paidAny = Object.keys(book).some((k) => note.offerPrefixes.includes(book[k]!.offerHashHex.slice(0, 32)) && checkOfferPaid(raw, book, k).ok);
@@ -207,6 +265,47 @@ export async function api(request: Request, env: ApiEnv): Promise<Response> {
     const book = OFFERS[meta.net];
     const good = meta.careless === 'sam' ? 'lena' : 'sam';
     const keys = [COVER_KEY[choice], `${good}:good`, 'logo'];
+    const partName = (k: string) => (k.startsWith('cover') ? EXAMPLE.choice.apiPart : k === 'logo' ? EXAMPLE.single.apiPart : EXAMPLE.pair.apiPart);
+    // how was it paid? JC2: into contracts; the files are sealed on the site and each key is on chain in its claim
+    let raw: string;
+    try {
+      raw = await rpc<string>(meta.net, 'blockchain.transaction.get', [txid, false]);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      if (/No such mempool|not found/i.test(msg)) return json({ ok: false, reason: 'the network does not know this transaction (yet)' }, 404);
+      return json({ ok: false, reason: `could not read the transaction from the network: ${msg}` }, 502);
+    }
+    const n2 = note2Of(raw);
+    if (n2) {
+      if (n2.orderIdHex !== meta.id) return json({ ok: false, reason: 'this transaction is not a payment for this order' }, 409);
+      const funded = fundedContracts(meta.net, raw);
+      const files = [];
+      for (const k of keys) {
+        const e = book[k]!;
+        const c = funded[k];
+        const base = { part: partName(k), name: e.file, sealed_url: abs(origin, e.v2.sealed), sealed_sha256: e.v2.signed.offer.cipherSha256, sha256: e.signed.offer.fileSha256, key_lock: e.v2.signed.offer.keyHash };
+        if (!c) {
+          files.push({ ...base, status: 'not_paid' });
+          continue;
+        }
+        let outcome: Awaited<ReturnType<typeof contractOutcome>> | { status: 'unknown'; reason: string };
+        try {
+          outcome = await contractOutcome(meta.net, txid, c);
+        } catch (err) {
+          outcome = { status: 'unknown', reason: `could not read the network: ${err instanceof Error ? err.message : err}` };
+        }
+        files.push({ ...base, contract: { vout: c.vout, sats: c.value.toString(), refund_after: new Date(c.params.refundTime * 1000).toISOString() }, claim_url: `${origin}/claim/${encodeURIComponent(k)}?net=${meta.net}&txid=${txid}`, ...outcome });
+      }
+      return json({
+        id: meta.id,
+        txid,
+        cover_choice: choice,
+        files,
+        note: 'Each file is sealed (AES-256-GCM: "JCE1", a 12-byte iv, the ciphertext with its 16-byte tag). Its key is on chain, in the specialist\'s claim that took the payment out of the contract; sha256(key) equals key_lock. Check sha256 of the sealed file against sealed_sha256, open it with the key, and compare sha256 of the result with the signed offer. A key not there yet: POST claim_url asks the specialist to claim.',
+        rejected: d.rejected,
+        not_chosen: d.not_chosen,
+      });
+    }
     return json({
       id: meta.id,
       txid,

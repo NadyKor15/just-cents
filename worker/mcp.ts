@@ -30,7 +30,8 @@ const TOOLS = [
   },
   {
     name: 'get_kit',
-    description: 'After the person has paid: links to the full files and their sha256 fingerprints. Returns "awaiting_payment" before that.',
+    description:
+      'After the person has paid: for each file, the sealed file, its sha256 fingerprints, and its key, read from the specialist\'s claim on chain (the claim that took the payment out of its contract). Open the sealed file with the key and compare sha256 with the signed offer. Returns "awaiting_payment" before that.',
     inputSchema: { type: 'object', properties: { order_id: { type: 'string' }, txid: { type: 'string', description: 'optional, if the person gives it' } }, required: ['order_id'] },
   },
 ];
