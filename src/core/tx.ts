@@ -9,6 +9,7 @@ import {
   utf8ToBin,
   type Transaction,
 } from '@bitauth/libauth';
+import { FEE_SATS, contractLocking, dustFor, noteText2, opReturnBytecode2, type LockParams } from './htlc';
 
 /** Outputs below this value are refused by the network as dust (P2PKH). */
 export const DUST_SATS = 546n;
@@ -186,4 +187,77 @@ function assemble(
 
 export function unsignedHex(tx: Transaction): string {
   return binToHex(encodeTransaction(tx));
+}
+
+// ---------- v2: one payment into hash-lock contracts (src/core/htlc.ts) ----------
+
+/** What the buyer locks for one accepted specialist: price + FEE_SATS, under the offer's key lock and sealed file. */
+export type ContractPayout = { label: string; priceSats: bigint; lock: Pick<LockParams, 'cipherSha256' | 'keyHash' | 'sellerPubkey'> };
+
+export type BuiltPayment2 = BuiltPayment & {
+  /** One per accepted specialist, in output order. */
+  contracts: { label: string; vout: number; sats: bigint; params: LockParams; lockingHex: string }[];
+  buyerLockingHex: string;
+  refundHeight: number;
+  note: string;
+};
+
+/**
+ * The v2 payment: one contract output per accepted specialist (price + FEE_SATS), the plain outputs (the service's 1¢),
+ * the JC2 note, change. Refunds and change go to the address of the largest coin, which is always spent first, so the
+ * buyer's refund address is one the wallet already knows as its own.
+ */
+export function buildPayment2(args: {
+  utxos: Utxo[];
+  contracts: ContractPayout[];
+  payouts: Payout[];
+  orderIdHex: string;
+  offerHashesHex: string[];
+  refundHeight: number;
+}): BuiltPayment2 {
+  if (args.contracts.length === 0) throw new Error('nothing to pay');
+  const coins = [...args.utxos].sort((a, b) => (b.sats > a.sats ? 1 : b.sats < a.sats ? -1 : 0));
+  if (coins.length === 0) throw new Error('not enough coins: the wallet has none');
+  const buyer = coins[0]!.lockingBytecode;
+  const buyerLockingHex = binToHex(buyer);
+  const note = noteText2(args.orderIdHex, args.refundHeight, buyerLockingHex, args.offerHashesHex);
+  const noteScript = opReturnBytecode2(note);
+  const contracts = args.contracts.map((c) => {
+    const params: LockParams = { ...c.lock, buyerLockingHex, refundHeight: args.refundHeight };
+    const locking = contractLocking(params);
+    const sats = c.priceSats + FEE_SATS;
+    if (sats < dustFor(locking)) throw new Error(`${c.label}: ${sats} sat is below the dust limit`);
+    return { label: c.label, sats, params, locking };
+  });
+  for (const p of args.payouts) if (p.sats < DUST_SATS) throw new Error(`${p.label}: ${p.sats} sat is below the dust limit ${DUST_SATS}`);
+  const outputs = [
+    ...contracts.map((c) => ({ lockingBytecode: c.locking, valueSatoshis: c.sats })),
+    ...args.payouts.map((p) => ({ lockingBytecode: lockingFor(p.address), valueSatoshis: p.sats })),
+  ];
+  const need = outputs.reduce((s, o) => s + o.valueSatoshis, 0n);
+  const picked: Utxo[] = [];
+  let have = 0n;
+  for (const c of coins) {
+    picked.push(c);
+    have += c.sats;
+    const size = estimateSize(picked.length, [...outputs.map((o) => o.lockingBytecode), noteScript, buyer]);
+    const fee = BigInt(size) * FEE_SATS_PER_BYTE;
+    let built: BuiltPayment | null = null;
+    if (have >= need + fee + DUST_SATS) built = assemble(picked, outputs, noteScript, buyer, have - need - fee, fee, size);
+    else {
+      const sizeNoChange = estimateSize(picked.length, [...outputs.map((o) => o.lockingBytecode), noteScript]);
+      const feeNoChange = BigInt(sizeNoChange) * FEE_SATS_PER_BYTE;
+      if (have >= need + feeNoChange) built = assemble(picked, outputs, noteScript, null, 0n, have - need, sizeNoChange);
+    }
+    if (built) {
+      return {
+        ...built,
+        contracts: contracts.map((c, i) => ({ label: c.label, vout: i, sats: c.sats, params: c.params, lockingHex: binToHex(c.locking) })),
+        buyerLockingHex,
+        refundHeight: args.refundHeight,
+        note,
+      };
+    }
+  }
+  throw new Error(`not enough coins: need ${need} sat plus fee, wallet has ${have} sat (short by at least ${need - have} sat)`);
 }
