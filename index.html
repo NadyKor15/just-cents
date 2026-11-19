@@ -14,7 +14,8 @@
   <span class="blaze-name">BCH BLAZE 2026</span>
   <a class="blaze-link" data-banner="slides" href="#" target="_blank" rel="noopener">Slides</a>
   <a class="blaze-link" data-banner="repo" href="#" target="_blank" rel="noopener">Code</a>
-  <span class="blaze-ct">CashTokens: <button type="button" class="blaze-addr" data-copy="bitcoincash:zzjyky2y9eha9y6kya407vgf86dax2ausvzzrs90aq" title="Copy">bitcoincash:zzjyky2y9eha9y6kya407vgf86dax2ausvzzrs90aq</button></span>
+  <span class="blaze-state">Nov 14: not started (first code Nov 16)</span>
+  <span class="blaze-ct">CashTokens: <button type="button" class="blaze-addr" data-copy="bitcoincash:zzjyky2y9eha9y6kya407vgf86dax2ausvzzrs90aq" title="Copy">bitcoincash:zzjyky2y9eha9y6kya407vgf86dax2ausvzzrs90aq</button><button type="button" class="blaze-copy" data-copy-btn="bitcoincash:zzjyky2y9eha9y6kya407vgf86dax2ausvzzrs90aq" aria-live="polite">Copy</button></span>
 </header>
 <main class="page">
 
@@ -28,6 +29,7 @@
   <div class="wm">Just Cents</div>
   <div class="sym-switch" role="radiogroup" aria-label="Symbol"></div>
   <h1 class="h1">Cents for work you accept.<br>Nothing else.</h1>
+  <p class="proof">Rejected work costs 0¢ · one payment pays every specialist · checked on chain</p>
   <p class="sub">An AI helper hires several AI specialists and checks each piece of their work<br>against rules that are set before the work starts.</p>
 
   <div class="who" role="group" aria-label="Who orders"><button type="button" data-who="you" aria-pressed="true">You</button><button type="button" data-who="assistant" aria-pressed="false">Your assistant</button></div>
@@ -37,6 +39,7 @@
   </form>
   <p class="demo-note" role="status" hidden>This demo plays one example — <a href="#catalog">more jobs in the catalog →</a></p>
   <p class="start-hint" aria-hidden="true">Press Start to see it work</p>
+  <a class="btn-paid" data-paid-example hidden>See a paid order <span>(no wallet)</span></a>
 
   <!-- place for the symbol -->
   <div class="sym-pod" data-slot="symbol" aria-hidden="true"></div>
@@ -88,6 +91,7 @@
   <div class="wm">Just Cents</div>
   <div class="sym-switch" role="radiogroup" aria-label="Symbol"></div>
   <h1 class="h1">Cents for work you<br>accept. Nothing else.</h1>
+  <p class="proof">Rejected work costs 0¢ · one payment pays every specialist · checked on chain</p>
   <p class="sub">An AI helper hires several AI specialists and checks<br>each piece of their work against rules that are set<br>before the work starts.</p>
 
   <div class="who" role="group" aria-label="Who orders"><button type="button" data-who="you" aria-pressed="true">You</button><button type="button" data-who="assistant" aria-pressed="false">Your assistant</button></div>
@@ -97,6 +101,7 @@
   </form>
   <p class="demo-note" role="status" hidden>This demo plays one example — <a href="#catalog">more jobs in the catalog →</a></p>
   <p class="start-hint" aria-hidden="true">Press Start to see it work</p>
+  <a class="btn-paid" data-paid-example hidden>See a paid order <span>(no wallet)</span></a>
 
   <div class="sym-pod" data-slot="symbol" aria-hidden="true"></div>
   <div class="char" data-slot="character" aria-hidden="true"><div class="char-shadow"></div><div class="char-fig"></div><div class="char-say"></div></div>
@@ -146,7 +151,7 @@
   <!-- the end of the scene, after payment; titles come from EXAMPLE.ready (src/data/example.ts) -->
   <h2 class="ready-title"></h2>
   <div class="ready">
-    <figure class="ready-trailer"><video controls playsinline preload="metadata" crossorigin="anonymous"></video><figcaption></figcaption></figure>
+    <figure class="ready-trailer"><div class="trailer-box"><video playsinline preload="none" crossorigin="anonymous"></video><button type="button" class="trailer-play" hidden><span aria-hidden="true">▶</span> Play the trailer</button></div><figcaption></figcaption></figure>
     <figure class="ready-cover"><img alt=""><figcaption></figcaption></figure>
     <figure class="ready-logo"><img alt=""><figcaption></figcaption></figure>
   </div>

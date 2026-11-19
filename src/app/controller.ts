@@ -10,6 +10,7 @@ import { offerHashHex } from '../core/offer';
 import { srtToVtt } from '../core/subtitles';
 import { zip } from './zip';
 import { copyText } from './copy';
+import { armTrailer } from './trailer';
 import { WalletLink, type WalletState } from '../core/wallet';
 import { explorerTx, getRawTx, type Net } from '../core/chain';
 import { parseNote } from '../core/tx';
@@ -607,6 +608,7 @@ async function deliverPaid(o: Order) {
           coverFig.hidden = false;
         })
         .catch(() => undefined); // no light copy: the cover shows once its full file has passed, as before
+  posterGate = lightIn;
   if (acc.some((c) => c.key === 'logo')) void lightIn.then(() => { new Image().src = EXAMPLE.single.sketch; });
   const lines = acc.map((c) => {
     const li = el('li', 'pending', `${label(c)}: checking the fingerprint…`);
@@ -706,9 +708,19 @@ function showReady(kit: HTMLElement, c: Checked, bytes: ArrayBuffer) {
   track.default = true;
   track.src = URL.createObjectURL(new Blob([srtToVtt(new TextDecoder().decode(bytes))], { type: 'text/vtt' }));
   video.appendChild(track);
-  video.src = EXAMPLE.trailer.video;
+  // the video itself loads only on Play (src/app/trailer.ts); a game frame as its picture, once the page has it anyway
+  void posterGate.then(() => {
+    if (!video.poster) video.poster = order?.coverChoice === 'b' ? EXAMPLE.choice.frames.b : EXAMPLE.choice.frames.a;
+  });
+  armTrailer(video, fig.querySelector<HTMLButtonElement>('.trailer-play')!, EXAMPLE.trailer.video);
   fig.hidden = false;
 }
+
+/**
+ * When the trailer's picture (a game frame) may be set. On "See a paid order" the frame is fetched only after the light
+ * copy of the cover (it is the cover check's yardstick), so the picture waits for that too and costs no extra bytes.
+ */
+let posterGate: Promise<unknown> = Promise.resolve();
 
 function label(c: Checked): string {
   if (c.key.startsWith('cover')) return `${EXAMPLE.choice.label} (${c.key === COVER_KEY.a ? 'A' : 'B'})`;

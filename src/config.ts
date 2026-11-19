@@ -23,7 +23,7 @@ export const PAID_EXAMPLE: { net: Net; txid: string } = { net: 'mainnet', txid: 
 
 /** BLAZE banner links. Empty until they exist; the banner then shows the link as not ready yet. */
 export const BANNER = {
-  slides: '', // Widget Factory slides
+  slides: '/just-cents-slides.pdf', // the deck, served by this site
   repo: '', // public repo, after the owner's go-ahead
   readme: '',
 };

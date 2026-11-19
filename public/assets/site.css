@@ -9,6 +9,15 @@
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:min(60vw,440px)}
 .blaze-addr:focus-visible{outline:2px solid var(--lime-hot);outline-offset:2px}
 .blaze-addr.copied{color:var(--lime-hot)}
+/* the project's state on Nov 14 (the organizers ask for it in the banner) */
+.blaze-state{color:#d9cde3;font-weight:600}
+/* "Copy" next to the address: says "Copied" for a moment */
+.blaze-copy{flex:none;min-height:26px;padding:0 11px;border:1px solid rgba(243,238,248,.45);border-radius:999px;background:transparent;
+  color:#f3eef8;font:700 12px/1 "Figtree",system-ui,sans-serif;cursor:pointer}
+.blaze-copy:hover{border-color:var(--lime-hot)}
+.blaze-copy:focus-visible{outline:2px solid var(--lime-hot);outline-offset:2px}
+.blaze-copy.copied{background:var(--lime-hot);border-color:var(--lime-hot);color:#231a2b}
+.blaze-copy.copy-failed{border-color:#ff9aa8;color:#ff9aa8}
 
 /* description tile: first sentence per language instead of the grey bar */
 .desc-bar.has-text{background:none;border-radius:0;height:auto!important;display:grid;gap:3px}
@@ -126,11 +135,27 @@
 .btn-like{min-height:48px;padding:0 26px;border:0;border-radius:999px;background:var(--orchid);color:#fff;font:700 16px "Figtree",sans-serif;cursor:pointer}
 .btn-like:disabled{opacity:.55;cursor:progress}
 .more h2,.why h2{text-align:center;margin-bottom:20px}
-/* "See a paid order (no wallet)": next to Pay, quieter than it */
-.foot .paid-example{color:var(--orchid-lo);font-weight:600;text-decoration:underline;text-underline-offset:2px}
-.stage-m .foot .sep{display:none}
-/* phone: the row under the foot line is taken by "Break it yourself", so the link sits in the free space above it */
-.stage-m .foot .paid-example{position:absolute;left:0;right:0;bottom:100%;margin-bottom:7px}
+/* "See a paid order (no wallet)": the second button next to Start, on the first screen (the judge's path without a wallet).
+   Outlined, so Start stays the main one. Computer: in the receipt's column, level with the order field, above the receipt.
+   Phone: right of "You / Your assistant", under Start. */
+.btn-paid{position:absolute;z-index:7;display:flex;align-items:center;justify-content:center;box-sizing:border-box;text-align:center;
+  font-family:"Figtree",sans-serif;font-weight:700;color:var(--orchid-lo);text-decoration:none;cursor:pointer;white-space:nowrap;
+  background:rgba(255,255,255,.86);border:2px solid var(--orchid);box-shadow:0 6px 16px rgba(150,70,140,.16)}
+.btn-paid[hidden]{display:none}
+.btn-paid:hover{background:#fff;box-shadow:0 0 0 3px rgba(214,246,74,.7),0 6px 16px rgba(150,70,140,.18)}
+.btn-paid:focus-visible{outline:3px solid var(--lime-hot);outline-offset:2px}
+.btn-paid span{font-weight:600;opacity:.85}
+.stage-d .btn-paid{left:1121px;top:384px;width:264px;height:56px;border-radius:14px;flex-direction:column;gap:1px;font-size:21px;line-height:23px}
+.stage-d .btn-paid span{font-size:15px;line-height:17px}
+.stage-m .btn-paid{left:184px;top:194px;width:176px;height:22px;border-radius:7px;border-width:1.5px;gap:3px;font-size:10px;line-height:12px;
+  margin-top:calc(var(--ex) * .14)}
+.stage-m .btn-paid span{font-size:10px}
+/* one line of proof under the headline */
+.proof{position:absolute;z-index:5;left:0;right:0;margin:0;text-align:center;font-family:"Figtree",sans-serif;font-weight:700;color:var(--orchid-lo);white-space:nowrap}
+.stage-d .h1{top:70px} /* up by 15 to make room for the proof line */
+.stage-d .proof{top:257px;font-size:19px;line-height:23px}
+.stage-m .proof{top:101px;font-size:9.2px;line-height:11px;letter-spacing:-.01em;margin-top:calc(var(--ex) * .05)}
+.stage-m .sub{top:113px} /* down by 10 to make room for the proof line (the order field stays clear even at the shortest height) */
 /* short phone screens (ex at its 120 floor, e.g. the Telegram in-app browser): that space is 8 px short, so the line,
    "Break it yourself" and "Become a specialist" go 12 px lower and the link sits clear of the receipt */
 .stage-m .foot,.stage-m .brk,.stage-m .spec{translate:0 12px}
@@ -140,7 +165,14 @@
 .ready figure{margin:0;padding:10px;border-radius:18px;background:var(--glass);border:1.5px solid var(--glass-line)}
 .ready figure[hidden]{display:none}
 .ready video,.ready img{display:block;width:100%;border-radius:10px}
-.ready video{background:#000;aspect-ratio:16/10}
+.ready video{background:#000 center/cover no-repeat;aspect-ratio:16/10;object-fit:contain}
+/* the trailer loads only on Play: until then a Play button over its picture */
+.trailer-box{position:relative}
+.trailer-play{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:inline-flex;align-items:center;gap:8px;
+  min-height:48px;padding:0 22px;border:0;border-radius:999px;background:var(--orchid);color:#fff;font:700 16px "Figtree",sans-serif;
+  cursor:pointer;box-shadow:0 0 0 4px rgba(255,255,255,.55),0 10px 26px rgba(60,30,60,.35);white-space:nowrap}
+.trailer-play:hover{box-shadow:0 0 0 4px var(--lime-hot),0 10px 26px rgba(60,30,60,.35)}
+.trailer-play[hidden]{display:none}
 .ready-logo img{background:#fff;aspect-ratio:1;object-fit:contain;padding:6%}
 .ready figcaption{margin-top:6px;font:700 14px/1.3 "Figtree",sans-serif;color:var(--ink-2);text-align:center}
 @media (max-width:899px){.ready{grid-template-columns:1.6fr 1fr;gap:10px}.ready-trailer{grid-column:1/-1}}

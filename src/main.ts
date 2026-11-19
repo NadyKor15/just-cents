@@ -2,7 +2,7 @@
 import './ui/app.js';
 import { BANNER, PAID_EXAMPLE } from './config';
 import { EXAMPLE } from './data/example';
-import { copyText } from './app/copy';
+import { copyAndConfirm, copyText } from './app/copy';
 import { NET, openPaidOrder, prepareScene, setWho, WHO, type Orderer } from './app/controller';
 
 prepareScene();
@@ -14,17 +14,12 @@ document.querySelectorAll<HTMLInputElement>('.order-in').forEach((i) => (i.value
 document.querySelectorAll<HTMLButtonElement>('.who button').forEach((b) => b.addEventListener('click', () => setWho(b.dataset.who as Orderer)));
 setWho(WHO);
 
-// no wallet? a real paid order, next to Pay (only when one is configured: no placeholder link)
+// no wallet? a real paid order: a second button next to Start, from the first screen on (only when one is configured:
+// no placeholder link). It replaces the small line that used to appear next to Pay only after the scene.
 if (PAID_EXAMPLE.txid) {
-  document.querySelectorAll<HTMLElement>('.foot').forEach((f) => {
-    const a = document.createElement('a');
-    a.className = 'paid-example';
+  document.querySelectorAll<HTMLAnchorElement>('[data-paid-example]').forEach((a) => {
     a.href = `/?paid=${PAID_EXAMPLE.txid}${PAID_EXAMPLE.net === 'chipnet' ? '&net=chipnet' : ''}`;
-    a.textContent = 'See a paid order (no wallet)';
-    const sep = document.createElement('span');
-    sep.className = 'sep';
-    sep.textContent = ' · ';
-    f.append(sep, a);
+    a.hidden = false;
   });
 }
 const paidTx = new URLSearchParams(location.search).get('paid');
@@ -50,3 +45,4 @@ document.querySelectorAll<HTMLButtonElement>('[data-copy]').forEach((b) =>
     setTimeout(() => b.classList.remove('copied', 'copy-failed'), 1600);
   }),
 );
+document.querySelectorAll<HTMLButtonElement>('[data-copy-btn]').forEach((b) => b.addEventListener('click', () => void copyAndConfirm(b, b.dataset.copyBtn!)));

@@ -29,3 +29,33 @@ export async function copyText(text: string): Promise<boolean> {
   ta.remove();
   return ok;
 }
+
+/** What a "Copy" button needs: its label and a class for the short confirmation. */
+export interface CopyButton {
+  textContent: string | null;
+  classList: { add(...t: string[]): void; remove(...t: string[]): void };
+}
+
+const idleLabel = new WeakMap<CopyButton, string>();
+const resetTimer = new WeakMap<CopyButton, ReturnType<typeof setTimeout>>();
+
+/**
+ * A "Copy" button: copies the text, says "Copied" (or "Copy failed") for a moment, then shows its own label again.
+ * Clicking again while it says "Copied" copies again and keeps the original label (it is remembered once).
+ */
+export async function copyAndConfirm(btn: CopyButton, text: string, copy: (t: string) => Promise<boolean> = copyText, ms = 1600): Promise<boolean> {
+  if (!idleLabel.has(btn)) idleLabel.set(btn, btn.textContent ?? '');
+  const ok = await copy(text);
+  btn.textContent = ok ? 'Copied' : 'Copy failed';
+  btn.classList.remove('copied', 'copy-failed');
+  btn.classList.add(ok ? 'copied' : 'copy-failed');
+  clearTimeout(resetTimer.get(btn));
+  resetTimer.set(
+    btn,
+    setTimeout(() => {
+      btn.textContent = idleLabel.get(btn) ?? '';
+      btn.classList.remove('copied', 'copy-failed');
+    }, ms),
+  );
+  return ok;
+}
