@@ -608,7 +608,9 @@ async function deliverPaid(o: Order) {
           coverFig.hidden = false;
         })
         .catch(() => undefined); // no light copy: the cover shows once its full file has passed, as before
-  posterGate = lightIn;
+  // the trailer's picture waits until the game frame is in (see posterGate); no cover in the order: no picture to wait for
+  let frameIn: () => void = () => undefined;
+  posterGate = cover ? new Promise<void>((r) => (frameIn = r)) : Promise.resolve();
   if (acc.some((c) => c.key === 'logo')) void lightIn.then(() => { new Image().src = EXAMPLE.single.sketch; });
   const lines = acc.map((c) => {
     const li = el('li', 'pending', `${label(c)}: checking the fingerprint…`);
@@ -621,7 +623,9 @@ async function deliverPaid(o: Order) {
       try {
         if (c === cover) {
           await lightIn;
-          new Image().src = c.key === COVER_KEY.b ? EXAMPLE.choice.frames.b : EXAMPLE.choice.frames.a;
+          const frame = new Image();
+          frame.onload = () => frameIn(); // only a frame that arrived; on an error the trailer simply has no picture
+          frame.src = c.key === COVER_KEY.b ? EXAMPLE.choice.frames.b : EXAMPLE.choice.frames.a;
         }
         const f = await o.fetchFull(c);
         const ok = f.match && f.verdict.ok;
@@ -717,8 +721,10 @@ function showReady(kit: HTMLElement, c: Checked, bytes: ArrayBuffer) {
 }
 
 /**
- * When the trailer's picture (a game frame) may be set. On "See a paid order" the frame is fetched only after the light
- * copy of the cover (it is the cover check's yardstick), so the picture waits for that too and costs no extra bytes.
+ * When the trailer's picture (a game frame) may be set. On "See a paid order" the frame is fetched after the light copy
+ * of the cover (it is the cover check's yardstick); the picture is set only once that frame has arrived, so it comes
+ * from the browser's cache. Set earlier, the poster started a second download of the same 1.2 MB frame (seen at the
+ * edge: two full responses per open), on the file the third tick waits for.
  */
 let posterGate: Promise<unknown> = Promise.resolve();
 
