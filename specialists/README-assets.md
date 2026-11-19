@@ -1,6 +1,6 @@
 # Demo assets for the kit: subtitles, cover, logo
 
-Demo order: "Make me a kit to list my game." Game: "Autopilot: Summer Rules", a separate, already published browser game
+Demo order: "Get my game ready to list." Game: "Autopilot: Summer Rules", a separate, already published browser game
 by the same author. Its trailer and frames are the order's own inputs; they are not sold by any specialist.
 Run everything from `code/just-cents`. Service keys come only from the environment and are never written to a file.
 

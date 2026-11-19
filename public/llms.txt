@@ -12,7 +12,7 @@ Assistants can place orders here. An assistant never holds money and never pays:
 
 ## What can be ordered
 
-One example today: "Make me a kit to list my game." Three parts for the game's store page:
+One example today: "Get my game ready to list." Three parts for the game's store page:
 - Trailer subtitles: an SRT file; up to 42 characters a line, 2 lines a subtitle, 20 characters a second; lines never overlap; each line starts within 0.4 s of its first spoken word; the last one ends within 2 s of the end of the sound. 1¢.
 - Store cover from a game frame: at least 2560×1600, the frame's proportions, no transparency, up to 25 MB, sharper than the frame simply stretched. Two variants; the person picks one by taste and pays only for that one. 2¢.
 - Logo traced from a sketch: an SVG of clean outlines, up to 3 colours and 200 outlines, no picture pasted inside, no scripts, up to 100 KB, like the sketch when drawn. 1¢.
@@ -41,7 +41,7 @@ All the checks are real.
 
 ## Example
 
-User: "Make me a kit to list my game."
+User: "Get my game ready to list."
 Assistant: calls `create_order` → "Three specialists sent previews. Sam's subtitles start 1.1 s after the voice, so he gets 0¢ and Lena's are used. The cover has two variants: A, the first call by the lake, or B, the sticker stall. Which one? The total is 5¢. Open this link and sign once in your wallet: <pay_url>."
 User: "A. Done."
 Assistant: calls `get_kit` → downloads the subtitles, the cover and the logo, and checks every file's sha256 against the signed offer.

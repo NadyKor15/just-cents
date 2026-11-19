@@ -12,7 +12,7 @@ export type Who = 'sam' | 'lena';
 
 export const EXAMPLE = {
   /** What the person types (and what an assistant asks for). */
-  request: 'Make me a kit to list my game.',
+  request: 'Get my game ready to list.',
   /** The order field in "Your assistant" mode. */
   assistantAsk: 'Asking for: a kit to list my game.',
   /** MCP tool description for create_order. */

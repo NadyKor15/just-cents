@@ -8,7 +8,7 @@ Built for BCH BLAZE 2026. MIT licensed.
 
 ## Two minutes on the live site
 
-1. The order is filled in: "Make me a kit to list my game." Press **Start**.
+1. The order is filled in: "Get my game ready to list." Press **Start**.
 2. Three parts for the game's store page appear: a store cover from a game frame (two variants), subtitles for the trailer, a logo traced from a sketch. Previews arrive: two 320 px watermarked covers, the first three subtitle lines, a 128 px watermarked logo.
 3. Every preview is checked by code against the published rules. The demo subtitles specialist Sam is careless on purpose: every line of his comes 1.1 s after the voice. Rejected, 0¢. Just Cents then uses Lena's subtitles, which pass. **Break it yourself** lets you make Lena the careless one instead; both files are checked again.
 4. **Pay 5¢ once**: connect a wallet over WizardConnect (tested with Cashonize on mainnet and chipnet, and with Selene on chipnet) and sign one transaction.
