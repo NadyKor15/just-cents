@@ -198,14 +198,15 @@ export type BuiltPayment2 = BuiltPayment & {
   /** One per accepted specialist, in output order. */
   contracts: { label: string; vout: number; sats: bigint; params: LockParams; lockingHex: string }[];
   buyerLockingHex: string;
-  refundHeight: number;
+  refundTime: number;
   note: string;
 };
 
 /**
  * The v2 payment: one contract output per accepted specialist (price + FEE_SATS), the plain outputs (the service's 1¢),
  * the JC2 note, change. Refunds and change go to the address of the largest coin, which is always spent first, so the
- * buyer's refund address is one the wallet already knows as its own.
+ * buyer's refund address is one the wallet already knows as its own. refundTime: the chain's median time past now
+ * plus REFUND_AFTER_SECONDS (src/core/htlc-chain.ts refundTimeFromNow).
  */
 export function buildPayment2(args: {
   utxos: Utxo[];
@@ -213,17 +214,17 @@ export function buildPayment2(args: {
   payouts: Payout[];
   orderIdHex: string;
   offerHashesHex: string[];
-  refundHeight: number;
+  refundTime: number;
 }): BuiltPayment2 {
   if (args.contracts.length === 0) throw new Error('nothing to pay');
   const coins = [...args.utxos].sort((a, b) => (b.sats > a.sats ? 1 : b.sats < a.sats ? -1 : 0));
   if (coins.length === 0) throw new Error('not enough coins: the wallet has none');
   const buyer = coins[0]!.lockingBytecode;
   const buyerLockingHex = binToHex(buyer);
-  const note = noteText2(args.orderIdHex, args.refundHeight, buyerLockingHex, args.offerHashesHex);
+  const note = noteText2(args.orderIdHex, args.refundTime, buyerLockingHex, args.offerHashesHex);
   const noteScript = opReturnBytecode2(note);
   const contracts = args.contracts.map((c) => {
-    const params: LockParams = { ...c.lock, buyerLockingHex, refundHeight: args.refundHeight };
+    const params: LockParams = { ...c.lock, buyerLockingHex, refundTime: args.refundTime };
     const locking = contractLocking(params);
     const sats = c.priceSats + FEE_SATS;
     if (sats < dustFor(locking)) throw new Error(`${c.label}: ${sats} sat is below the dust limit`);
@@ -254,7 +255,7 @@ export function buildPayment2(args: {
         ...built,
         contracts: contracts.map((c, i) => ({ label: c.label, vout: i, sats: c.sats, params: c.params, lockingHex: binToHex(c.locking) })),
         buyerLockingHex,
-        refundHeight: args.refundHeight,
+        refundTime: args.refundTime,
         note,
       };
     }

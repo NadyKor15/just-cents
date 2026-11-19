@@ -1,11 +1,12 @@
 // A demo specialist's side of a v2 order: "I see my contract on chain → I reveal my file key in a claim and take the money."
 // POST /claim/<offer>?net=…&txid=<payment> reads the payment from a public Fulcrum server, rebuilds this offer's
-// contract from the payment's JC2 note, checks the amount and the time left before a refund, and broadcasts the claim.
+// contract from the payment's JC2 note, checks the amount and the time left before a refund (the chain's median time
+// past against the contract's refund time), and broadcasts the claim.
 // The answer names the claim transaction; the buyer's page reads the key from the chain, not from this answer.
 // The specialist's file key and signing key are secrets of this server (environment), never in the code.
 // No libauth here (Workers refuse its WASM): src/core/htlc.ts and src/core/filebox.ts are WASM-free.
 import offers from '../src/data/offers.json';
-import { buildClaim, canClaimSafely, contractLocking, decodeTx, FEE_SATS, hex, parseNote2, txidOf, unhex, type LockParams } from '../src/core/htlc';
+import { buildClaim, canClaimSafely, contractLocking, decodeTx, FEE_SATS, hex, medianTimePast, parseNote2, txidOf, unhex, type LockParams } from '../src/core/htlc';
 import { deriveFileKey, keyHashHex } from '../src/core/filebox';
 import { rpc, type Net } from './fulcrum';
 import { json } from './http';
@@ -28,8 +29,8 @@ export type ClaimPlan =
   | { ok: true; paymentTxid: string; vout: number; value: bigint; params: LockParams; hex: string; txid: string; fee: bigint }
   | { ok: false; status: number; reason: string };
 
-/** Pure: everything the endpoint decides, given the payment, the offer, the keys and the chain tip. */
-export function planClaim(paymentHex: string, e: ClaimEntry, net: Net, keys: ClaimKeys, tipHeight: number): ClaimPlan {
+/** Pure: everything the endpoint decides, given the payment, the offer, the keys and the chain's median time past. */
+export function planClaim(paymentHex: string, e: ClaimEntry, net: Net, keys: ClaimKeys, mtp: number): ClaimPlan {
   let raw: Uint8Array;
   let tx: ReturnType<typeof decodeTx>;
   try {
@@ -47,7 +48,7 @@ export function planClaim(paymentHex: string, e: ClaimEntry, net: Net, keys: Cla
     keyHash: e.keyHash,
     sellerPubkey: e.pubkey,
     buyerLockingHex: note.buyerLockingHex,
-    refundHeight: note.refundHeight,
+    refundTime: note.refundTime,
   };
   let lockingHex: string;
   try {
@@ -62,7 +63,7 @@ export function planClaim(paymentHex: string, e: ClaimEntry, net: Net, keys: Cla
   const value = tx.outputs[vout]!.value;
   const want = BigInt(e.priceSats) + FEE_SATS;
   if (value < want) return { ok: false, status: 402, reason: `the contract holds ${value} sat, the offer asks ${e.priceSats} sat plus ${FEE_SATS} sat for the network` };
-  if (!canClaimSafely(tipHeight, note.refundHeight)) return { ok: false, status: 409, reason: `too late: the refund opens at block ${note.refundHeight}, the chain is at ${tipHeight}; the key stays secret` };
+  if (!canClaimSafely(mtp, note.refundTime)) return { ok: false, status: 409, reason: `too late: the refund opens at ${new Date(note.refundTime * 1000).toISOString()} (chain time ${new Date(mtp * 1000).toISOString()}); the key stays secret` };
   const key = deriveFileKey(keys.seed, net, e.fileSha256);
   if (keyHashHex(key) !== e.keyHash) return { ok: false, status: 500, reason: 'this server does not hold the key of this offer' };
   const privateKey = keys.privateKeys[e.pubkey];
@@ -139,16 +140,18 @@ export async function claim(url: URL, method: string, env: ClaimEnv, book: Recor
   const keys = readKeys(env);
   if (!keys) return json({ ok: false, reason: 'the specialist keys are not set up on this server' }, 503);
   let raw: string;
-  let tip: number;
+  let mtp: number;
   try {
     raw = await rawTx(net, txid);
-    tip = (await rpc<{ height: number }>(net, 'blockchain.headers.subscribe', [])).height;
+    const tip = (await rpc<{ height: number }>(net, 'blockchain.headers.subscribe', [])).height;
+    const h = await rpc<{ hex: string; count: number }>(net, 'blockchain.block.headers', [tip - 10, 11]);
+    mtp = medianTimePast(h.hex);
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     if (/No such mempool|not found/i.test(msg)) return json({ ok: false, reason: 'the network does not know this transaction (yet)' }, 404);
     return json({ ok: false, reason: `could not read the network: ${msg}` }, 502);
   }
-  const plan = planClaim(raw, entry, net, keys, tip);
+  const plan = planClaim(raw, entry, net, keys, mtp);
   if (!plan.ok) return json({ ok: false, reason: plan.reason }, plan.status);
   if (plan.paymentTxid !== txid) return json({ ok: false, reason: 'the network returned another transaction' }, 502);
   try {
@@ -161,5 +164,5 @@ export async function claim(url: URL, method: string, env: ClaimEnv, book: Recor
       return json({ ok: false, reason: `the network refused the claim: ${msg}` }, 502);
     }
   }
-  return json({ ok: true, claimTxid: plan.txid, payment: { txid, vout: plan.vout, sats: plan.value.toString() }, fee: plan.fee.toString(), refundHeight: plan.params.refundHeight });
+  return json({ ok: true, claimTxid: plan.txid, payment: { txid, vout: plan.vout, sats: plan.value.toString() }, fee: plan.fee.toString(), refundTime: plan.params.refundTime });
 }

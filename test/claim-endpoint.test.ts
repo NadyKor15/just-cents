@@ -24,6 +24,18 @@ const fileSha256 = binToHex(libSha.hash(PLAIN));
 const fileKey = deriveFileKey(SEED, 'chipnet', fileSha256);
 const env = { JC_FILE_KEY_SEED: binToHex(SEED), JC_CLAIM_KEYS: JSON.stringify({ [binToHex(pub(seller))]: binToHex(seller) }) };
 const ORIGIN = 'https://justcents.retailbox-automation.com';
+const T_REFUND = 1_795_100_000;
+
+/** 11 block headers whose median time is `mtp` (only the time field matters here). */
+function headers(mtp: number): string {
+  let hex = '';
+  for (let i = 0; i < 11; i++) {
+    const b = new Uint8Array(80);
+    new DataView(b.buffer).setUint32(68, mtp + (i - 5) * 60, true);
+    hex += binToHex(b);
+  }
+  return hex;
+}
 
 let entry: ClaimEntry;
 let paymentHex = '';
@@ -48,17 +60,21 @@ beforeEach(async () => {
     payouts: [],
     orderIdHex: 'ef'.repeat(16),
     offerHashesHex: [entry.offerHashHex],
-    refundHeight: 338_600,
+    refundTime: T_REFUND,
   });
   paymentHex = signLocally(p.transaction, p.sourceOutputs, () => buyerPriv).hex;
   paymentTxid = txidOf(unhex(paymentHex));
 });
 
-function network(o: { broadcast?: () => unknown; tip?: number } = {}) {
+function network(o: { broadcast?: () => unknown; mtp?: number } = {}) {
   const sent: string[] = [];
   rpc.mockImplementation(async (_net: string, method: string, params: unknown[]) => {
     if (method === 'blockchain.transaction.get') return paymentHex;
-    if (method === 'blockchain.headers.subscribe') return { height: o.tip ?? 338_500, hex: '' };
+    if (method === 'blockchain.headers.subscribe') return { height: 338_500, hex: '' };
+    if (method === 'blockchain.block.headers') {
+      expect(params).toEqual([338_490, 11]);
+      return { hex: headers(o.mtp ?? T_REFUND - 3600), count: 11, max: 2016 };
+    }
     if (method === 'blockchain.transaction.broadcast') {
       sent.push(params[0] as string);
       if (o.broadcast) return o.broadcast();
@@ -106,8 +122,8 @@ describe('POST /claim', () => {
     expect(r.status).toBe(409);
   });
 
-  it('too close to the refund height: 409 and nothing is broadcast, the key stays secret', async () => {
-    const sent = network({ tip: 338_598 });
+  it('too close to the refund time: 409 and nothing is broadcast, the key stays secret', async () => {
+    const sent = network({ mtp: T_REFUND - 600 });
     const r = await post();
     expect(r.status).toBe(409);
     expect(sent).toHaveLength(0);

@@ -5,9 +5,13 @@
 //   claim  — the specialist reveals the file key K, with sha256(K) equal to the contract's keyHash, and signs with the
 //            key of its offer. The money goes where the specialist's signed transaction says; K is now on chain, and the
 //            buyer's page reads it there and opens the sealed file.
-//   refund — once the chain reaches refundHeight, anyone, without any signature, may send the money back: the output at
-//            the same index as the contract's input must pay the buyer's own locking bytecode at least the contract's
-//            value minus FEE_SATS.
+//   refund — once the chain's median time passes refundTime, anyone, without any signature, may send the money back:
+//            the output at the same index as the contract's input must pay the buyer's own locking bytecode at least the
+//            contract's value minus FEE_SATS.
+// The refund lock is a time (median time past of the chain), not a block height: on chipnet, since its switch to the
+// next upgrade's rules (block 333055, 15 Nov 2026), every node calls a height locktime above 333054 non-final, while a
+// time locktime is final as usual; on mainnet both work. One kind of lock on both networks keeps the chipnet test the
+// same as the real thing.
 // The contract also carries the fingerprint of the sealed (encrypted) file, so the specialist's claim signature covers
 // exactly which sealed file was paid for.
 //
@@ -21,10 +25,15 @@ export type Net = 'mainnet' | 'chipnet';
 
 /** Added by the buyer on top of each specialist's price: pays the claim's network fee, and caps what a refund may spend on fee. */
 export const FEE_SATS = 500n;
-/** About an hour: blocks after the payment before the money can go back to the buyer. Chipnet blocks come about once a minute. */
-export const REFUND_AFTER_BLOCKS: Record<Net, number> = { mainnet: 6, chipnet: 60 };
-/** A specialist reveals its key only while at least this many blocks remain before a refund becomes possible. */
-export const CLAIM_MARGIN_BLOCKS = 2;
+/**
+ * An hour of the chain's median time past (MTP): refundTime = MTP at payment + this. MTP moves at about real time,
+ * so the money can go back about an hour after the payment, on either network.
+ */
+export const REFUND_AFTER_SECONDS = 3600;
+/** A specialist reveals its key only while the chain's MTP is at least this far from refundTime. */
+export const CLAIM_MARGIN_SECONDS = 600;
+/** Locktimes from this value on are times (unix seconds), below it block heights. */
+export const LOCKTIME_THRESHOLD = 500_000_000;
 /** Network relay minimum. */
 export const FEE_PER_BYTE = 1n;
 /** Smallest output the network relays to a P2PKH address. */
@@ -39,8 +48,8 @@ export type LockParams = {
   sellerPubkey: string;
   /** locking bytecode the refund must pay (the buyer's address), hex */
   buyerLockingHex: string;
-  /** block height from which a refund is valid */
-  refundHeight: number;
+  /** unix seconds; a refund is valid once the chain's median time past is past it */
+  refundTime: number;
 };
 
 // ---------- bytes ----------
@@ -174,7 +183,11 @@ function checkParams(p: LockParams): void {
   if (!isHex(p.keyHash, 32)) throw new Error('keyHash must be 32 bytes hex');
   if (!/^0[23][0-9a-f]{64}$/.test(p.sellerPubkey)) throw new Error('sellerPubkey must be a compressed public key');
   if (!/^([0-9a-f]{2}){1,40}$/.test(p.buyerLockingHex)) throw new Error('buyerLockingHex must be 1..40 bytes hex');
-  if (!Number.isInteger(p.refundHeight) || p.refundHeight < 17 || p.refundHeight >= 500_000_000) throw new Error('refundHeight must be a block height');
+  if (!isRefundTime(p.refundTime)) throw new Error('refundTime must be unix seconds');
+}
+
+function isRefundTime(t: number): boolean {
+  return Number.isInteger(t) && t >= LOCKTIME_THRESHOLD && t <= 0xffffffff;
 }
 
 /**
@@ -185,7 +198,7 @@ function checkParams(p: LockParams): void {
  *     OP_SHA256 <keyHash> OP_EQUALVERIFY                        K opens this lock
  *     <sellerPubkey> OP_CHECKSIG                               and the specialist signs
  *   OP_ELSE
- *     <refundHeight> OP_CHECKLOCKTIMEVERIFY OP_DROP            not before refundHeight
+ *     <refundTime> OP_CHECKLOCKTIMEVERIFY OP_DROP              not before refundTime (median time past)
  *     OP_INPUTINDEX OP_OUTPUTBYTECODE <buyerLocking> OP_EQUALVERIFY      the output at my index pays the buyer
  *     OP_INPUTINDEX OP_OUTPUTVALUE OP_INPUTINDEX OP_UTXOVALUE <FEE> OP_SUB OP_GREATERTHANOREQUAL   at least my value − FEE
  *   OP_ENDIF
@@ -202,7 +215,7 @@ export function redeemScript(p: LockParams): Uint8Array {
     pushData(hexToBytes(p.sellerPubkey)),
     Uint8Array.of(OP.OP_CHECKSIG),
     Uint8Array.of(OP.OP_ELSE),
-    pushNumber(p.refundHeight),
+    pushNumber(p.refundTime),
     Uint8Array.of(OP.OP_CHECKLOCKTIMEVERIFY, OP.OP_DROP),
     Uint8Array.of(OP.OP_INPUTINDEX, OP.OP_OUTPUTBYTECODE),
     pushData(hexToBytes(p.buyerLockingHex)),
@@ -245,7 +258,7 @@ export function parseRedeem(redeem: Uint8Array): LockParams | null {
       keyHash: bytesToHex(k.data),
       sellerPubkey: bytesToHex(pk.data),
       buyerLockingHex: bytesToHex(b.data),
-      refundHeight: Number(decodeScriptNum(h.data)),
+      refundTime: Number(decodeScriptNum(h.data)),
     };
     return bytesToHex(redeemScript(p)) === bytesToHex(redeem) ? p : null;
   } catch {
@@ -287,15 +300,16 @@ export const NOTE_PREFIX_2 = 'JC2';
 export const MAX_OP_RETURN_BYTES = 223;
 
 /**
- * One ASCII push: "JC2 <order id, 32 hex> <refund height> <buyer locking bytecode hex> <first 16 bytes of each accepted
- * offer hash, 32 hex each>". With it, a specialist (or anyone) can rebuild every contract of the order from the chain.
+ * One ASCII push: "JC2 <order id, 32 hex> <refund time, unix seconds> <buyer locking bytecode hex> <first 16 bytes of
+ * each accepted offer hash, 32 hex each>". With it, a specialist (or anyone) can rebuild every contract of the order
+ * from the chain.
  */
-export function noteText2(orderIdHex: string, refundHeight: number, buyerLockingHex: string, offerHashesHex: string[]): string {
+export function noteText2(orderIdHex: string, refundTime: number, buyerLockingHex: string, offerHashesHex: string[]): string {
   if (!/^[0-9a-f]{32}$/.test(orderIdHex)) throw new Error('order id must be 16 bytes hex');
-  if (!Number.isInteger(refundHeight) || refundHeight < 17 || refundHeight >= 500_000_000) throw new Error('refund height must be a block height');
+  if (!isRefundTime(refundTime)) throw new Error('refund time must be unix seconds');
   if (!/^([0-9a-f]{2}){1,40}$/.test(buyerLockingHex)) throw new Error('buyer locking bytecode must be 1..40 bytes hex');
   for (const h of offerHashesHex) if (!/^[0-9a-f]{64}$/.test(h)) throw new Error('offer hash must be 32 bytes hex');
-  return [NOTE_PREFIX_2, orderIdHex, String(refundHeight), buyerLockingHex, ...offerHashesHex.map((h) => h.slice(0, 32))].join(' ');
+  return [NOTE_PREFIX_2, orderIdHex, String(refundTime), buyerLockingHex, ...offerHashesHex.map((h) => h.slice(0, 32))].join(' ');
 }
 
 export function opReturnBytecode2(text: string): Uint8Array {
@@ -309,7 +323,7 @@ export function opReturnBytecode2(text: string): Uint8Array {
   return script;
 }
 
-export type Note2 = { orderIdHex: string; refundHeight: number; buyerLockingHex: string; offerPrefixes: string[] };
+export type Note2 = { orderIdHex: string; refundTime: number; buyerLockingHex: string; offerPrefixes: string[] };
 
 export function parseNote2(locking: Uint8Array): Note2 | null {
   if (locking[0] !== 0x6a) return null;
@@ -317,12 +331,12 @@ export function parseNote2(locking: Uint8Array): Note2 | null {
   if (!items || items.length !== 1) return null;
   const parts = new TextDecoder().decode(items[0]).split(' ');
   if (parts[0] !== NOTE_PREFIX_2) return null;
-  const [, order, height, buyer, ...offers] = parts;
+  const [, order, time, buyer, ...offers] = parts;
   if (!order || !/^[0-9a-f]{32}$/.test(order)) return null;
-  if (!height || !/^[1-9][0-9]{1,8}$/.test(height)) return null;
+  if (!time || !/^[1-9][0-9]{8,9}$/.test(time) || !isRefundTime(Number(time))) return null;
   if (!buyer || !/^([0-9a-f]{2}){1,40}$/.test(buyer)) return null;
   if (offers.some((p) => !/^[0-9a-f]{32}$/.test(p))) return null;
-  return { orderIdHex: order, refundHeight: Number(height), buyerLockingHex: buyer, offerPrefixes: offers };
+  return { orderIdHex: order, refundTime: Number(time), buyerLockingHex: buyer, offerPrefixes: offers };
 }
 
 // ---------- transactions ----------
@@ -466,7 +480,8 @@ export type ContractCoin = { txid: string; vout: number; value: bigint; params: 
 
 /**
  * The refund: no signature at all. Input i spends contract i, output i pays that contract's buyer its value minus its
- * share of the fee (never more than FEE_SATS). Valid once the chain reaches the highest refundHeight among them.
+ * share of the fee (never more than FEE_SATS). The network takes it once the chain's median time past is past the
+ * latest refundTime among them.
  */
 export function buildRefund(a: { contracts: ContractCoin[]; feePerByte?: bigint }): BuiltTx {
   if (a.contracts.length === 0) throw new Error('nothing to refund');
@@ -476,7 +491,7 @@ export function buildRefund(a: { contracts: ContractCoin[]; feePerByte?: bigint 
     // CHECKLOCKTIMEVERIFY needs a sequence below 0xffffffff
     inputs: a.contracts.map((c) => ({ txid: c.txid, vout: c.vout, unlocking: refundUnlocking(redeemScript(c.params)), sequence: 0xfffffffe })),
     outputs: a.contracts.map((c) => ({ value: c.value, locking: hexToBytes(c.params.buyerLockingHex) })),
-    locktime: Math.max(...a.contracts.map((c) => c.params.refundHeight)),
+    locktime: Math.max(...a.contracts.map((c) => c.params.refundTime)),
   };
   const size = encodeTx(tx).length;
   const fee = BigInt(size) * feeRate;
@@ -517,14 +532,26 @@ export function readSpend(raw: Uint8Array, outpoint: { txid: string; vout: numbe
   return null;
 }
 
-/** May the specialist reveal its key now? Only with CLAIM_MARGIN_BLOCKS to spare before a refund opens. */
-export function canClaimSafely(tipHeight: number, refundHeight: number): boolean {
-  return tipHeight + CLAIM_MARGIN_BLOCKS < refundHeight;
+/** May the specialist reveal its key now? Only with CLAIM_MARGIN_SECONDS of median time to spare before a refund opens. */
+export function canClaimSafely(medianTimePast: number, refundTime: number): boolean {
+  return medianTimePast + CLAIM_MARGIN_SECONDS < refundTime;
 }
 
-/** Can a refund be accepted now? A transaction is final when its locktime is at most the chain tip. */
-export function canRefund(tipHeight: number, refundHeight: number): boolean {
-  return tipHeight >= refundHeight;
+/** Will the network take a refund now? A time locktime is final once it is below the tip's median time past. */
+export function canRefund(medianTimePast: number, refundTime: number): boolean {
+  return medianTimePast > refundTime;
+}
+
+/** Median time past from the chain's last 11 block headers (80 bytes each, hex, oldest first), as the network computes it. */
+export function medianTimePast(headersHex: string): number {
+  if (headersHex.length % 160 !== 0 || headersHex.length === 0) throw new Error('headers must be whole 80-byte headers');
+  const times: number[] = [];
+  for (let i = 0; i < headersHex.length; i += 160) {
+    const b = hexToBytes(headersHex.slice(i, i + 160));
+    times.push(new DataView(b.buffer).getUint32(68, true));
+  }
+  const last = times.slice(-11).sort((x, y) => x - y);
+  return last[Math.floor(last.length / 2)]!;
 }
 
 /** What a page or a refunder knows about an offer: its fingerprint and lock (from the signed v2 offer). */
@@ -534,9 +561,9 @@ export type FoundContract = { offerHashHex: string; vout: number; value: bigint;
 
 /**
  * Rebuilds, from a payment alone, the contract of every listed offer that the payment really funds: the JC2 note gives
- * the order, the refund height and the buyer; each offer gives its lock. Works on any device, from the chain only.
+ * the order, the refund time and the buyer; each offer gives its lock. Works on any device, from the chain only.
  */
-export function contractsInPayment(raw: Uint8Array, offers: OfferLock[]): { orderIdHex: string; refundHeight: number; buyerLockingHex: string; contracts: FoundContract[] } | null {
+export function contractsInPayment(raw: Uint8Array, offers: OfferLock[]): { orderIdHex: string; refundTime: number; buyerLockingHex: string; contracts: FoundContract[] } | null {
   const tx = decodeTx(raw);
   const notes = tx.outputs.map((o) => parseNote2(o.locking)).filter((n) => n !== null);
   if (notes.length !== 1) return null;
@@ -544,11 +571,11 @@ export function contractsInPayment(raw: Uint8Array, offers: OfferLock[]): { orde
   const contracts: FoundContract[] = [];
   for (const o of offers) {
     if (!note.offerPrefixes.includes(o.offerHashHex.slice(0, 32))) continue;
-    const params: LockParams = { ...o.lock, buyerLockingHex: note.buyerLockingHex, refundHeight: note.refundHeight };
+    const params: LockParams = { ...o.lock, buyerLockingHex: note.buyerLockingHex, refundTime: note.refundTime };
     const lockingHex = bytesToHex(contractLocking(params));
     tx.outputs.forEach((out, vout) => {
       if (bytesToHex(out.locking) === lockingHex) contracts.push({ offerHashHex: o.offerHashHex, vout, value: out.value, params, lockingHex });
     });
   }
-  return { orderIdHex: note.orderIdHex, refundHeight: note.refundHeight, buyerLockingHex: note.buyerLockingHex, contracts };
+  return { orderIdHex: note.orderIdHex, refundTime: note.refundTime, buyerLockingHex: note.buyerLockingHex, contracts };
 }

@@ -25,6 +25,7 @@ import {
   encodeTx,
   FEE_SATS,
   hex,
+  medianTimePast,
   noteText2,
   opReturnBytecode2,
   parseNote2,
@@ -63,7 +64,7 @@ const params: LockParams = {
   keyHash: keyHashHex(K),
   sellerPubkey: binToHex(pub(sellerPriv)),
   buyerLockingHex: binToHex(buyerLock),
-  refundHeight: 978_100,
+  refundTime: 1_795_000_000,
 };
 const FUND = 'aa'.repeat(32);
 const PRICE = 4756n;
@@ -106,13 +107,15 @@ describe('the contract', () => {
     const r = redeemScript(params);
     expect(r.length).toBeLessThan(520);
     expect(parseRedeem(r)).toEqual(params);
-    const other = redeemScript({ ...params, refundHeight: params.refundHeight + 1 });
-    expect(hex(contractLocking({ ...params, refundHeight: params.refundHeight + 1 }))).not.toBe(hex(contract()));
+    const other = redeemScript({ ...params, refundTime: params.refundTime + 1 });
+    expect(hex(contractLocking({ ...params, refundTime: params.refundTime + 1 }))).not.toBe(hex(contract()));
+    // a block height is not accepted as the refund lock (chipnet calls height locks non-final; see htlc.ts)
+    expect(() => redeemScript({ ...params, refundTime: 978_100 })).toThrow(/unix seconds/);
     // any other script, even one byte off, is not ours
     const tampered = Uint8Array.from(r);
     tampered[tampered.length - 3] = 0x93; // OP_ADD instead of OP_SUB
     expect(parseRedeem(tampered)).toBeNull();
-    expect(parseRedeem(other)).toEqual({ ...params, refundHeight: params.refundHeight + 1 });
+    expect(parseRedeem(other)).toEqual({ ...params, refundTime: params.refundTime + 1 });
     expect(contract().length).toBe(35);
   });
 
@@ -145,30 +148,30 @@ describe('the contract', () => {
     expect(() => claimTx({ priv: otherPriv })).toThrow(/specialist key/);
   });
 
-  it('refund before the refund height is refused', () => {
-    const tx = refundTx({ locktime: params.refundHeight - 1, outputs: [{ value: VALUE - FEE_SATS, locking: buyerLock }] });
+  it('refund before the refund time is refused', () => {
+    const tx = refundTx({ locktime: params.refundTime - 1, outputs: [{ value: VALUE - FEE_SATS, locking: buyerLock }] });
     const r = verify(tx, [[contract(), VALUE]]);
     expect(r).not.toBe(true);
     expect(String(r)).toMatch(/requires a locktime greater than the transaction's locktime/);
   });
 
-  it('refund from the refund height pays the buyer, with no signature', () => {
-    const tx = refundTx({ locktime: params.refundHeight, outputs: [{ value: VALUE - FEE_SATS, locking: buyerLock }] });
+  it('refund from the refund time pays the buyer, with no signature', () => {
+    const tx = refundTx({ locktime: params.refundTime, outputs: [{ value: VALUE - FEE_SATS, locking: buyerLock }] });
     expect(verify(tx, [[contract(), VALUE]])).toBe(true);
   });
 
   it('refund with a final sequence is refused (locktime would not apply)', () => {
-    const tx = refundTx({ locktime: params.refundHeight, sequence: 0xffffffff, outputs: [{ value: VALUE - FEE_SATS, locking: buyerLock }] });
+    const tx = refundTx({ locktime: params.refundTime, sequence: 0xffffffff, outputs: [{ value: VALUE - FEE_SATS, locking: buyerLock }] });
     expect(String(verify(tx, [[contract(), VALUE]]))).toMatch(/locktime is disabled/);
   });
 
   it('refund to anyone but the buyer is refused', () => {
-    const tx = refundTx({ locktime: params.refundHeight, outputs: [{ value: VALUE - FEE_SATS, locking: thiefLock }] });
+    const tx = refundTx({ locktime: params.refundTime, outputs: [{ value: VALUE - FEE_SATS, locking: thiefLock }] });
     expect(String(verify(tx, [[contract(), VALUE]]))).toMatch(/input index 0: Program failed an OP_VERIFY/);
   });
 
   it('refund paying the buyer less than the value minus the fixed fee is refused', () => {
-    const tx = refundTx({ locktime: params.refundHeight, outputs: [{ value: VALUE - FEE_SATS - 1n, locking: buyerLock }] });
+    const tx = refundTx({ locktime: params.refundTime, outputs: [{ value: VALUE - FEE_SATS - 1n, locking: buyerLock }] });
     expect(String(verify(tx, [[contract(), VALUE]]))).toMatch(/non-truthy value/);
   });
 
@@ -177,10 +180,10 @@ describe('the contract', () => {
       [{ value: VALUE - FEE_SATS, locking: buyerLock }, { value: VALUE - FEE_SATS, locking: thiefLock }],
       [{ value: VALUE - FEE_SATS, locking: thiefLock }, { value: VALUE - FEE_SATS, locking: buyerLock }],
     ]) {
-      const tx = refundTx({ locktime: params.refundHeight, inputs: 2, outputs });
+      const tx = refundTx({ locktime: params.refundTime, inputs: 2, outputs });
       expect(String(verify(tx, [[contract(), VALUE], [contract(), VALUE]]))).toMatch(/Program failed an OP_VERIFY/);
     }
-    const ok = refundTx({ locktime: params.refundHeight, inputs: 2, outputs: [{ value: VALUE - FEE_SATS, locking: buyerLock }, { value: VALUE - FEE_SATS, locking: buyerLock }] });
+    const ok = refundTx({ locktime: params.refundTime, inputs: 2, outputs: [{ value: VALUE - FEE_SATS, locking: buyerLock }, { value: VALUE - FEE_SATS, locking: buyerLock }] });
     expect(verify(ok, [[contract(), VALUE], [contract(), VALUE]])).toBe(true);
   });
 
@@ -193,17 +196,29 @@ describe('the contract', () => {
       ],
     });
     expect(verify(r.tx, [[contract(), VALUE], [contractLocking(p2), 9512n + FEE_SATS]])).toBe(true);
-    expect(r.tx.locktime).toBe(params.refundHeight);
+    expect(r.tx.locktime).toBe(params.refundTime);
     expect(r.tx.outputs.map((o) => hex(o.locking))).toEqual([hex(buyerLock), hex(buyerLock)]);
     expect(r.tx.outputs[0]!.value).toBeGreaterThanOrEqual(VALUE - FEE_SATS);
     expect(() => buildRefund({ contracts: [{ txid: FUND, vout: 0, value: VALUE, params }], feePerByte: 10n })).toThrow(/above/);
   });
 
   it('can a specialist still claim, can a buyer refund: the margins', () => {
-    expect(canClaimSafely(params.refundHeight - 3, params.refundHeight)).toBe(true);
-    expect(canClaimSafely(params.refundHeight - 2, params.refundHeight)).toBe(false);
-    expect(canRefund(params.refundHeight - 1, params.refundHeight)).toBe(false);
-    expect(canRefund(params.refundHeight, params.refundHeight)).toBe(true);
+    expect(canClaimSafely(params.refundTime - 601, params.refundTime)).toBe(true);
+    expect(canClaimSafely(params.refundTime - 600, params.refundTime)).toBe(false);
+    // the network takes a time-locked transaction once its locktime is below the median time past
+    expect(canRefund(params.refundTime, params.refundTime)).toBe(false);
+    expect(canRefund(params.refundTime + 1, params.refundTime)).toBe(true);
+  });
+
+  it('median time past: the middle of the last 11 header times, as the network takes it', () => {
+    const header = (t: number) => {
+      const b = new Uint8Array(80);
+      new DataView(b.buffer).setUint32(68, t, true);
+      return binToHex(b);
+    };
+    const times = [10, 50, 20, 40, 30, 90, 60, 80, 70, 100, 110].map((x) => 1_795_000_000 + x);
+    expect(medianTimePast(times.map(header).join(''))).toBe(1_795_000_060);
+    expect(() => medianTimePast('00')).toThrow();
   });
 });
 
@@ -247,17 +262,18 @@ describe('the JC2 note', () => {
   const order = 'ab'.repeat(16);
   const hashes = ['11', '22', '33'].map((b) => b.repeat(32));
   it('round-trips, fits the relay limit with three offers, and is not mistaken for JC1', () => {
-    const t = noteText2(order, 978_106, binToHex(buyerLock), hashes);
+    const t = noteText2(order, 1_795_003_600, binToHex(buyerLock), hashes);
     const s = opReturnBytecode2(t);
     expect(s.length).toBeLessThanOrEqual(223);
-    expect(parseNote2(s)).toEqual({ orderIdHex: order, refundHeight: 978_106, buyerLockingHex: binToHex(buyerLock), offerPrefixes: hashes.map((h) => h.slice(0, 32)) });
+    expect(parseNote2(s)).toEqual({ orderIdHex: order, refundTime: 1_795_003_600, buyerLockingHex: binToHex(buyerLock), offerPrefixes: hashes.map((h) => h.slice(0, 32)) });
     expect(parseNote(s)).toBeNull();
     expect(readNote(s)).toBeNull();
   });
   it('refuses malformed fields', () => {
-    expect(() => noteText2(order, 5, binToHex(buyerLock), hashes)).toThrow();
-    expect(() => noteText2('xy', 978_106, binToHex(buyerLock), hashes)).toThrow();
+    expect(() => noteText2(order, 978_106, binToHex(buyerLock), hashes)).toThrow();
+    expect(() => noteText2('xy', 1_795_003_600, binToHex(buyerLock), hashes)).toThrow();
     expect(parseNote2(opReturnBytecode2('JC2 ' + order + ' 0123 ' + binToHex(buyerLock)))).toBeNull();
+    expect(parseNote2(opReturnBytecode2('JC2 ' + order + ' 978106 ' + binToHex(buyerLock)))).toBeNull();
   });
 });
 
@@ -338,14 +354,17 @@ async function entryFor(): Promise<{ entry: ClaimEntry; offerHashHex: string; se
   };
 }
 
-function pay(e: ClaimEntry, offerHashHex: string, over: Partial<{ price: bigint; listed: string[]; refundHeight: number }> = {}) {
+const T_REFUND = 1_795_100_000;
+const MTP_NOW = T_REFUND - 3600;
+
+function pay(e: ClaimEntry, offerHashHex: string, over: Partial<{ price: bigint; listed: string[]; refundTime: number }> = {}) {
   const p = buildPayment2({
     utxos: [coin(3000n, 1), coin(20000n, 2)],
     contracts: [{ label: 'logo', priceSats: over.price ?? PRICE, lock: { cipherSha256: e.cipherSha256, keyHash: e.keyHash, sellerPubkey: e.pubkey } }],
     payouts: [{ label: 'service', address: 'bchtest:qqczcf6dcqm62u0prm2qnre4655w5236qytf8scfkf', sats: 4756n }],
     orderIdHex: 'cd'.repeat(16),
     offerHashesHex: over.listed ?? [offerHashHex],
-    refundHeight: over.refundHeight ?? 338_600,
+    refundTime: over.refundTime ?? T_REFUND,
   });
   const signed = signLocally(p.transaction, p.sourceOutputs, () => coinPriv);
   return { p, raw: signed.hex };
@@ -368,7 +387,7 @@ describe('a whole v2 order, offline', () => {
   it('specialist claims (the same code as the worker) → the page reads the key from the claim → the file opens and matches', async () => {
     const { entry, offerHashHex, sealed } = await entryFor();
     const { p, raw } = pay(entry, offerHashHex);
-    const plan = planClaim(raw, entry, 'chipnet', { seed: SEED, privateKeys: { [entry.pubkey]: sellerPriv } }, 338_500);
+    const plan = planClaim(raw, entry, 'chipnet', { seed: SEED, privateKeys: { [entry.pubkey]: sellerPriv } }, MTP_NOW);
     expect(plan.ok, plan.ok ? '' : plan.reason).toBe(true);
     if (!plan.ok) return;
     expect(plan.vout).toBe(0);
@@ -388,21 +407,21 @@ describe('a whole v2 order, offline', () => {
     const { entry, offerHashHex } = await entryFor();
     const keys = { seed: SEED, privateKeys: { [entry.pubkey]: sellerPriv } };
     const notListed = pay(entry, offerHashHex, { listed: ['ee'.repeat(32)] }).raw;
-    expect(planClaim(notListed, entry, 'chipnet', keys, 338_500)).toMatchObject({ ok: false, status: 402, reason: 'this offer is not in the note' });
+    expect(planClaim(notListed, entry, 'chipnet', keys, MTP_NOW)).toMatchObject({ ok: false, status: 402, reason: 'this offer is not in the note' });
     const under = pay(entry, offerHashHex, { price: PRICE - 1n }).raw;
-    expect(planClaim(under, entry, 'chipnet', keys, 338_500)).toMatchObject({ ok: false, status: 402 });
+    expect(planClaim(under, entry, 'chipnet', keys, MTP_NOW)).toMatchObject({ ok: false, status: 402 });
     const { raw } = pay(entry, offerHashHex);
-    expect(planClaim(raw, entry, 'chipnet', keys, 338_598)).toMatchObject({ ok: false, status: 409 });
-    expect(planClaim(raw, entry, 'chipnet', keys, 338_597).ok).toBe(true);
-    expect(planClaim(raw, entry, 'chipnet', { ...keys, seed: k('another seed') }, 338_500)).toMatchObject({ ok: false, status: 500 });
-    expect(planClaim(raw, entry, 'mainnet', keys, 338_500)).toMatchObject({ ok: false, status: 500 });
-    expect(planClaim(raw, entry, 'chipnet', { seed: SEED, privateKeys: {} }, 338_500)).toMatchObject({ ok: false, status: 500 });
+    expect(planClaim(raw, entry, 'chipnet', keys, T_REFUND - 600)).toMatchObject({ ok: false, status: 409 });
+    expect(planClaim(raw, entry, 'chipnet', keys, T_REFUND - 601).ok).toBe(true);
+    expect(planClaim(raw, entry, 'chipnet', { ...keys, seed: k('another seed') }, MTP_NOW)).toMatchObject({ ok: false, status: 500 });
+    expect(planClaim(raw, entry, 'mainnet', keys, MTP_NOW)).toMatchObject({ ok: false, status: 500 });
+    expect(planClaim(raw, entry, 'chipnet', { seed: SEED, privateKeys: {} }, MTP_NOW)).toMatchObject({ ok: false, status: 500 });
     // a payment whose contract was made for another buyer than the note says: no contract found for this offer
     const other = { ...entry, pubkey: binToHex(pub(otherPriv)) };
-    expect(planClaim(raw, other, 'chipnet', keys, 338_500)).toMatchObject({ ok: false, status: 402, reason: 'no contract for this offer in the transaction' });
+    expect(planClaim(raw, other, 'chipnet', keys, MTP_NOW)).toMatchObject({ ok: false, status: 402, reason: 'no contract for this offer in the transaction' });
   });
 
-  it('nobody claims → after the refund height anyone refunds to the buyer, rebuilt from the payment alone', async () => {
+  it('nobody claims → after the refund time anyone refunds to the buyer, rebuilt from the payment alone', async () => {
     const { entry, offerHashHex } = await entryFor();
     const { raw } = pay(entry, offerHashHex);
     const found = contractsInPayment(unhex(raw), [{ offerHashHex, lock: { cipherSha256: entry.cipherSha256, keyHash: entry.keyHash, sellerPubkey: entry.pubkey } }])!;
