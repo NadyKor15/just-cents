@@ -72,7 +72,7 @@ beforeEach(() => {
   fetched.length = 0;
   vi.stubGlobal('fetch', async (url: string) => {
     fetched.push(url);
-    const part = /^(.*)\.p(\d+)$/.exec(url);
+    const part = /^(.*)\.part(\d+)$/.exec(url);
     const path = part ? part[1]! : url;
     const bytes = new Uint8Array(readFileSync(`public${path}`));
     if (path === tamper) bytes[bytes.length - 1]! ^= 1;
@@ -123,7 +123,7 @@ describe('paying once, even when sending fails', () => {
     // the sealed files were fetched (and checked) before the wallet was asked: the cover in its 9 parts, once each,
     // the small ones whole; nothing else
     const cover = OFFERS.chipnet['cover']!.v2!.sealed;
-    expect(fetched.sort()).toEqual([...Array.from({ length: 9 }, (_, i) => `${cover}.p${i}`), ...['lena:good', 'logo'].map((k) => OFFERS.chipnet[k]!.v2!.sealed)].sort());
+    expect(fetched.sort()).toEqual([...Array.from({ length: 9 }, (_, i) => `${cover}.part${i}`), ...['lena:good', 'logo'].map((k) => OFFERS.chipnet[k]!.v2!.sealed)].sort());
   });
 
   it('Pay shows how many sealed files are in and how far the cover is', async () => {
@@ -146,7 +146,7 @@ describe('paying once, even when sending fails', () => {
     // a stale part 4 (same length, other bytes), as an out-of-date cache could serve
     vi.stubGlobal('fetch', async (url: string) => {
       const r = await real(url);
-      if (url !== `${cover}.p4`) return r;
+      if (url !== `${cover}.part4`) return r;
       const b = new Uint8Array(await r.arrayBuffer());
       b[0]! ^= 0xff;
       return new Response(b);

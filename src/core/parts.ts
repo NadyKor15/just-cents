@@ -1,6 +1,7 @@
 // Big sealed files are also published in parts, so a download that stalls loses one part, not the whole file.
 // Cloudflare Pages ignores Range on static files (it answers 200 with the whole file), so the parts are plain static
-// files beside the whole one: <sealed>.p0, <sealed>.p1, … Joined in order they are the sealed file, byte for byte;
+// files beside the whole one: <sealed>.part0, <sealed>.part1, … (not .p8 & co.: Cloudflare maps .p7/.p8/.p12 to
+// crypto media types). Joined in order they are the sealed file, byte for byte;
 // the page checks the joined bytes against the signed fingerprint, so a part can never change what is paid for.
 // The build cuts them (vite.config.ts → scripts/split-sealed.ts); the whole file stays for the order API (/kit).
 
@@ -19,5 +20,5 @@ export function partLength(size: number, i: number): number {
 
 /** Where part `i` of a published file lives. */
 export function partPath(path: string, i: number): string {
-  return `${path}.p${i}`;
+  return `${path}.part${i}`;
 }

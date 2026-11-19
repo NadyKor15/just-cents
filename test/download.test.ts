@@ -24,18 +24,22 @@ function file(size: number, seed = 7): Uint8Array {
   return b;
 }
 
-/** A fake site: `files` by path; parts (<path>.p<i>) cut from the files when `parts` is on. */
-function site(files: Record<string, Uint8Array>, opts: { parts: boolean; way?: (url: string, n: number) => Way }) {
+/**
+ * A fake site: `files` by path; parts (<path>.part<i>) cut from the files when `parts` is on. A path it does not have
+ * gets 404, or — `pages: true` — what Cloudflare Pages really answers: 200 with the site's own HTML page.
+ */
+function site(files: Record<string, Uint8Array>, opts: { parts: boolean; pages?: boolean; way?: (url: string, n: number) => Way }) {
   const calls: Record<string, number> = {};
   const fetchFn: FetchFn = (url, { signal }) => {
     const n = (calls[url] = (calls[url] ?? 0) + 1);
-    const m = /^(.*)\.p(\d+)$/.exec(url);
+    const m = /^(.*)\.part(\d+)$/.exec(url);
     let body: Uint8Array | undefined;
     if (m && opts.parts && files[m[1]!]) {
       const whole = files[m[1]!]!;
       const i = Number(m[2]);
       if (i < partCount(whole.length)) body = whole.slice(i * PART_BYTES, i * PART_BYTES + partLength(whole.length, i));
     } else if (!m) body = files[url];
+    if (!body && opts.pages) return Promise.resolve(new Response('<!doctype html><title>Just Cents</title>'.padEnd(13_588, ' '), { headers: { 'content-type': 'text/html; charset=utf-8' } }));
     const way: Way = body ? (opts.way?.(url, n) ?? { kind: 'ok' }) : { kind: 'status', status: 404 };
     const aborted = () => new DOMException('The operation was aborted.', 'AbortError');
     if (way.kind === 'no-answer') return new Promise((_, reject) => signal.addEventListener('abort', () => reject(aborted())));
@@ -123,7 +127,7 @@ describe('a big file comes in parts; a cut costs one part', () => {
   it('gives up after its tries and says the download stalled', async () => {
     const data = file(PART_BYTES + 1);
     const s = site({ [URL_]: data }, { parts: true, way: (u) => (u === partPath(URL_, 1) ? { kind: 'stuck-after', bytes: 0 } : { kind: 'ok' }) });
-    await expect(download(URL_, { ...fast, tries: 3, size: data.length, fetchFn: s.fetchFn })).rejects.toThrow(/\.p1: stalled, no data for/);
+    await expect(download(URL_, { ...fast, tries: 3, size: data.length, fetchFn: s.fetchFn })).rejects.toThrow(/\.part1: stalled, no data for/);
     expect(s.calls[partPath(URL_, 1)]).toBe(3);
   });
 });
@@ -165,6 +169,17 @@ describe('without parts on the site', () => {
     expect(await download(URL_, { ...fast, size: data.length, fetchFn: s.fetchFn })).toEqual(data);
     expect(s.calls[URL_]).toBe(1);
     expect(s.calls[partPath(URL_, 0)]).toBe(1);
+  });
+
+  it('Cloudflare Pages answers a missing part with its own page (200, HTML): taken as "no parts", the file comes whole', async () => {
+    const data = file(2 * PART_BYTES + 3, 17);
+    const s = site({ [URL_]: data }, { parts: false, pages: true });
+    expect(await download(URL_, { ...fast, size: data.length, fetchFn: s.fetchFn })).toEqual(data);
+    expect(s.calls[partPath(URL_, 0)]).toBe(1); // not asked again: the page is not a part that broke
+    expect(s.calls[URL_]).toBe(1);
+    const gone = site({}, { parts: false, pages: true });
+    await expect(download('/enc/none.jce', { ...fast, fetchFn: gone.fetchFn })).rejects.toThrow(/not on the site/);
+    expect(gone.calls['/enc/none.jce']).toBe(1);
   });
 
   it('a small file is never asked for in parts', async () => {

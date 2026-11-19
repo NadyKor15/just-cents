@@ -36,8 +36,9 @@ export class HttpStatus extends Error {
   constructor(
     readonly status: number,
     url: string,
+    why = `HTTP ${status}`,
   ) {
-    super(`${url}: HTTP ${status}`);
+    super(`${url}: ${why}`);
   }
 }
 
@@ -70,6 +71,12 @@ export async function getBytes(url: string, fetchFn: FetchFn, stallMs: number, o
     if (!r.ok) {
       void r.body?.cancel().catch(() => undefined);
       throw new HttpStatus(r.status, url);
+    }
+    // Cloudflare Pages answers a path it does not have with the site's own page (200, text/html), not a 404;
+    // the files fetched here are never HTML, so that answer means "not there"
+    if (/^text\/html/i.test(r.headers.get('content-type') ?? '')) {
+      void r.body?.cancel().catch(() => undefined);
+      throw new HttpStatus(404, url, 'not on the site (the site answered with its page)');
     }
     const len = Number(r.headers.get('content-length'));
     if (len > 0) onLength?.(len);
