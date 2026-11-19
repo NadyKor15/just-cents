@@ -59,7 +59,7 @@ Built for BCH BLAZE 2026. MIT licensed.
 
 ## What if something goes wrong?
 
-Today the Just Cents server keeps this honest. It holds every full file until it sees the payment on chain (`/full/…` answers 402 without one), and the site it serves runs the checks (in your browser, and in the order API for assistants). There is no escrow contract yet. You pay only after the previews have passed, and only for the accepted parts, so for a rejected part there is nothing to hold back or return.
+Today the Just Cents server keeps this honest. It holds every full file until it sees the payment on chain (`/full/…` answers 402 to a transaction that does not pay the offer, and 404 to one the network does not know), and the site it serves runs the checks (in your browser, and in the order API for assistants). There is no escrow contract yet. You pay only after the previews have passed, and only for the accepted parts, so for a rejected part there is nothing to hold back or return.
 
 | What goes wrong | What happens today | In the code |
 |---|---|---|
