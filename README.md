@@ -57,6 +57,29 @@ Built for BCH BLAZE 2026. MIT licensed.
 | `specialists/` | how the demo specialists' files were made, and the files themselves |
 | `scripts/sign-offers.ts` | signs the demo specialists' standing offers |
 
+## Paying into a contract: the key for the money (version 2)
+
+A version 2 order does not pay a specialist's address. Each accepted specialist's money goes into its own small contract on chain, and the specialist can take it only by publishing the key to its file in the same transaction. There is no server in the middle that holds the money or decides who gets it.
+
+1. **Before you pay, you already hold the file, sealed.** Each full file is published sealed (AES-256-GCM, its own key per file and network). The specialist's signed v2 offer adds the sealed file's fingerprint (`cipherSha256`), the sha256 of the key (`keyHash`) and the key the specialist will claim with. The page downloads every accepted sealed file and checks its fingerprint before the wallet is asked to sign.
+2. **One payment, one contract per accepted specialist.** Each contract holds the price plus 500 satoshis for the specialist's claim fee. Its script (P2SH32, 152 bytes, written by hand, see `src/core/htlc.ts`) has two ways out:
+   - **claim:** a key whose sha256 equals `keyHash`, and the specialist's signature;
+   - **refund:** after the refund time (the chain's median time past at payment, plus one hour), an output that pays the buyer's own address at least the contract's value minus 500 satoshis. No signature is needed, so anyone can send the refund, and it can only go to the buyer.
+   The `JC2` note in the payment (`JC2 <order id> <refund time> <buyer's script> <offer fingerprints>`) lets the specialist, or anyone, rebuild every contract from the chain.
+3. **The key comes from the chain.** The specialist claims (in the demo, `POST /claim/<offer>` on this site does it for the demo specialists), and its key is now in the claim's input on chain. The page reads the key there, never from the server's answer, checks it against `keyHash`, opens the sealed file, and checks the full file's fingerprint and the rules, as before. A specialist reveals its key only with at least 10 minutes left before the refund opens.
+4. **Nobody claims in time: "Get my money back".** After the refund time the page offers the refund of every contract still open; it goes back to the buyer.
+
+**What is guaranteed and what is not.**
+
+- **The swap of key and money is atomic.** The specialist cannot take the money without putting the key on chain, and the contract cannot be emptied any other way except back to the buyer.
+- **That the key opens exactly the promised file is not something the chain can check** (that would take a zero-knowledge proof). What covers it: you hold the sealed file before you pay and its fingerprint must match the signed offer; the key must match the lock; and the specialist's claim signature covers the contract's script, which contains the sealed file's fingerprint. If the opened file does not match the offer, the page shows it in red, and the chain keeps public proof of what this specialist signed for. The money is not returned automatically in that case.
+- **The demo specialists' offers are standing offers:** one key per file and network, the same for every order. After the first paid order on a network, that key is on chain, and anyone can open that sealed file (in version 1, anyone who knew a paying transaction could fetch the file from `/full/` too). A real specialist seals and signs per order: the offer can carry the order id.
+- **In the demo, our server claims for the demo specialists.** Their claim keys and file keys are secrets of this site's server, separate from the keys that sign their offers. A real specialist runs its own claim.
+- **The claim request can be repeated safely.** The same request builds the same claim transaction (deterministic signature), so the page asks again after a network error or a Cloudflare 503 / 1102, and stops when the specialist says it is too late (409).
+- **Big sealed files come in parts.** The cover (4.5 MB) is also published as 512 KB parts; a download is cut only when no byte has arrived for 15 seconds, and a cut costs one part. The joined bytes are checked against the signed fingerprint.
+
+Orders paid before version 2 (a `JC1` note) still open the version 1 way, through `/full/`. Code: `src/core/htlc.ts` (contract, claim, refund, note), `src/core/htlc-chain.ts` (chain time, contract state from the chain), `src/core/filebox.ts` (sealing), `src/app/download.ts` (parts and the stall rule), `worker/claim.ts` (the demo specialists' claim), `scripts/seal-files.ts`, `scripts/sign-offers-v2.ts`, `scripts/split-sealed.ts`.
+
 ## What if something goes wrong?
 
 Today the Just Cents server keeps this honest. It holds every full file until it sees the payment on chain (`/full/…` answers 402 to a transaction that does not pay the offer, and 404 to one the network does not know), and the site it serves runs the checks (in your browser, and in the order API for assistants). There is no escrow contract yet. You pay only after the previews have passed, and only for the accepted parts, so for a rejected part there is nothing to hold back or return.
