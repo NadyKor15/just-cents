@@ -549,6 +549,143 @@ async function deliver(o: Order) {
   };
 }
 
+/**
+ * "See a paid order": the ready screen comes up at once and fills as the files are checked, so a visitor sees the
+ * result in seconds instead of minutes. A light copy of the cover (1024 px, served by the specialist after the same
+ * payment check, for display only) shows first; the three full files are fetched at the same time, each is checked
+ * by its fingerprint and its rule as soon as it lands, and its tick appears then. The fingerprint is always of the
+ * full file; the light copy is replaced by the checked full file, or removed if the full file fails.
+ * Before this, the files came one after another and the yardsticks (game frame, sketch) only after each file:
+ * 3–4 minutes on a slow line before the three ticks.
+ */
+async function deliverPaid(o: Order) {
+  const kit = document.querySelector<HTMLElement>('#kit');
+  if (!kit) return;
+  kit.removeAttribute('hidden');
+  const list = kit.querySelector<HTMLElement>('.kit-files')!;
+  const btn = kit.querySelector<HTMLButtonElement>('.kit-download')!;
+  const tx = kit.querySelector<HTMLAnchorElement>('.kit-tx')!;
+  tx.href = explorerTx(o.net, o.txid);
+  tx.textContent = o.txid;
+  list.innerHTML = '';
+  const R = EXAMPLE.ready;
+  kit.setAttribute('aria-label', R.title);
+  kit.querySelector('.ready-title')!.textContent = R.title;
+  for (const [part, caption] of [['trailer', R.trailer], ['cover', R.cover], ['logo', R.logo]] as const) {
+    const f = kit.querySelector<HTMLElement>(`.ready-${part}`)!;
+    f.hidden = true;
+    f.querySelector('figcaption')!.textContent = caption;
+  }
+  btn.disabled = true;
+  btn.textContent = 'Preparing the files…';
+  const acc = o.accepted();
+  let progress = kit.querySelector<HTMLElement>('.kit-progress');
+  if (!progress) {
+    progress = el('p', 'kit-progress');
+    list.before(progress);
+  }
+  let done = 0, passed = 0;
+  const say = () => {
+    progress!.textContent = done < acc.length ? `Checking the files… ${done} of ${acc.length}` : passed === acc.length ? `Files checked: ${passed} of ${acc.length} ✓` : `Files checked: ${passed} of ${acc.length} passed`;
+  };
+  say();
+  // The yardsticks the checks read load while the files do (the sketch for the logo, the game frame with the full
+  // cover), after the light copy. The light copy of the cover goes first; the 4.5 MB full cover and its frame start once it is in, so on a
+  // slow line the picture is not stuck behind them.
+  const cover = acc.find((c) => c.key.startsWith('cover'));
+  const coverFig = kit.querySelector<HTMLElement>('.ready-cover')!;
+  let coverChecked = false;
+  const lightIn: Promise<void> = !cover
+    ? Promise.resolve()
+    : fetch(`/full/${encodeURIComponent(cover.key)}?net=${o.net}&txid=${o.txid}&view=light`)
+        .then((r) => (r.ok ? r.blob() : Promise.reject(new Error(String(r.status)))))
+        .then((b) => {
+          if (coverChecked) return;
+          const img = coverFig.querySelector('img')!;
+          img.src = URL.createObjectURL(b);
+          img.alt = `${label(cover)} (light copy while the full file is checked)`;
+          coverFig.hidden = false;
+        })
+        .catch(() => undefined); // no light copy: the cover shows once its full file has passed, as before
+  if (acc.some((c) => c.key === 'logo')) void lightIn.then(() => { new Image().src = EXAMPLE.single.sketch; });
+  const lines = acc.map((c) => {
+    const li = el('li', 'pending', `${label(c)}: checking the fingerprint…`);
+    list.appendChild(li);
+    return li;
+  });
+  const got = await Promise.all(
+    acc.map(async (c, i) => {
+      const li = lines[i]!;
+      try {
+        if (c === cover) {
+          await lightIn;
+          new Image().src = c.key === COVER_KEY.b ? EXAMPLE.choice.frames.b : EXAMPLE.choice.frames.a;
+        }
+        const f = await o.fetchFull(c);
+        const ok = f.match && f.verdict.ok;
+        li.className = ok ? 'ok' : 'bad';
+        li.textContent = `${label(c)}: ${f.match ? 'fingerprint matches the offer' : 'fingerprint does NOT match the offer'} · ${f.verdict.ok ? f.verdict.note : f.verdict.reason}`;
+        if (c === cover) {
+          coverChecked = true;
+          if (!ok) coverFig.hidden = true; // never leave the light copy up for a file that failed
+        }
+        if (ok) {
+          passed++;
+          showReady(kit, c, f.bytes);
+        }
+        return { name: KIT_NAME[f.name] ?? f.name, data: new Uint8Array(f.bytes) };
+      } catch (e) {
+        if (c === cover) {
+          coverChecked = true;
+          coverFig.hidden = true;
+        }
+        li.className = 'bad';
+        li.textContent = `${label(c)}: ${e instanceof Error ? e.message : e}`;
+        return null;
+      } finally {
+        done++;
+        say();
+      }
+    }),
+  );
+  const files: { name: string; data: Uint8Array }[] = [];
+  for (const f of got) if (f) files.push(f);
+  const otherCover = o.notChosenCover();
+  if (otherCover) list.appendChild(el('li', 'taste', `${label(otherCover)}: not chosen (taste, not a rule: it passed the rules, you picked the other one), nothing paid`));
+  const rej = o.results[o.careless];
+  if (rej && !rej.verdict.ok) list.appendChild(el('li', 'zero', `${EXAMPLE.pair.label} (${pairName(o.careless)}): rejected, 0¢ (${rej.verdict.reason})`));
+  const receipt = {
+    order: o.id,
+    network: o.net,
+    txid: o.txid,
+    explorer: explorerTx(o.net, o.txid),
+    paid: acc.map((c) => ({
+      part: c.key,
+      specialist: c.offer.offer.specialist,
+      cents: c.offer.offer.priceCents,
+      sats: c.offer.offer.priceSats,
+      payTo: c.offer.offer.payTo,
+      offerFingerprint: offerHashHex(c.offer.offer),
+      fileSha256: c.offer.offer.fileSha256,
+    })),
+    service: { cents: SERVICE.cents, sats: SERVICE.sats.toString() },
+    networkFeeSats: null,
+    outputs: null,
+    rejected: rej && !rej.verdict.ok ? { part: EXAMPLE.pair.apiPart, specialist: o.careless, cents: 0, reason: rej.verdict.reason } : null,
+    note: undefined,
+  };
+  files.push({ name: 'receipt.json', data: new TextEncoder().encode(JSON.stringify(receipt, null, 2)) });
+  const blob = new Blob([zip(files) as BlobPart], { type: 'application/zip' });
+  btn.disabled = false;
+  btn.textContent = R.download;
+  btn.onclick = () => {
+    const a = el('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `just-cents-${o.id.slice(0, 8)}.zip`;
+    a.click();
+  };
+}
+
 /** One accepted, checked file on the "ready" screen: the subtitles play over the game's trailer, the cover and logo as they are. */
 function showReady(kit: HTMLElement, c: Checked, bytes: ArrayBuffer) {
   if (c.key.startsWith('cover') || c.key === 'logo') {
@@ -609,15 +746,14 @@ export async function openPaidOrder(txid: string, net: Net): Promise<void> {
     }
     if (o.results[COVER_KEY.b]) o.coverChoice = 'b';
     if (!o.accepted().length) throw new Error('this transaction pays none of the current offers');
-    // the careless specialist's rejection, checked again on its preview, for the receipt
-    await o.checkSubtitles(o.careless).catch(() => undefined);
-    // the other cover variant, for "not chosen"
-    await o.checkCover(o.coverChoice === 'a' ? 'b' : 'a').catch(() => undefined);
+    // the careless specialist's rejection, checked again on its preview, for the receipt; the other cover variant,
+    // for "not chosen" (both at once: each is a small signed check)
+    await Promise.all([o.checkSubtitles(o.careless).catch(() => undefined), o.checkCover(o.coverChoice === 'a' ? 'b' : 'a').catch(() => undefined)]);
     o.txid = txid;
     order = o;
     paid = true;
     setTx(net, txid);
-    await deliver(o);
+    await deliverPaid(o);
   } catch (e) {
     if (reading?.isConnected) {
       reading.className = 'bad';

@@ -60,13 +60,19 @@ export async function release(url: URL, env: Env): Promise<Response> {
   if (!raw) return json({ ok: false, reason: 'transaction not found' }, 404);
   const paid = checkOfferPaid(raw, bookFor(net), entryKey);
   if (!paid.ok) return json({ ok: false, reason: paid.reason }, 402);
-  const file = await env.ASSETS.fetch(new Request(new URL(`/files/${entry.file}`, url.origin)));
+  // ?view=light: a 1024 px copy of a cover, to show while the full file downloads and is checked; same payment check,
+  // and never the file the offer's fingerprint is of
+  const light = url.searchParams.get('view') === 'light' && /\.jpg$/.test(entry.file);
+  const name = light ? entry.file.replace(/\.jpg$/, '-light.jpg') : entry.file;
+  const file = await env.ASSETS.fetch(new Request(new URL(`/files/${name}`, url.origin)));
   if (!file.ok) return json({ ok: false, reason: 'file missing on the specialist side' }, 500);
   const headers = new Headers(file.headers);
-  headers.set('cache-control', 'no-store');
+  // this person's browser may keep it (the URL names the paid transaction); shared caches may not
+  headers.set('cache-control', 'private, max-age=3600');
+  if (light) headers.set('x-view', 'light copy for display; the offer fingerprint is of the full file');
   headers.set('x-paid-sats', paid.paidSats.toString());
   headers.set('x-order-id', paid.orderIdHex ?? '');
-  headers.set('content-disposition', `attachment; filename="${entry.file}"`);
+  headers.set('content-disposition', `attachment; filename="${name}"`);
   return new Response(file.body, { status: 200, headers });
 }
 
