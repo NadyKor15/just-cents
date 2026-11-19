@@ -158,16 +158,35 @@ export class Order {
     if (!p) {
       const e = this.v2(key);
       p = (async () => {
-        const r = await fetch(e.sealed);
-        if (!r.ok) throw new Error(`${key}: the sealed file did not load (${r.status})`);
-        const bytes = await r.arrayBuffer();
-        if ((await sha256Hex(bytes)) !== e.signed.offer.cipherSha256) throw new Error(`${key}: the sealed file is not the one the offer names`);
-        return new Uint8Array(bytes);
+        // a download that stalls is cut after 45 s and tried once more (the site's speed varies a lot)
+        let last: unknown;
+        for (let attempt = 0; attempt < 2; attempt++) {
+          const ac = new AbortController();
+          const t = setTimeout(() => ac.abort(), 45_000);
+          try {
+            const r = await fetch(e.sealed, { signal: ac.signal });
+            if (!r.ok) throw new Error(`${key}: the sealed file did not load (${r.status})`);
+            const bytes = await r.arrayBuffer();
+            if ((await sha256Hex(bytes)) !== e.signed.offer.cipherSha256) throw new Error(`${key}: the sealed file is not the one the offer names`);
+            return new Uint8Array(bytes);
+          } catch (err) {
+            last = err;
+            if (err instanceof Error && /not the one the offer names/.test(err.message)) throw err;
+          } finally {
+            clearTimeout(t);
+          }
+        }
+        throw last instanceof Error && last.name !== 'AbortError' ? last : new Error(`${key}: the sealed file did not load in time`);
       })();
       p.catch(() => this.sealedFiles.delete(key));
       this.sealedFiles.set(key, p);
     }
     return p;
+  }
+
+  /** Starts loading a part's sealed file in the background (once accepted), so Pay does not wait for it. */
+  prefetch(key: string): void {
+    if (this.entry(key).v2) this.sealedFile(key).catch(() => undefined);
   }
 
   /** The v2 offer must promise the same as the v1 offer the checks ran on, and be signed by the same key. */
@@ -184,8 +203,10 @@ export class Order {
       const acc = this.accepted();
       if (!acc.length) throw new Error('nothing was accepted, nothing to pay');
       for (const c of acc) this.checkV2(c);
-      step('Fetching the sealed files');
-      await Promise.all(acc.map((c) => this.sealedFile(c.key)));
+      // usually already here: each accepted part's sealed file starts loading while the scene plays (prefetch)
+      let have = 0;
+      step(`Fetching the sealed files (0 of ${acc.length})`);
+      await Promise.all(acc.map((c) => this.sealedFile(c.key).then(() => step(`Fetching the sealed files (${++have} of ${acc.length})`))));
       step('Looking for coins in your wallet');
       const coins = await link.coins(this.net);
       if (!coins.length) throw new Error('Your wallet has no coins on the addresses it shared.');

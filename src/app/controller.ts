@@ -101,6 +101,7 @@ function showCoverChoice(o: Order) {
           ev.stopPropagation();
           if (paid || o.coverChoice === v || !c?.verdict.ok) return;
           o.coverChoice = v;
+          o.prefetch(COVER_KEY[v]);
           render();
           renderReceiptPrices();
         };
@@ -178,6 +179,9 @@ function runChecks(o: Order, careless: Who) {
   descBad.then((c) => { showSubsPreview(c); if (!c.verdict.ok) setTagReason(careless, c.verdict.reason); }).catch((e) => fail(EXAMPLE.pair.label, e));
   descGood.catch((e) => fail(EXAMPLE.pair.label, e));
   voice.catch((e) => fail(EXAMPLE.single.label, e));
+  // each accepted part's sealed file loads in the background while the scene plays, so Pay does not wait for it
+  icon.then(() => o.prefetch(COVER_KEY[o.coverChoice])).catch(() => undefined);
+  for (const g of [descBad, descGood, voice]) g.then((c) => { if (c.verdict.ok) o.prefetch(c.key); }).catch(() => undefined);
   return { icon, descBad, descGood, voice };
 }
 
