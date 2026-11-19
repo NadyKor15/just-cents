@@ -114,7 +114,7 @@ function describe(meta: OrderMeta, origin: string, txid: string | null, choice: 
     status: txid ? 'paid' : 'awaiting_payment',
     txid,
     pay_url: `${origin}/?order=${meta.id}${choice === 'b' ? '&choice=b' : ''}`,
-    pay_note: 'A person opens pay_url and signs one transaction in their own wallet over WizardConnect (tested with Cashonize). The assistant never holds money.',
+    pay_note: 'A person opens pay_url and signs one transaction in their own wallet over WizardConnect (tested with Cashonize and Selene). The assistant never holds money.',
     kit_url: `${origin}/api/orders/${meta.id}/kit`,
   };
 }

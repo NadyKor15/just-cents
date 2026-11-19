@@ -83,7 +83,7 @@ Assistants (Claude, GPT, developer agents) can place orders; a person still sign
 claude mcp add --transport http justcents https://justcents.retailbox-automation.com/mcp
 ```
 
-Tools: `create_order`, `get_order`, `get_pay_link`, `get_kit`. The same over plain HTTP under `/api/orders`, described in [`/llms.txt`](public/llms.txt). The assistant never holds money: it hands the person a pay link, the person signs once in their own wallet, and the assistant fetches the kit. Creating an order stores nothing (the order id carries its own state); the only stored fact is "this order was paid by this transaction", written after the transaction is read from the network. The API checks what each signed offer declares; the cover's sharpness and the logo's likeness are measured on the full files in the person's browser.
+Tools: `create_order`, `get_order`, `get_pay_link`, `get_kit`. The same over plain HTTP under `/api/orders`, described in [`/llms.txt`](public/llms.txt). The assistant never holds money: it hands the person a pay link, the person signs once in their own wallet, and the assistant fetches the files. Creating an order stores nothing (the order id carries its own state); the only stored fact is "this order was paid by this transaction", written after the transaction is read from the network. The API checks what each signed offer declares; the cover's sharpness and the logo's likeness are measured on the full files in the person's browser.
 
 ## Limits, said plainly
 

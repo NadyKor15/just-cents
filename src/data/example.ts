@@ -14,7 +14,7 @@ export const EXAMPLE = {
   /** What the person types (and what an assistant asks for). */
   request: 'Get my game ready to list.',
   /** The order field in "Your assistant" mode. */
-  assistantAsk: 'Asking for: a kit to list my game.',
+  assistantAsk: 'Asking to get my game ready to list.',
   /** MCP tool description for create_order. */
   mcpOrder:
     'Order the files to list a game in a store: subtitles for its trailer (SRT, every line on its spoken words), a big store cover from a game frame (at least 2560x1600, two variants, the person picks one), and its logo traced from a sketch into a clean SVG.',
