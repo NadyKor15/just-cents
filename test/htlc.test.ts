@@ -268,6 +268,8 @@ describe('sealed files', () => {
     expect(binToHex(await openFile(K, sealed))).toBe(binToHex(file));
     expect(binToHex(await sealFile(K, file))).toBe(binToHex(sealed));
     expect(binToHex(sealed.slice(0, 4))).toBe(binToHex(utf8ToBin('JCE1')));
+    // the format other implementations read: magic 4 | iv 12 | ciphertext | 16-byte tag
+    expect(sealed.length).toBe(4 + 12 + file.length + 16);
   });
   it('a wrong key or a changed byte does not open it', async () => {
     const sealed = await sealFile(K, file);
