@@ -1,5 +1,7 @@
 # Just Cents
 
+[Try it](https://justcents.retailbox-automation.com) · [Slides](https://justcents.retailbox-automation.com/just-cents-slides.pdf)
+
 Cents for work you accept. Nothing else.
 
 An AI helper hires several AI specialists and checks each piece of their work against rules that are set before the work starts. You pay in Bitcoin Cash with one signature in your own wallet, and only the accepted pieces get paid. A rejected piece costs 0¢ and shows up as a line on the receipt. Nothing is paid up front.
@@ -54,6 +56,24 @@ Built for BCH BLAZE 2026. MIT licensed.
 | `worker/`, `functions/` | Cloudflare Pages Functions: `/full/*` delivery after payment (no crypto library: the offer book carries precomputed scripts and fingerprints), `/files/*` closed |
 | `specialists/` | how the demo specialists' files were made, and the files themselves |
 | `scripts/sign-offers.ts` | signs the demo specialists' standing offers |
+
+## What if something goes wrong?
+
+Today the Just Cents server keeps this honest. It holds every full file until it sees the payment on chain (`/full/…` answers 402 without one), and the site it serves runs the checks (in your browser, and in the order API for assistants). There is no escrow contract yet. You pay only after the previews have passed, and only for the accepted parts, so for a rejected part there is nothing to hold back or return.
+
+| What goes wrong | What happens today | In the code |
+|---|---|---|
+| A part breaks a rule | It is rejected before you pay. It gets no output in the transaction (0¢), the receipt shows it as "rejected, 0¢", and its full file is never released: the note does not list its offer, so `/full/` answers 402. | `src/app/order.ts` (`accepted`, `pay`), `worker/txparse.ts` |
+| Too little paid, or paid to another address | The full file is not released. `/full/` hands it over only if the transaction pays that specialist's address at least the offer price and the note lists that offer; otherwise it answers 402 ("paid … sat, the offer asks … sat"). The wallet must also sign exactly the transaction the page built, or nothing is sent. | `worker/index.ts` (`release`), `worker/txparse.ts` (`checkPaidRaw`), `src/app/order.ts` (`pay`) |
+| Paying twice | "Try again" after a failed send sends the same signed transaction again, never a new payment. The order API records one transaction per order and refuses a second, different one (409). A second payment made by hand is not returned automatically. | `src/app/order.ts` (`signedHex`), `worker/api.ts` (`paid`) |
+| A specialist does not hand over the file, or hands over another one | The page checks each full file's fingerprint against the signed offer and runs the rules again. A missing or different file shows as a red line ("fingerprint does NOT match the offer") and does not appear on the ready screen. There is no automatic refund today: the signed offer and the transaction on chain are the proof. In the demo, the Just Cents server itself holds and releases the specialists' files. | `src/app/order.ts` (`fetchFull`), `src/app/controller.ts` (`deliver`) |
+| The wallet does not answer | Nothing is sent: the wallet only signs (`broadcast: false`) and the page sends. After 5 minutes without an answer the page says so and shows "Try again". A wallet on the other network is told so, and nothing is built. | `src/core/wallet.ts` (`SIGN_TIMEOUT_MS`), `src/app/controller.ts` |
+
+## What's next
+
+- **No middleman: a CashScript contract.** Today you trust the Just Cents server: it holds the files until the payment is on chain and serves the checks. The next step moves the check rule and the payout into a CashScript contract, so nobody has to trust the Just Cents server.
+- **Real specialists** on their own servers, with their own prices and rules (see below).
+- **More jobs from the catalog** in the same flow.
 
 ## Become a specialist
 
