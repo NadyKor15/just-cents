@@ -48,7 +48,7 @@ beforeEach(async () => {
     offerHashHex: binToHex(k('offer')),
     priceSats: '4756',
     payToLockingHex: binToHex(lockingFor('bchtest:qrzvk9ujc48fylttn48f3tkkjnmetpx6vqdhsxvdx3')),
-    pubkey: binToHex(pub(seller)),
+    claimPubkey: binToHex(pub(seller)),
     keyHash: keyHashHex(fileKey),
     cipherSha256: binToHex(libSha.hash(sealed)),
     fileSha256,
@@ -56,7 +56,7 @@ beforeEach(async () => {
   const coin: Utxo = { txid: '12'.repeat(32), vout: 1, sats: 50_000n, lockingBytecode: buyerLock, path: 'receive', index: 0 };
   const p = buildPayment2({
     utxos: [coin],
-    contracts: [{ label: 'lena', priceSats: 4756n, lock: { cipherSha256: entry.cipherSha256, keyHash: entry.keyHash, sellerPubkey: entry.pubkey } }],
+    contracts: [{ label: 'lena', priceSats: 4756n, lock: { cipherSha256: entry.cipherSha256, keyHash: entry.keyHash, sellerPubkey: entry.claimPubkey } }],
     payouts: [],
     orderIdHex: 'ef'.repeat(16),
     offerHashesHex: [entry.offerHashHex],
@@ -143,8 +143,8 @@ describe('POST /claim', () => {
     expect((await post('nobody')).status).toBe(404);
   });
 
-  it('the shipped offer book has no claimable offers until v2 offers are signed (stage 2)', () => {
-    expect(Object.keys(claimBook('mainnet'))).toEqual([]);
-    expect(Object.keys(claimBook('chipnet'))).toEqual([]);
+  it('the shipped offer book: every demo offer is claimable (see test/offers-v2.test.ts)', () => {
+    expect(Object.keys(claimBook('mainnet'))).toHaveLength(7);
+    expect(Object.keys(claimBook('chipnet'))).toHaveLength(7);
   });
 });

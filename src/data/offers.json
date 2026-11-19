@@ -20,7 +20,32 @@
       "file": "cover-a.jpg",
       "preview": "/previews/cover-a.jpg",
       "payToLockingHex": "76a9147eea7ce77196ac5c5c48e23da94149ac8ee7916488ac",
-      "offerHashHex": "ba8780a402b87e446cbc6f014a78b8e0c5c70cff156af61e07945c7ad0ff59af"
+      "offerHashHex": "ba8780a402b87e446cbc6f014a78b8e0c5c70cff156af61e07945c7ad0ff59af",
+      "v2": {
+        "signed": {
+          "offer": {
+            "orderId": "*",
+            "facts": "4096x2560;4488737",
+            "specialist": "cover (demo specialist)",
+            "part": "cover",
+            "priceCents": 2,
+            "priceSats": "9512",
+            "fileSha256": "06ea15d8f2284bf0704d890ae75fe285c9f74ce31f00f89f8c326a972d616ad7",
+            "expires": 1798761599,
+            "payTo": "bitcoincash:qplw5l88wxt2chzufr3rm22pfxkgaeu3vscyy08d82",
+            "pubkey": "039fbd87348d91f9e0689e1e011ddf406dccbf832238df7b514ae711ae53f6826b",
+            "v": 2,
+            "cipherSha256": "4e4bbaa763a1ebd979922ec6bd38ff1859a422f5bae0580dc36b2db40e0f50ae",
+            "keyHash": "e156d3cb04ef7d69fd2c71fc7a956bd0649a684044a574fd0c6f352047c230a7",
+            "claimPubkey": "03f34f6a9427d2aab8bbdee6c64bb7c921f10fd64fcd36a8297409f168e720d27e"
+          },
+          "sig": "95a4fccba86b690a8d3528e61342af860047bd6eb36ce7111fd22ae694befe919e83e93143234ecf217f43079f8c40de3f2552a7982c56ff72dbe4e2688f489b"
+        },
+        "offerHashHex": "2ab253311ee4a68a94ef56aca50746bbb4957cb7fffa7cc7f65ce0f4d666a6e6",
+        "payToLockingHex": "76a9147eea7ce77196ac5c5c48e23da94149ac8ee7916488ac",
+        "sealed": "/enc/mainnet/cover-a.jpg.jce",
+        "sealedLight": "/enc/mainnet/cover-a-light.jpg.jce"
+      }
     },
     "cover:b": {
       "signed": {
@@ -42,7 +67,32 @@
       "file": "cover-b.jpg",
       "preview": "/previews/cover-b.jpg",
       "payToLockingHex": "76a9147eea7ce77196ac5c5c48e23da94149ac8ee7916488ac",
-      "offerHashHex": "a92293a87fd2c80630c93e8af807223007da3905edb00d8e15d5352607a4bebd"
+      "offerHashHex": "a92293a87fd2c80630c93e8af807223007da3905edb00d8e15d5352607a4bebd",
+      "v2": {
+        "signed": {
+          "offer": {
+            "orderId": "*",
+            "facts": "4096x2560;4185029",
+            "specialist": "cover (demo specialist)",
+            "part": "cover",
+            "priceCents": 2,
+            "priceSats": "9512",
+            "fileSha256": "2e24dba7a669d7b8b1f7b201eb5d776f0159eacc0574467aea36b5cc8b794998",
+            "expires": 1798761599,
+            "payTo": "bitcoincash:qplw5l88wxt2chzufr3rm22pfxkgaeu3vscyy08d82",
+            "pubkey": "039fbd87348d91f9e0689e1e011ddf406dccbf832238df7b514ae711ae53f6826b",
+            "v": 2,
+            "cipherSha256": "e09449942d4e23c400f8e01c5a4ec48348bacf87244c64d1c4cb4c8fde95c909",
+            "keyHash": "1ee1c00a80f1ae4cc51001cf500ee59b8343f474e9c79b5bf04dcbbe6572bab3",
+            "claimPubkey": "03f34f6a9427d2aab8bbdee6c64bb7c921f10fd64fcd36a8297409f168e720d27e"
+          },
+          "sig": "274e3bfaeef0c97857e52103ca43163dcabe4a263dcc090fee341e8bba56709ae8e6e1d5298181f33e6b02397639769bc7c6e12e13c666819b0bffdd8b41a686"
+        },
+        "offerHashHex": "6de321b38dc18ae87535acafbb164a67b0a3a08e5f797163bb6468ee84a428e5",
+        "payToLockingHex": "76a9147eea7ce77196ac5c5c48e23da94149ac8ee7916488ac",
+        "sealed": "/enc/mainnet/cover-b.jpg.jce",
+        "sealedLight": "/enc/mainnet/cover-b-light.jpg.jce"
+      }
     },
     "sam:good": {
       "signed": {
@@ -64,7 +114,31 @@
       "file": "subs-sam.srt",
       "preview": "/previews/subs-sam.srt",
       "payToLockingHex": "76a9145b0e8429294c2677eafe8303994553ea43f09d8188ac",
-      "offerHashHex": "33f31143d5f91595cdaeff4d617ad42d4ab49b67bc4a6a0f4fe3b150eea050b6"
+      "offerHashHex": "33f31143d5f91595cdaeff4d617ad42d4ab49b67bc4a6a0f4fe3b150eea050b6",
+      "v2": {
+        "signed": {
+          "offer": {
+            "orderId": "*",
+            "facts": "srt;9;18.375",
+            "specialist": "Sam (demo specialist)",
+            "part": "subtitles",
+            "priceCents": 1,
+            "priceSats": "4756",
+            "fileSha256": "23ab8e6c142d8da577c0cd7f147c73c5a732f09875a39b4676f6227025885334",
+            "expires": 1798761599,
+            "payTo": "bitcoincash:qpdsappf99xzval2l6ps8x29204y8uyasyjfhv2frv",
+            "pubkey": "0214ffd7211c47baeafbfd82f7f4c7da11c7e9931d8c95fceb97ebd0d9a5dff6ef",
+            "v": 2,
+            "cipherSha256": "d2a2876ab6df10ed26d503721205a000749127aafc5637f96b93d70cc8be30d6",
+            "keyHash": "82681f822abb5f2ca15845b042237e7f5efcc8eb40f0bbb6f7800f04536f072f",
+            "claimPubkey": "0342712e30437c5751fc89ed25d505f9c1f6e72010c5f54f73ba434bea003c41b1"
+          },
+          "sig": "96197018575a3edd033092d7f200bde8743458b5837e66d8be65af3bf10d6af4427238a765afb84a1afa1aeaeef1e4161ed509777db6f774113dda41554bc258"
+        },
+        "offerHashHex": "beabebea37ead8dd6005aa0f543ce56ddad484b8170dd3a2a989e3eec2798480",
+        "payToLockingHex": "76a9145b0e8429294c2677eafe8303994553ea43f09d8188ac",
+        "sealed": "/enc/mainnet/subs-sam.srt.jce"
+      }
     },
     "sam:careless": {
       "signed": {
@@ -86,7 +160,31 @@
       "file": "subs-sam-careless.srt",
       "preview": "/previews/subs-sam-careless.srt",
       "payToLockingHex": "76a9145b0e8429294c2677eafe8303994553ea43f09d8188ac",
-      "offerHashHex": "3230719f9b8e83e6ecaec4cb9d1fea8f54449ffac2fa6d96308dd80e9331c520"
+      "offerHashHex": "3230719f9b8e83e6ecaec4cb9d1fea8f54449ffac2fa6d96308dd80e9331c520",
+      "v2": {
+        "signed": {
+          "offer": {
+            "orderId": "*",
+            "facts": "srt;9;19.575",
+            "specialist": "Sam (demo specialist)",
+            "part": "subtitles",
+            "priceCents": 1,
+            "priceSats": "4756",
+            "fileSha256": "05161810b732f59543378e8623fa9e3c5f46ddb4d939a739c3a600fc1a4a9fef",
+            "expires": 1798761599,
+            "payTo": "bitcoincash:qpdsappf99xzval2l6ps8x29204y8uyasyjfhv2frv",
+            "pubkey": "0214ffd7211c47baeafbfd82f7f4c7da11c7e9931d8c95fceb97ebd0d9a5dff6ef",
+            "v": 2,
+            "cipherSha256": "19bdfde7584f685daf1ad330452bfe61c0da9bc1361c7f23491ae88c96893253",
+            "keyHash": "22c1c91aa353ff3985ba973a7c59cd2166c765ac3dd019ad39850804729d4220",
+            "claimPubkey": "0342712e30437c5751fc89ed25d505f9c1f6e72010c5f54f73ba434bea003c41b1"
+          },
+          "sig": "df1312c3f8c4bcfa4f5cc882072579c7e88f9d7810dc83ca5f271ac8e8c1c5800e78716886bd8686ce6002657491384210bcbc8efe0d80bd6e80e531986ec1c5"
+        },
+        "offerHashHex": "d2dac1779204791cab3ca3876f00b2bac64f57cea767e3f58bb7110b68c1beda",
+        "payToLockingHex": "76a9145b0e8429294c2677eafe8303994553ea43f09d8188ac",
+        "sealed": "/enc/mainnet/subs-sam-careless.srt.jce"
+      }
     },
     "lena:good": {
       "signed": {
@@ -108,7 +206,31 @@
       "file": "subs-lena.srt",
       "preview": "/previews/subs-lena.srt",
       "payToLockingHex": "76a914c4cb1792c54e927d6b9d4e98aed694f79584da6088ac",
-      "offerHashHex": "fdbf027dc2895489dcba941053854b8e2a218733675fcb0daa343039f642298b"
+      "offerHashHex": "fdbf027dc2895489dcba941053854b8e2a218733675fcb0daa343039f642298b",
+      "v2": {
+        "signed": {
+          "offer": {
+            "orderId": "*",
+            "facts": "srt;9;18.375",
+            "specialist": "Lena (demo specialist)",
+            "part": "subtitles",
+            "priceCents": 1,
+            "priceSats": "4756",
+            "fileSha256": "a99e55dc4d2c055a98a9dd24148a4621daeec22e430c54c09dc3433adfad14b7",
+            "expires": 1798761599,
+            "payTo": "bitcoincash:qrzvk9ujc48fylttn48f3tkkjnmetpx6vqf95pw6pd",
+            "pubkey": "02240616b674e5f2b06907420914d21907493ea4ef31845beb74f4040d1a7b13a2",
+            "v": 2,
+            "cipherSha256": "cf27ac2a2c5f4c62178c33507cd55ec17f5278d0889bd39caf22d62a7da709e7",
+            "keyHash": "affe0b7a204b58d0b679c9f080017b950772230c8d99396c5f9cc09c5bb4005b",
+            "claimPubkey": "0317b60f89a5fb55c2bc6eeae5f0a9115839e4ddeebf9151a5fc121198aa9c089f"
+          },
+          "sig": "76d9a02fdbe558ce312d6fe3c3283d2daa5061b2d75742376f654b12858198ee96d9c63b399ae717265d10a087529e1ec94d6b05b247b73a0e601af4bb181a8c"
+        },
+        "offerHashHex": "0e9c00843ca92408edd54690b131c4ffe931d3eb93d970f4863d602fc55dd1c5",
+        "payToLockingHex": "76a914c4cb1792c54e927d6b9d4e98aed694f79584da6088ac",
+        "sealed": "/enc/mainnet/subs-lena.srt.jce"
+      }
     },
     "lena:careless": {
       "signed": {
@@ -130,7 +252,31 @@
       "file": "subs-lena-careless.srt",
       "preview": "/previews/subs-lena-careless.srt",
       "payToLockingHex": "76a914c4cb1792c54e927d6b9d4e98aed694f79584da6088ac",
-      "offerHashHex": "c4819b3b604d7bb43aa28badc264a0aa8054c2af08615e9f487c6ecef3a57aa0"
+      "offerHashHex": "c4819b3b604d7bb43aa28badc264a0aa8054c2af08615e9f487c6ecef3a57aa0",
+      "v2": {
+        "signed": {
+          "offer": {
+            "orderId": "*",
+            "facts": "srt;9;19.575",
+            "specialist": "Lena (demo specialist)",
+            "part": "subtitles",
+            "priceCents": 1,
+            "priceSats": "4756",
+            "fileSha256": "2913bce91e18d65d14c930506467530a935858f3195a067ce48c00b1a0b5a2c7",
+            "expires": 1798761599,
+            "payTo": "bitcoincash:qrzvk9ujc48fylttn48f3tkkjnmetpx6vqf95pw6pd",
+            "pubkey": "02240616b674e5f2b06907420914d21907493ea4ef31845beb74f4040d1a7b13a2",
+            "v": 2,
+            "cipherSha256": "2540ea3154c31342ab95e03d27819f6420da0823ca792fd779d001f34eb6c2ed",
+            "keyHash": "53a1bbe7726f4fdf6fadec8a1d6adbca2091c0c0b568138c4973c0ee1ab00ac9",
+            "claimPubkey": "0317b60f89a5fb55c2bc6eeae5f0a9115839e4ddeebf9151a5fc121198aa9c089f"
+          },
+          "sig": "506f33b170984d278dd1c70862e34fbc98dfc9757ba0312d4e57784670192071eb2c4fd07750ae76c3b41ed4cf7f7ca3531a93b79e9480405ac683417d763a88"
+        },
+        "offerHashHex": "fe0a4ce4f171957796dca5b6165d9f986bc98c3a160a8742ee39a72de54df34f",
+        "payToLockingHex": "76a914c4cb1792c54e927d6b9d4e98aed694f79584da6088ac",
+        "sealed": "/enc/mainnet/subs-lena-careless.srt.jce"
+      }
     },
     "logo": {
       "signed": {
@@ -152,7 +298,31 @@
       "file": "logo.svg",
       "preview": "/previews/logo-128.png",
       "payToLockingHex": "76a914bcb2a311217672b85b944de1372332b254f95f1e88ac",
-      "offerHashHex": "861f6692e34fb0639a0dd3ad2e00a2bec62947edd9b06d4fdd317235f410351b"
+      "offerHashHex": "861f6692e34fb0639a0dd3ad2e00a2bec62947edd9b06d4fdd317235f410351b",
+      "v2": {
+        "signed": {
+          "offer": {
+            "orderId": "*",
+            "facts": "svg;1;29;46029",
+            "specialist": "logo (demo specialist)",
+            "part": "logo",
+            "priceCents": 1,
+            "priceSats": "4756",
+            "fileSha256": "cdb9c0930ef5dce2f7c61218b5f7a61ac3121ce702697beeee336e612a357a6c",
+            "expires": 1798761599,
+            "payTo": "bitcoincash:qz7t9gc3y9m89wzmj3x7zderx2e9f72lrcusk940hk",
+            "pubkey": "026798be40e18f30a32c9394a49da576d3aa939df88b24ffd647b286eed710c5f5",
+            "v": 2,
+            "cipherSha256": "6b40754f6c223e2512864e50263b350f9f552d033eb32d3eaa434991df25112a",
+            "keyHash": "998171fb201149d687452329d3c79cdb94a25efc2b8ee43fecd65765bccf2a43",
+            "claimPubkey": "038bf2bb59ed64f3d3acd436a8f24c2c2b8a1a5a5cae8fb14890c52a9c7f0c55fd"
+          },
+          "sig": "71989b8c6fb44dad512cdd4686ae5c9db15302bedb073951b0727365cb988477328bd054c2478ba2e95e284a7ee69b67b4ba52155163f10e9bd6d12b012fff77"
+        },
+        "offerHashHex": "5c75be64aad51b7da63599eb7cdeb49c9e82ce2da9f6d91cad7124b0ec81c63b",
+        "payToLockingHex": "76a914bcb2a311217672b85b944de1372332b254f95f1e88ac",
+        "sealed": "/enc/mainnet/logo.svg.jce"
+      }
     }
   },
   "chipnet": {
@@ -176,7 +346,32 @@
       "file": "cover-a.jpg",
       "preview": "/previews/cover-a.jpg",
       "payToLockingHex": "76a9147eea7ce77196ac5c5c48e23da94149ac8ee7916488ac",
-      "offerHashHex": "e4923a587eb51e143b9b9a379ff3fad05918849ec8dc0421b5daa7862cb24715"
+      "offerHashHex": "e4923a587eb51e143b9b9a379ff3fad05918849ec8dc0421b5daa7862cb24715",
+      "v2": {
+        "signed": {
+          "offer": {
+            "orderId": "*",
+            "facts": "4096x2560;4488737",
+            "specialist": "cover (demo specialist)",
+            "part": "cover",
+            "priceCents": 2,
+            "priceSats": "9512",
+            "fileSha256": "06ea15d8f2284bf0704d890ae75fe285c9f74ce31f00f89f8c326a972d616ad7",
+            "expires": 1798761599,
+            "payTo": "bchtest:qplw5l88wxt2chzufr3rm22pfxkgaeu3vsukqg96qk",
+            "pubkey": "039fbd87348d91f9e0689e1e011ddf406dccbf832238df7b514ae711ae53f6826b",
+            "v": 2,
+            "cipherSha256": "254fb60d1a576fa90530ab13e2d3e9eb1ee8608ab053720b01e5ff0569cc319f",
+            "keyHash": "1f7f0a6968de34730e0a98d6f083b7110793c165c3a6981489fb8b72f68d4f97",
+            "claimPubkey": "03f34f6a9427d2aab8bbdee6c64bb7c921f10fd64fcd36a8297409f168e720d27e"
+          },
+          "sig": "3ee29deb185d2b72c0cb556901b79f2c6603e3522fcd200b2dba9b3a520a0f5604d408160e00eb32b52350aed2528aec4414711e80e6e34feec10e0aef175d07"
+        },
+        "offerHashHex": "66be48c26b8dbf92654b1806233165e500fec3a82ad54c5e7b60061759ff4966",
+        "payToLockingHex": "76a9147eea7ce77196ac5c5c48e23da94149ac8ee7916488ac",
+        "sealed": "/enc/chipnet/cover-a.jpg.jce",
+        "sealedLight": "/enc/chipnet/cover-a-light.jpg.jce"
+      }
     },
     "cover:b": {
       "signed": {
@@ -198,7 +393,32 @@
       "file": "cover-b.jpg",
       "preview": "/previews/cover-b.jpg",
       "payToLockingHex": "76a9147eea7ce77196ac5c5c48e23da94149ac8ee7916488ac",
-      "offerHashHex": "613e936b1286558fcf2afb409a78a3ad904bb4918ab7ea523dbd5ed3c1671cec"
+      "offerHashHex": "613e936b1286558fcf2afb409a78a3ad904bb4918ab7ea523dbd5ed3c1671cec",
+      "v2": {
+        "signed": {
+          "offer": {
+            "orderId": "*",
+            "facts": "4096x2560;4185029",
+            "specialist": "cover (demo specialist)",
+            "part": "cover",
+            "priceCents": 2,
+            "priceSats": "9512",
+            "fileSha256": "2e24dba7a669d7b8b1f7b201eb5d776f0159eacc0574467aea36b5cc8b794998",
+            "expires": 1798761599,
+            "payTo": "bchtest:qplw5l88wxt2chzufr3rm22pfxkgaeu3vsukqg96qk",
+            "pubkey": "039fbd87348d91f9e0689e1e011ddf406dccbf832238df7b514ae711ae53f6826b",
+            "v": 2,
+            "cipherSha256": "52b1cee9832d485a3f31b1142aa1e0993263d84714d39bcba278947fd0e76786",
+            "keyHash": "4c3f07338cd3f36f6144c1659b31d992db2eeb02f3ab0150fa18ec68cbb4c55a",
+            "claimPubkey": "03f34f6a9427d2aab8bbdee6c64bb7c921f10fd64fcd36a8297409f168e720d27e"
+          },
+          "sig": "c872e90ce46e7127afdc928a959027127ace9adf161b3c2142d00885dbf8493d31f8dc476fd3a0b10754c0186c52e8ac9eebc4432dc50b3a0b5b31901792a8d8"
+        },
+        "offerHashHex": "0ff01a64ebbba886c42d8aa7bedb98ac1f876af9f0ac065d542b2c4cf7a78569",
+        "payToLockingHex": "76a9147eea7ce77196ac5c5c48e23da94149ac8ee7916488ac",
+        "sealed": "/enc/chipnet/cover-b.jpg.jce",
+        "sealedLight": "/enc/chipnet/cover-b-light.jpg.jce"
+      }
     },
     "sam:good": {
       "signed": {
@@ -220,7 +440,31 @@
       "file": "subs-sam.srt",
       "preview": "/previews/subs-sam.srt",
       "payToLockingHex": "76a9145b0e8429294c2677eafe8303994553ea43f09d8188ac",
-      "offerHashHex": "1d21a8b0d33d2e00408bc4e54c7b0ef5789d62a78a444a20b41fafdea73e9d93"
+      "offerHashHex": "1d21a8b0d33d2e00408bc4e54c7b0ef5789d62a78a444a20b41fafdea73e9d93",
+      "v2": {
+        "signed": {
+          "offer": {
+            "orderId": "*",
+            "facts": "srt;9;18.375",
+            "specialist": "Sam (demo specialist)",
+            "part": "subtitles",
+            "priceCents": 1,
+            "priceSats": "4756",
+            "fileSha256": "23ab8e6c142d8da577c0cd7f147c73c5a732f09875a39b4676f6227025885334",
+            "expires": 1798761599,
+            "payTo": "bchtest:qpdsappf99xzval2l6ps8x29204y8uyasykmntg7ys",
+            "pubkey": "0214ffd7211c47baeafbfd82f7f4c7da11c7e9931d8c95fceb97ebd0d9a5dff6ef",
+            "v": 2,
+            "cipherSha256": "f67f8b471776240063c2b5ea1ceeacf5d0c42bd6f80e2079ae7638305fae8f92",
+            "keyHash": "31dcec7409999b8f144382de7ac1faa4de7f3cbee4f741015cc68e79f30e16b1",
+            "claimPubkey": "0342712e30437c5751fc89ed25d505f9c1f6e72010c5f54f73ba434bea003c41b1"
+          },
+          "sig": "7ccc7e63f1d4e04740d81729ba7b037d019cc6d497e7aa9a395ce5d5a1e91e50fc2d49cae991b4d7a264dc4f8810235a3c44c011aa48c456acf6dfa56d9d0c03"
+        },
+        "offerHashHex": "794b888a3edbd36017be4e7a3ef6e36508f0f2e77e615d10db0fe7cc4b794ce9",
+        "payToLockingHex": "76a9145b0e8429294c2677eafe8303994553ea43f09d8188ac",
+        "sealed": "/enc/chipnet/subs-sam.srt.jce"
+      }
     },
     "sam:careless": {
       "signed": {
@@ -242,7 +486,31 @@
       "file": "subs-sam-careless.srt",
       "preview": "/previews/subs-sam-careless.srt",
       "payToLockingHex": "76a9145b0e8429294c2677eafe8303994553ea43f09d8188ac",
-      "offerHashHex": "33eabf605753f8741b87921e365b83fe3886c039d2a8638deb7dcb4053b92b60"
+      "offerHashHex": "33eabf605753f8741b87921e365b83fe3886c039d2a8638deb7dcb4053b92b60",
+      "v2": {
+        "signed": {
+          "offer": {
+            "orderId": "*",
+            "facts": "srt;9;19.575",
+            "specialist": "Sam (demo specialist)",
+            "part": "subtitles",
+            "priceCents": 1,
+            "priceSats": "4756",
+            "fileSha256": "05161810b732f59543378e8623fa9e3c5f46ddb4d939a739c3a600fc1a4a9fef",
+            "expires": 1798761599,
+            "payTo": "bchtest:qpdsappf99xzval2l6ps8x29204y8uyasykmntg7ys",
+            "pubkey": "0214ffd7211c47baeafbfd82f7f4c7da11c7e9931d8c95fceb97ebd0d9a5dff6ef",
+            "v": 2,
+            "cipherSha256": "39ac80bbf5e7cb840b6032f9b8f6a025538cf7184a1778804b2d0c2bd99d6d7e",
+            "keyHash": "91f2ea7ff46015cc30ac6e3ec1bfbbc36e47e828df212f61c8269735d3fd8bde",
+            "claimPubkey": "0342712e30437c5751fc89ed25d505f9c1f6e72010c5f54f73ba434bea003c41b1"
+          },
+          "sig": "93d293e96f2f42bc5b652b324aeb68aa0d321a52905eeef11e9c97a434375d1f03919f6b0d86bf503e463643f2ee7964459f8c1915322b7e86bcf0f6c29814f5"
+        },
+        "offerHashHex": "bdf0df45e6153ef64ebb2d1c210e5c032ae1f7b503779c9c16ec2695b936bf39",
+        "payToLockingHex": "76a9145b0e8429294c2677eafe8303994553ea43f09d8188ac",
+        "sealed": "/enc/chipnet/subs-sam-careless.srt.jce"
+      }
     },
     "lena:good": {
       "signed": {
@@ -264,7 +532,31 @@
       "file": "subs-lena.srt",
       "preview": "/previews/subs-lena.srt",
       "payToLockingHex": "76a914c4cb1792c54e927d6b9d4e98aed694f79584da6088ac",
-      "offerHashHex": "c1b946e76a342c79df0caa1bfa2354cacf82e2c14556a8f2f50138e5ab6c9248"
+      "offerHashHex": "c1b946e76a342c79df0caa1bfa2354cacf82e2c14556a8f2f50138e5ab6c9248",
+      "v2": {
+        "signed": {
+          "offer": {
+            "orderId": "*",
+            "facts": "srt;9;18.375",
+            "specialist": "Lena (demo specialist)",
+            "part": "subtitles",
+            "priceCents": 1,
+            "priceSats": "4756",
+            "fileSha256": "a99e55dc4d2c055a98a9dd24148a4621daeec22e430c54c09dc3433adfad14b7",
+            "expires": 1798761599,
+            "payTo": "bchtest:qrzvk9ujc48fylttn48f3tkkjnmetpx6vqdhsxvdx3",
+            "pubkey": "02240616b674e5f2b06907420914d21907493ea4ef31845beb74f4040d1a7b13a2",
+            "v": 2,
+            "cipherSha256": "afc58745d817fa43b23869835495bc7a564cb0b1d5680a438769534c8a468850",
+            "keyHash": "b7ab2232836595205832c1ac7cbd41c9d2b0c5d9870d119484b31e3ad841e393",
+            "claimPubkey": "0317b60f89a5fb55c2bc6eeae5f0a9115839e4ddeebf9151a5fc121198aa9c089f"
+          },
+          "sig": "6a850bb21c815dabf463aa7ef6b357bac9c67181c46681b991fbadc6eff56f42f13f042857bcb302927f68671be68a81b9b7f45e3a18d327d23227672fbd6e98"
+        },
+        "offerHashHex": "dc0e4e9a0e45c64262b90f19bd0a0e7663c09b1b2b07c453e08e0773d1515cbc",
+        "payToLockingHex": "76a914c4cb1792c54e927d6b9d4e98aed694f79584da6088ac",
+        "sealed": "/enc/chipnet/subs-lena.srt.jce"
+      }
     },
     "lena:careless": {
       "signed": {
@@ -286,7 +578,31 @@
       "file": "subs-lena-careless.srt",
       "preview": "/previews/subs-lena-careless.srt",
       "payToLockingHex": "76a914c4cb1792c54e927d6b9d4e98aed694f79584da6088ac",
-      "offerHashHex": "a7d63834c118916c4b79240a3997bce9c91723fccfa9e26ae79a23bda5979ad2"
+      "offerHashHex": "a7d63834c118916c4b79240a3997bce9c91723fccfa9e26ae79a23bda5979ad2",
+      "v2": {
+        "signed": {
+          "offer": {
+            "orderId": "*",
+            "facts": "srt;9;19.575",
+            "specialist": "Lena (demo specialist)",
+            "part": "subtitles",
+            "priceCents": 1,
+            "priceSats": "4756",
+            "fileSha256": "2913bce91e18d65d14c930506467530a935858f3195a067ce48c00b1a0b5a2c7",
+            "expires": 1798761599,
+            "payTo": "bchtest:qrzvk9ujc48fylttn48f3tkkjnmetpx6vqdhsxvdx3",
+            "pubkey": "02240616b674e5f2b06907420914d21907493ea4ef31845beb74f4040d1a7b13a2",
+            "v": 2,
+            "cipherSha256": "4e6e656dded4c613d667ca1605c467d3c3b7bde04992f7ca9d9356e5280b487b",
+            "keyHash": "18dbdbb7281330050191fd25e6271ea04d7ba3190835be5d913381010fa878d2",
+            "claimPubkey": "0317b60f89a5fb55c2bc6eeae5f0a9115839e4ddeebf9151a5fc121198aa9c089f"
+          },
+          "sig": "7044490f41451df84d84a6a14f4cdbacd8fe364bd3f96cf5f5549a53a8a543ca1c5f3105f394846ce514b152cb30799165147cd6e5397b2262344b0249f29ac5"
+        },
+        "offerHashHex": "38d233fcbcaf86b2494b90aaaf52546d8fd58bd026dfabef61df0433feac5be5",
+        "payToLockingHex": "76a914c4cb1792c54e927d6b9d4e98aed694f79584da6088ac",
+        "sealed": "/enc/chipnet/subs-lena-careless.srt.jce"
+      }
     },
     "logo": {
       "signed": {
@@ -308,7 +624,31 @@
       "file": "logo.svg",
       "preview": "/previews/logo-128.png",
       "payToLockingHex": "76a914bcb2a311217672b85b944de1372332b254f95f1e88ac",
-      "offerHashHex": "d93d236b88414d52d588d8bf13970f2e926f9dd0c0a912b8e50dcfc6539f7f49"
+      "offerHashHex": "d93d236b88414d52d588d8bf13970f2e926f9dd0c0a912b8e50dcfc6539f7f49",
+      "v2": {
+        "signed": {
+          "offer": {
+            "orderId": "*",
+            "facts": "svg;1;29;46029",
+            "specialist": "logo (demo specialist)",
+            "part": "logo",
+            "priceCents": 1,
+            "priceSats": "4756",
+            "fileSha256": "cdb9c0930ef5dce2f7c61218b5f7a61ac3121ce702697beeee336e612a357a6c",
+            "expires": 1798761599,
+            "payTo": "bchtest:qz7t9gc3y9m89wzmj3x7zderx2e9f72lrcczjzhcs2",
+            "pubkey": "026798be40e18f30a32c9394a49da576d3aa939df88b24ffd647b286eed710c5f5",
+            "v": 2,
+            "cipherSha256": "0bc10cd4eba41101554942952fed8951ec578095bdc21e959a0cdd13e1e6b251",
+            "keyHash": "bd69880b5aa2846ead7fdb09e991f591ef86a3f2d9da42810ba667ac93f82db7",
+            "claimPubkey": "038bf2bb59ed64f3d3acd436a8f24c2c2b8a1a5a5cae8fb14890c52a9c7f0c55fd"
+          },
+          "sig": "b67f2ea50b15e0be6de5168f156c7193ca3931af5d052be22ca3ab0e1657636dbaa190a5d3c9f91ebd97302f19d74e6f9969646cffafde63b391123dfe92418f"
+        },
+        "offerHashHex": "5aaa086a056d7fcc554bb2b0b4c6b1684474fac1b13a68d1d29551aa2f5f16ec",
+        "payToLockingHex": "76a914bcb2a311217672b85b944de1372332b254f95f1e88ac",
+        "sealed": "/enc/chipnet/logo.svg.jce"
+      }
     }
   },
   "_meta": {

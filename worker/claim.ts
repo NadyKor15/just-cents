@@ -3,7 +3,8 @@
 // contract from the payment's JC2 note, checks the amount and the time left before a refund (the chain's median time
 // past against the contract's refund time), and broadcasts the claim.
 // The answer names the claim transaction; the buyer's page reads the key from the chain, not from this answer.
-// The specialist's file key and signing key are secrets of this server (environment), never in the code.
+// The specialist's file keys (from a seed) and claim keys are secrets of this server (environment), never in the code.
+// The keys that sign offers are not here: a v2 offer names a separate claim key (src/core/offer.ts).
 // No libauth here (Workers refuse its WASM): src/core/htlc.ts and src/core/filebox.ts are WASM-free.
 import offers from '../src/data/offers.json';
 import { buildClaim, canClaimSafely, contractLocking, decodeTx, FEE_SATS, hex, medianTimePast, parseNote2, txidOf, unhex, type LockParams } from '../src/core/htlc';
@@ -16,13 +17,14 @@ export type ClaimEntry = {
   offerHashHex: string;
   priceSats: string;
   payToLockingHex: string;
-  pubkey: string;
+  /** the offer's claim key: the contract's specialist key (not the key that signs offers) */
+  claimPubkey: string;
   keyHash: string;
   cipherSha256: string;
   fileSha256: string;
 };
 
-/** The specialist's secrets: the seed its file keys come from, and the private key of each offer public key. */
+/** The specialist's secrets: the seed its file keys come from, and the private key of each claim public key. */
 export type ClaimKeys = { seed: Uint8Array; privateKeys: Record<string, Uint8Array> };
 
 export type ClaimPlan =
@@ -46,7 +48,7 @@ export function planClaim(paymentHex: string, e: ClaimEntry, net: Net, keys: Cla
   const params: LockParams = {
     cipherSha256: e.cipherSha256,
     keyHash: e.keyHash,
-    sellerPubkey: e.pubkey,
+    sellerPubkey: e.claimPubkey,
     buyerLockingHex: note.buyerLockingHex,
     refundTime: note.refundTime,
   };
@@ -66,8 +68,8 @@ export function planClaim(paymentHex: string, e: ClaimEntry, net: Net, keys: Cla
   if (!canClaimSafely(mtp, note.refundTime)) return { ok: false, status: 409, reason: `too late: the refund opens at ${new Date(note.refundTime * 1000).toISOString()} (chain time ${new Date(mtp * 1000).toISOString()}); the key stays secret` };
   const key = deriveFileKey(keys.seed, net, e.fileSha256);
   if (keyHashHex(key) !== e.keyHash) return { ok: false, status: 500, reason: 'this server does not hold the key of this offer' };
-  const privateKey = keys.privateKeys[e.pubkey];
-  if (!privateKey) return { ok: false, status: 500, reason: 'this server does not hold the signing key of this offer' };
+  const privateKey = keys.privateKeys[e.claimPubkey];
+  if (!privateKey) return { ok: false, status: 500, reason: 'this server does not hold the claim key of this offer' };
   const paymentTxid = txidOf(raw);
   try {
     const c = buildClaim({ fundingTxid: paymentTxid, vout, value, params, key, privateKey, payToLocking: unhex(e.payToLockingHex) });
@@ -77,7 +79,7 @@ export function planClaim(paymentHex: string, e: ClaimEntry, net: Net, keys: Cla
   }
 }
 
-type V2Entry = { offerHashHex: string; payToLockingHex: string; signed: { offer: { priceSats: string; pubkey: string; keyHash: string; cipherSha256: string; fileSha256: string } } };
+type V2Entry = { offerHashHex: string; payToLockingHex: string; signed: { offer: { priceSats: string; claimPubkey: string; keyHash: string; cipherSha256: string; fileSha256: string } } };
 type BookRow = { v2?: V2Entry };
 const BOOK = offers as unknown as Record<Net, Record<string, BookRow>>;
 
@@ -87,7 +89,7 @@ export function claimBook(net: Net, book: Record<Net, Record<string, BookRow>> =
   for (const [k, row] of Object.entries(book[net] ?? {})) {
     if (k.startsWith('_') || !row?.v2) continue;
     const o = row.v2.signed.offer;
-    out[k] = { offerHashHex: row.v2.offerHashHex, priceSats: o.priceSats, payToLockingHex: row.v2.payToLockingHex, pubkey: o.pubkey, keyHash: o.keyHash, cipherSha256: o.cipherSha256, fileSha256: o.fileSha256 };
+    out[k] = { offerHashHex: row.v2.offerHashHex, priceSats: o.priceSats, payToLockingHex: row.v2.payToLockingHex, claimPubkey: o.claimPubkey, keyHash: o.keyHash, cipherSha256: o.cipherSha256, fileSha256: o.fileSha256 };
   }
   return out;
 }
@@ -95,7 +97,7 @@ export function claimBook(net: Net, book: Record<Net, Record<string, BookRow>> =
 export interface ClaimEnv {
   /** hex, at least 32 bytes: the seed of the demo specialists' file keys */
   JC_FILE_KEY_SEED?: string;
-  /** JSON {"<offer public key hex>": "<private key hex>"} */
+  /** JSON {"<claim public key hex>": "<private key hex>"} */
   JC_CLAIM_KEYS?: string;
 }
 

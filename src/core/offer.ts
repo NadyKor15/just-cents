@@ -67,8 +67,10 @@ export function fileSha256Hex(bytes: Uint8Array): string {
 // ---------- v2: offers whose full file is sealed, paid through a hash-lock contract (src/core/htlc.ts) ----------
 
 /**
- * A v2 offer adds two fingerprints to v1: the sealed (encrypted) full file, and the lock of its key (sha256 of K).
- * The buyer pays into a contract that only the specialist can open, and only by putting K on chain.
+ * A v2 offer adds to v1 the fingerprint of the sealed (encrypted) full file, the lock of its key (sha256 of K), and the
+ * public key that will sign the claim. The buyer pays into a contract that only the holder of that claim key can open,
+ * and only by putting K on chain. The claim key is separate from the offer key: the server that claims holds only the
+ * claim key, never the key that signs offers.
  */
 export type Offer2 = Omit<Offer, 'v'> & {
   v: 2;
@@ -76,12 +78,14 @@ export type Offer2 = Omit<Offer, 'v'> & {
   cipherSha256: string;
   /** sha256 of the file key K, 32 bytes hex */
   keyHash: string;
+  /** compressed public key that signs the claim (the contract's specialist key), 33 bytes hex */
+  claimPubkey: string;
 };
 
 export type SignedOffer2 = { offer: Offer2; sig: string };
 
 export function canonical2(o: Offer2): string {
-  return JSON.stringify([o.v, o.orderId, o.facts, o.specialist, o.part, o.priceCents, o.priceSats, o.fileSha256, o.cipherSha256, o.keyHash, o.expires, o.payTo, o.pubkey]);
+  return JSON.stringify([o.v, o.orderId, o.facts, o.specialist, o.part, o.priceCents, o.priceSats, o.fileSha256, o.cipherSha256, o.keyHash, o.claimPubkey, o.expires, o.payTo, o.pubkey]);
 }
 
 export function offerHash2(o: Offer2): Uint8Array {
@@ -108,6 +112,7 @@ export function verifyOffer2(s: SignedOffer2, expect: { orderId: string; nowSec:
   if (!/^[0-9a-f]{64}$/.test(o.cipherSha256)) return { ok: false, reason: 'bad sealed file fingerprint' };
   if (!/^[0-9a-f]{64}$/.test(o.keyHash)) return { ok: false, reason: 'bad key lock' };
   if (!/^0[23][0-9a-f]{64}$/.test(o.pubkey)) return { ok: false, reason: 'bad public key' };
+  if (!/^0[23][0-9a-f]{64}$/.test(o.claimPubkey)) return { ok: false, reason: 'bad claim key' };
   if (!/^\d+$/.test(o.priceSats)) return { ok: false, reason: 'bad price' };
   let good = false;
   try {

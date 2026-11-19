@@ -22,8 +22,12 @@ const own = (b: Uint8Array): Uint8Array<ArrayBuffer> => {
   return c;
 };
 
-function ivFor(key: Uint8Array): Uint8Array {
-  return sha256(concatBytes(utf8ToBytes('JCE1 iv'), key)).slice(0, IV_BYTES);
+/**
+ * The iv comes from the key and a label. Under one key, every sealed file must have its own label: the full file has
+ * none, a display copy (the cover's light copy) is "light". The same iv twice under one key would break AES-GCM.
+ */
+function ivFor(key: Uint8Array, label: string): Uint8Array {
+  return sha256(concatBytes(utf8ToBytes(`JCE1 iv${label}`), key)).slice(0, IV_BYTES);
 }
 
 async function aesKey(key: Uint8Array, use: 'encrypt' | 'decrypt'): Promise<CryptoKey> {
@@ -31,8 +35,9 @@ async function aesKey(key: Uint8Array, use: 'encrypt' | 'decrypt'): Promise<Cryp
   return crypto.subtle.importKey('raw', own(key), { name: 'AES-GCM' }, false, [use]);
 }
 
-export async function sealFile(key: Uint8Array, plain: Uint8Array): Promise<Uint8Array> {
-  const iv = ivFor(key);
+export async function sealFile(key: Uint8Array, plain: Uint8Array, label = ''): Promise<Uint8Array> {
+  if (label && !/^ [a-z]+$/.test(label)) throw new Error('a seal label is a space and lowercase letters, e.g. " light"');
+  const iv = ivFor(key, label);
   const ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv: own(iv), tagLength: TAG_BYTES * 8 }, await aesKey(key, 'encrypt'), own(plain)));
   return concatBytes(MAGIC, iv, ct);
 }

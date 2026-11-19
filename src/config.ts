@@ -28,6 +28,17 @@ export const BANNER = {
   readme: '',
 };
 
+/**
+ * Public keys that sign each specialist's claims (v2: the hash-lock contract's specialist key). Separate from the
+ * offer keys below: the server that claims holds these, never the keys that sign offers (vault team-nadya /just-cents).
+ */
+export const CLAIM_PUBKEY: Record<'cover' | 'sam' | 'lena' | 'logo', string> = {
+  cover: '03f34f6a9427d2aab8bbdee6c64bb7c921f10fd64fcd36a8297409f168e720d27e',
+  sam: '0342712e30437c5751fc89ed25d505f9c1f6e72010c5f54f73ba434bea003c41b1',
+  lena: '0317b60f89a5fb55c2bc6eeae5f0a9115839e4ddeebf9151a5fc121198aa9c089f',
+  logo: '038bf2bb59ed64f3d3acd436a8f24c2c2b8a1a5a5cae8fb14890c52a9c7f0c55fd',
+};
+
 /** Public keys that sign each specialist's offers. */
 export const OFFER_PUBKEY: Record<'cover' | 'sam' | 'lena' | 'logo', string> = {
   cover: '039fbd87348d91f9e0689e1e011ddf406dccbf832238df7b514ae711ae53f6826b',

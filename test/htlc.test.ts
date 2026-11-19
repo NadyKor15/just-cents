@@ -51,7 +51,8 @@ const vm = createVirtualMachineBch2026(true);
 const k = (s: string) => libSha.hash(utf8ToBin(s));
 const pub = (priv: Uint8Array) => libSecp.derivePublicKeyCompressed(priv) as Uint8Array;
 
-const sellerPriv = k('seller');
+const sellerPriv = k('seller'); // the claim key: the contract's specialist key
+const offerPriv = k('seller offer key'); // signs offers only, never claims
 const otherPriv = k('someone else');
 const buyerPriv = k('buyer');
 const buyerLock = encodeLockingBytecodeP2pkh(hash160(pub(buyerPriv)));
@@ -317,13 +318,17 @@ describe('v2 offers', () => {
     keyHash: params.keyHash,
     expires: 1_798_761_599,
     payTo: 'bchtest:qz7t9gc3y9m89wzmj3x7zderx2e9f72lrcczjzhcs2',
-    pubkey: params.sellerPubkey,
+    pubkey: binToHex(pub(offerPriv)),
+    claimPubkey: params.sellerPubkey,
   };
-  it('sign and verify; changing the lock or the sealed fingerprint breaks the signature', () => {
-    const s = signOffer2(base, sellerPriv);
-    expect(verifyOffer2(s, { orderId: 'cd'.repeat(16), nowSec: 1_794_800_000 }).ok).toBe(true);
+  it('sign and verify with the offer key; changing the lock, the sealed fingerprint or the claim key breaks the signature', () => {
+    const s = signOffer2(base, offerPriv);
+    expect(verifyOffer2(s, { orderId: 'cd'.repeat(16), nowSec: 1_794_800_000, pubkey: binToHex(pub(offerPriv)) }).ok).toBe(true);
     expect(verifyOffer2({ ...s, offer: { ...base, keyHash: binToHex(k('x')) } }, { orderId: ANY_ORDER, nowSec: 0 }).ok).toBe(false);
     expect(verifyOffer2({ ...s, offer: { ...base, cipherSha256: binToHex(k('x')) } }, { orderId: ANY_ORDER, nowSec: 0 }).ok).toBe(false);
+    expect(verifyOffer2({ ...s, offer: { ...base, claimPubkey: binToHex(pub(otherPriv)) } }, { orderId: ANY_ORDER, nowSec: 0 }).ok).toBe(false);
+    // the claim key cannot sign offers
+    expect(verifyOffer2(signOffer2(base, sellerPriv), { orderId: ANY_ORDER, nowSec: 0 }).ok).toBe(false);
     // a v2 offer is never taken for a v1 one
     expect(verifyOffer(s as never, { orderId: ANY_ORDER, nowSec: 0 })).toEqual({ ok: false, reason: 'unknown offer version' });
   });
@@ -344,11 +349,11 @@ async function entryFor(): Promise<{ entry: ClaimEntry; offerHashHex: string; se
   const offer: Offer2 = {
     v: 2, orderId: ANY_ORDER, facts: 'svg;1;1;40', specialist: 'logo (demo specialist)', part: 'logo', priceCents: 1, priceSats: PRICE.toString(),
     fileSha256: plainSha, cipherSha256: binToHex(libSha.hash(sealed)), keyHash: keyHashHex(fileKey), expires: 1_798_761_599,
-    payTo: 'bchtest:qz7t9gc3y9m89wzmj3x7zderx2e9f72lrcczjzhcs2', pubkey: binToHex(pub(sellerPriv)),
+    payTo: 'bchtest:qz7t9gc3y9m89wzmj3x7zderx2e9f72lrcczjzhcs2', pubkey: binToHex(pub(offerPriv)), claimPubkey: binToHex(pub(sellerPriv)),
   };
   const offerHashHex = offerHash2Hex(offer);
   return {
-    entry: { offerHashHex, priceSats: offer.priceSats, payToLockingHex: binToHex(lockingFor(offer.payTo)), pubkey: offer.pubkey, keyHash: offer.keyHash, cipherSha256: offer.cipherSha256, fileSha256: offer.fileSha256 },
+    entry: { offerHashHex, priceSats: offer.priceSats, payToLockingHex: binToHex(lockingFor(offer.payTo)), claimPubkey: offer.claimPubkey, keyHash: offer.keyHash, cipherSha256: offer.cipherSha256, fileSha256: offer.fileSha256 },
     offerHashHex,
     sealed,
   };
@@ -360,7 +365,7 @@ const MTP_NOW = T_REFUND - 3600;
 function pay(e: ClaimEntry, offerHashHex: string, over: Partial<{ price: bigint; listed: string[]; refundTime: number }> = {}) {
   const p = buildPayment2({
     utxos: [coin(3000n, 1), coin(20000n, 2)],
-    contracts: [{ label: 'logo', priceSats: over.price ?? PRICE, lock: { cipherSha256: e.cipherSha256, keyHash: e.keyHash, sellerPubkey: e.pubkey } }],
+    contracts: [{ label: 'logo', priceSats: over.price ?? PRICE, lock: { cipherSha256: e.cipherSha256, keyHash: e.keyHash, sellerPubkey: e.claimPubkey } }],
     payouts: [{ label: 'service', address: 'bchtest:qqczcf6dcqm62u0prm2qnre4655w5236qytf8scfkf', sats: 4756n }],
     orderIdHex: 'cd'.repeat(16),
     offerHashesHex: over.listed ?? [offerHashHex],
@@ -380,14 +385,14 @@ describe('a whole v2 order, offline', () => {
     expect(binToHex(p.transaction.outputs[0]!.lockingBytecode)).toBe(p.contracts[0]!.lockingHex);
     expect(binToHex(p.transaction.outputs[p.transaction.outputs.length - 1]!.lockingBytecode)).toBe(binToHex(coinLock));
     expect(p.sourceOutputs[0]!.valueSatoshis).toBe(20000n);
-    const found = contractsInPayment(unhex(raw), [{ offerHashHex, lock: { cipherSha256: entry.cipherSha256, keyHash: entry.keyHash, sellerPubkey: entry.pubkey } }]);
+    const found = contractsInPayment(unhex(raw), [{ offerHashHex, lock: { cipherSha256: entry.cipherSha256, keyHash: entry.keyHash, sellerPubkey: entry.claimPubkey } }]);
     expect(found?.contracts.map((c) => [c.vout, c.value])).toEqual([[0, PRICE + FEE_SATS]]);
   });
 
   it('specialist claims (the same code as the worker) → the page reads the key from the claim → the file opens and matches', async () => {
     const { entry, offerHashHex, sealed } = await entryFor();
     const { p, raw } = pay(entry, offerHashHex);
-    const plan = planClaim(raw, entry, 'chipnet', { seed: SEED, privateKeys: { [entry.pubkey]: sellerPriv } }, MTP_NOW);
+    const plan = planClaim(raw, entry, 'chipnet', { seed: SEED, privateKeys: { [entry.claimPubkey]: sellerPriv } }, MTP_NOW);
     expect(plan.ok, plan.ok ? '' : plan.reason).toBe(true);
     if (!plan.ok) return;
     expect(plan.vout).toBe(0);
@@ -405,7 +410,7 @@ describe('a whole v2 order, offline', () => {
 
   it('the specialist refuses: offer not in the note, underpaid, too close to the refund, keys it does not hold', async () => {
     const { entry, offerHashHex } = await entryFor();
-    const keys = { seed: SEED, privateKeys: { [entry.pubkey]: sellerPriv } };
+    const keys = { seed: SEED, privateKeys: { [entry.claimPubkey]: sellerPriv } };
     const notListed = pay(entry, offerHashHex, { listed: ['ee'.repeat(32)] }).raw;
     expect(planClaim(notListed, entry, 'chipnet', keys, MTP_NOW)).toMatchObject({ ok: false, status: 402, reason: 'this offer is not in the note' });
     const under = pay(entry, offerHashHex, { price: PRICE - 1n }).raw;
@@ -417,14 +422,14 @@ describe('a whole v2 order, offline', () => {
     expect(planClaim(raw, entry, 'mainnet', keys, MTP_NOW)).toMatchObject({ ok: false, status: 500 });
     expect(planClaim(raw, entry, 'chipnet', { seed: SEED, privateKeys: {} }, MTP_NOW)).toMatchObject({ ok: false, status: 500 });
     // a payment whose contract was made for another buyer than the note says: no contract found for this offer
-    const other = { ...entry, pubkey: binToHex(pub(otherPriv)) };
+    const other = { ...entry, claimPubkey: binToHex(pub(otherPriv)) };
     expect(planClaim(raw, other, 'chipnet', keys, MTP_NOW)).toMatchObject({ ok: false, status: 402, reason: 'no contract for this offer in the transaction' });
   });
 
   it('nobody claims → after the refund time anyone refunds to the buyer, rebuilt from the payment alone', async () => {
     const { entry, offerHashHex } = await entryFor();
     const { raw } = pay(entry, offerHashHex);
-    const found = contractsInPayment(unhex(raw), [{ offerHashHex, lock: { cipherSha256: entry.cipherSha256, keyHash: entry.keyHash, sellerPubkey: entry.pubkey } }])!;
+    const found = contractsInPayment(unhex(raw), [{ offerHashHex, lock: { cipherSha256: entry.cipherSha256, keyHash: entry.keyHash, sellerPubkey: entry.claimPubkey } }])!;
     const r = buildRefund({ contracts: found.contracts.map((c) => ({ txid: txidOf(unhex(raw)), vout: c.vout, value: c.value, params: c.params })) });
     expect(verify(r.tx, [[unhex(found.contracts[0]!.lockingHex), found.contracts[0]!.value]])).toBe(true);
     expect(hex(r.tx.outputs[0]!.locking)).toBe(binToHex(coinLock));

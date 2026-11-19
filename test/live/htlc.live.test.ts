@@ -60,12 +60,12 @@ async function specialist(payTo: string) {
     offerHashHex: binToHex(sha256.hash(rnd())),
     priceSats: PRICE.toString(),
     payToLockingHex: binToHex(lockingFor(payTo)),
-    pubkey: publicKeyOf(privateKey),
+    claimPubkey: publicKeyOf(privateKey),
     keyHash: keyHashHex(key),
     cipherSha256: binToHex(sha256.hash(sealed)),
     fileSha256,
   };
-  return { entry, keys: { seed, privateKeys: { [entry.pubkey]: privateKey } }, sealed, plain };
+  return { entry, keys: { seed, privateKeys: { [entry.claimPubkey]: privateKey } }, sealed, plain };
 }
 
 async function payInto(site: WalletLink, entry: ClaimEntry, refundTime: number) {
@@ -73,7 +73,7 @@ async function payInto(site: WalletLink, entry: ClaimEntry, refundTime: number) 
   expect(coins.length).toBeGreaterThan(0);
   const p = buildPayment2({
     utxos: coins,
-    contracts: [{ label: 'logo', priceSats: PRICE, lock: { cipherSha256: entry.cipherSha256, keyHash: entry.keyHash, sellerPubkey: entry.pubkey } }],
+    contracts: [{ label: 'logo', priceSats: PRICE, lock: { cipherSha256: entry.cipherSha256, keyHash: entry.keyHash, sellerPubkey: entry.claimPubkey } }],
     payouts: [{ label: 'service', address: PAYOUT.service[NET], sats: 600n }],
     orderIdHex: binToHex(rnd().slice(0, 16)),
     offerHashesHex: [entry.offerHashHex],
@@ -153,7 +153,7 @@ describe.skipIf(!LIVE)('chipnet: the hash-lock flow', () => {
     close();
 
     // anyone can rebuild the contract from the payment alone
-    const found = contractsInPayment(unhex(raw), [{ offerHashHex: s.entry.offerHashHex, lock: { cipherSha256: s.entry.cipherSha256, keyHash: s.entry.keyHash, sellerPubkey: s.entry.pubkey } }]);
+    const found = contractsInPayment(unhex(raw), [{ offerHashHex: s.entry.offerHashHex, lock: { cipherSha256: s.entry.cipherSha256, keyHash: s.entry.keyHash, sellerPubkey: s.entry.claimPubkey } }]);
     expect(found?.contracts).toHaveLength(1);
     const coin = { txid, vout: found!.contracts[0]!.vout, value: found!.contracts[0]!.value, params: found!.contracts[0]!.params as LockParams };
     expect(binToHex(contractLocking(coin.params))).toBe(p.contracts[0]!.lockingHex);
