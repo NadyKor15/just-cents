@@ -30,6 +30,7 @@ import { lockingFor, type BuiltPayment, type Utxo } from '../src/core/tx';
 import { contractLocking, FEE_SATS, parseNote2 } from '../src/core/htlc';
 import { txidOf } from '../src/core/release';
 import { signLocally } from './helpers/signer';
+import { PART_BYTES, partCount, partLength } from '../src/core/parts';
 
 const priv = sha256.hash(utf8ToBin('pay-test-wallet'));
 const addr = encodeCashAddress({ prefix: 'bchtest', type: 'p2pkh', payload: hash160(secp256k1.derivePublicKeyCompressed(priv) as Uint8Array) }).address;
@@ -58,7 +59,10 @@ function wallet(opts: { coins: Utxo[][]; tamper?: boolean }) {
 
 const coin = (sats: bigint, n: number): Utxo => ({ txid: n.toString(16).padStart(64, '0'), vout: 0, sats, lockingBytecode: lockingFor(addr), path: 'receive', index: 0 });
 
-/** The site, for the sealed files: served from public/ as the static site would; `tamper` changes one byte of one. */
+/**
+ * The site, for the sealed files: served from public/ as the built static site would, the big ones also in parts
+ * (<file>.p<i>, cut as the build cuts them); `tamper` changes the last byte of one file (and so of its last part).
+ */
 let tamper = '';
 const fetched: string[] = [];
 beforeEach(() => {
@@ -68,9 +72,14 @@ beforeEach(() => {
   fetched.length = 0;
   vi.stubGlobal('fetch', async (url: string) => {
     fetched.push(url);
-    const bytes = new Uint8Array(readFileSync(`public${url}`));
-    if (url === tamper) bytes[bytes.length - 1]! ^= 1;
-    return new Response(bytes);
+    const part = /^(.*)\.p(\d+)$/.exec(url);
+    const path = part ? part[1]! : url;
+    const bytes = new Uint8Array(readFileSync(`public${path}`));
+    if (path === tamper) bytes[bytes.length - 1]! ^= 1;
+    if (!part) return new Response(bytes);
+    const i = Number(part[2]);
+    if (i >= partCount(bytes.length)) return new Response('not found', { status: 404 });
+    return new Response(bytes.slice(i * PART_BYTES, i * PART_BYTES + partLength(bytes.length, i)));
   });
 });
 afterEach(() => vi.unstubAllGlobals());
@@ -111,8 +120,51 @@ describe('paying once, even when sending fails', () => {
     expect(note).toMatchObject({ orderIdHex: o.id, refundTime: REFUND_TIME, buyerLockingHex: binToHex(lockingFor(addr)) });
     expect(note.offerPrefixes).toEqual(['cover', 'lena:good', 'logo'].map((k) => OFFERS.chipnet[k]!.v2!.offerHashHex.slice(0, 32)));
     expect(note.offerPrefixes).not.toContain(OFFERS.chipnet['sam:careless']!.v2!.offerHashHex.slice(0, 32));
-    // the sealed files were fetched (and checked) before the wallet was asked
-    expect(fetched.sort()).toEqual(['cover', 'lena:good', 'logo'].map((k) => OFFERS.chipnet[k]!.v2!.sealed).sort());
+    // the sealed files were fetched (and checked) before the wallet was asked: the cover in its 9 parts, once each,
+    // the small ones whole; nothing else
+    const cover = OFFERS.chipnet['cover']!.v2!.sealed;
+    expect(fetched.sort()).toEqual([...Array.from({ length: 9 }, (_, i) => `${cover}.p${i}`), ...['lena:good', 'logo'].map((k) => OFFERS.chipnet[k]!.v2!.sealed)].sort());
+  });
+
+  it('Pay shows how many sealed files are in and how far the cover is', async () => {
+    const o = readyOrder();
+    const w = wallet({ coins: [[coin(200_000n, 6)]] });
+    const steps: string[] = [];
+    await o.pay(w.link, (s) => steps.push(s));
+    const fetching = steps.filter((s) => s.startsWith('Fetching the sealed files'));
+    expect(fetching[0]).toMatch(/^Fetching the sealed files \(0 of 3\)/);
+    expect(fetching.some((s) => / · cover \d{1,2}%$/.test(s))).toBe(true);
+    expect(fetching.at(-1)).toBe('Fetching the sealed files (3 of 3)');
+    expect(steps.indexOf('Fetching the sealed files (3 of 3)')).toBeLessThan(steps.indexOf('Looking for coins in your wallet'));
+  });
+
+  it('a part that does not join into the offered file: the file is fetched whole once more, and used if it is right', async () => {
+    const o = readyOrder();
+    const w = wallet({ coins: [[coin(200_000n, 7)]] });
+    const cover = OFFERS.chipnet['cover']!.v2!.sealed;
+    const real = globalThis.fetch;
+    // a stale part 4 (same length, other bytes), as an out-of-date cache could serve
+    vi.stubGlobal('fetch', async (url: string) => {
+      const r = await real(url);
+      if (url !== `${cover}.p4`) return r;
+      const b = new Uint8Array(await r.arrayBuffer());
+      b[0]! ^= 0xff;
+      return new Response(b);
+    });
+    await o.pay(w.link, () => {});
+    expect(fetched.filter((u) => u === cover)).toHaveLength(1);
+    expect(sent).toHaveLength(1);
+  });
+
+  it('a cover that is not the offered one, in parts and whole: no payment, the wallet is never asked', async () => {
+    const o = readyOrder();
+    const w = wallet({ coins: [[coin(200_000n, 8)]] });
+    const cover = OFFERS.chipnet['cover']!.v2!.sealed;
+    tamper = cover;
+    await expect(o.pay(w.link, () => {})).rejects.toThrow(/cover: the sealed file is not the one the offer names/);
+    expect(fetched.filter((u) => u === cover)).toHaveLength(1);
+    expect(w.counts()).toEqual({ coinCalls: 0, signCalls: 0 });
+    expect(sent).toHaveLength(0);
   });
 
   it('a sealed file that is not the one the offer names: no payment is built, the wallet is never asked', async () => {

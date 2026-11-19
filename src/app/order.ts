@@ -22,6 +22,15 @@ import { drawing, pixels, sha256Hex } from './measure';
 import { newOrderId } from '../core/orderid';
 import { txidOf } from '../core/release';
 import { binToHex, decodeTransaction, hexToBin } from '@bitauth/libauth';
+import { download } from './download';
+import { partCount } from '../core/parts';
+import SEALED_SIZES_JSON from '../data/sealed-sizes.json';
+
+/** Sizes of the sealed files on the site (a test checks them against the files). */
+const SEALED_SIZES = SEALED_SIZES_JSON as Record<string, number>;
+
+/** The bytes of a view, as an ArrayBuffer of exactly those bytes (for crypto.subtle). */
+const asBuffer = (b: Uint8Array): ArrayBuffer => (b.byteOffset === 0 && b.byteLength === b.buffer.byteLength ? (b.buffer as ArrayBuffer) : (b.slice().buffer as ArrayBuffer));
 
 /** One accepted specialist's contract in a v2 payment: where the money sits until the key is on chain. */
 export type Contract = { key: string; vout: number; sats: bigint; params: LockParams; lockingHex: string };
@@ -149,39 +158,53 @@ export class Order {
     return e;
   }
 
+  /** Bytes in so far of each sealed file being fetched, by offer key (for the percent on Pay). */
+  readonly progress: Record<string, { got: number; total: number }> = {};
+  /** Called whenever a sealed file's progress moves. */
+  onProgress?: () => void;
+  /** Parts of each sealed file that have arrived; kept across tries, so a retry does not fetch them again. */
+  private sealedParts = new Map<string, (Uint8Array | undefined)[]>();
+
   /**
    * The sealed full file, fetched from the site and checked against the signed v2 offer. The page holds it before it
    * pays: after the payment the specialist can only reveal the key, it cannot swap the file.
+   * The download is cut only when it stalls, and a big file comes in parts that survive a cut (./download.ts).
    */
   sealedFile(key: string): Promise<Uint8Array> {
     let p = this.sealedFiles.get(key);
     if (!p) {
       const e = this.v2(key);
+      const size = SEALED_SIZES[e.sealed];
+      const onProgress = (got: number, total: number) => {
+        this.progress[key] = { got, total };
+        this.onProgress?.();
+      };
       p = (async () => {
-        // a download that stalls is cut after 45 s and tried once more (the site's speed varies a lot)
-        let last: unknown;
-        for (let attempt = 0; attempt < 2; attempt++) {
-          const ac = new AbortController();
-          const t = setTimeout(() => ac.abort(), 45_000);
-          try {
-            const r = await fetch(e.sealed, { signal: ac.signal });
-            if (!r.ok) throw new Error(`${key}: the sealed file did not load (${r.status})`);
-            const bytes = await r.arrayBuffer();
-            if ((await sha256Hex(bytes)) !== e.signed.offer.cipherSha256) throw new Error(`${key}: the sealed file is not the one the offer names`);
-            return new Uint8Array(bytes);
-          } catch (err) {
-            last = err;
-            if (err instanceof Error && /not the one the offer names/.test(err.message)) throw err;
-          } finally {
-            clearTimeout(t);
-          }
+        const want = e.signed.offer.cipherSha256;
+        const fail = (err: unknown) => new Error(`${key}: the sealed file did not load (${err instanceof Error ? err.message : err})`);
+        let store = this.sealedParts.get(key);
+        if (!store) this.sealedParts.set(key, (store = []));
+        let bytes = await download(e.sealed, { size, store, onProgress }).catch((err) => Promise.reject(fail(err)));
+        if ((await sha256Hex(asBuffer(bytes))) !== want && size && partCount(size)) {
+          // the parts joined are not the file the offer names (a part out of date in a cache?): once more, whole
+          store.length = 0;
+          bytes = await download(e.sealed, { onProgress }).catch((err) => Promise.reject(fail(err)));
         }
-        throw last instanceof Error && last.name !== 'AbortError' ? last : new Error(`${key}: the sealed file did not load in time`);
+        if ((await sha256Hex(asBuffer(bytes))) !== want) throw new Error(`${key}: the sealed file is not the one the offer names`);
+        return bytes;
       })();
       p.catch(() => this.sealedFiles.delete(key));
       this.sealedFiles.set(key, p);
     }
     return p;
+  }
+
+  /** What Pay shows while the sealed files come in: how many are in, and how far the cover (the big one) is. */
+  fetchingText(keys: string[], have: number): string {
+    const cover = keys.find((k) => k.startsWith('cover'));
+    const pr = cover ? this.progress[cover] : undefined;
+    const pct = pr && pr.total > 0 && pr.got < pr.total ? ` · cover ${Math.floor((100 * pr.got) / pr.total)}%` : '';
+    return `Fetching the sealed files (${have} of ${keys.length})${pct}`;
   }
 
   /** Starts loading a part's sealed file in the background (once accepted), so Pay does not wait for it. */
@@ -204,9 +227,16 @@ export class Order {
       if (!acc.length) throw new Error('nothing was accepted, nothing to pay');
       for (const c of acc) this.checkV2(c);
       // usually already here: each accepted part's sealed file starts loading while the scene plays (prefetch)
+      const keys = acc.map((c) => c.key);
       let have = 0;
-      step(`Fetching the sealed files (0 of ${acc.length})`);
-      await Promise.all(acc.map((c) => this.sealedFile(c.key).then(() => step(`Fetching the sealed files (${++have} of ${acc.length})`))));
+      const say = () => step(this.fetchingText(keys, have));
+      this.onProgress = say;
+      say();
+      try {
+        await Promise.all(keys.map((k) => this.sealedFile(k).then(() => (have++, say()))));
+      } finally {
+        this.onProgress = undefined;
+      }
       step('Looking for coins in your wallet');
       const coins = await link.coins(this.net);
       if (!coins.length) throw new Error('Your wallet has no coins on the addresses it shared.');
@@ -269,9 +299,8 @@ export class Order {
     }
     const path = this.v2(c.key).sealedLight;
     if (!path) throw new Error('no light copy');
-    const [{ key }, r] = await Promise.all([this.obtainKey(c.key, true), fetch(path)]);
-    if (!r.ok) throw new Error(String(r.status));
-    return new Blob([(await openFile(key, new Uint8Array(await r.arrayBuffer()))) as BlobPart], { type: 'image/jpeg' });
+    const [{ key }, sealed] = await Promise.all([this.obtainKey(c.key, true), download(path, { size: SEALED_SIZES[path] })]);
+    return new Blob([(await openFile(key, sealed)) as BlobPart], { type: 'image/jpeg' });
   }
 
   private keys = new Map<string, Promise<{ key: Uint8Array; claimTxid: string }>>();
