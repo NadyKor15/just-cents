@@ -11,6 +11,17 @@ export interface TrailerVideo {
   controls: boolean;
   preload: string;
   play(): Promise<void> | void;
+  textTracks?: ArrayLike<{ kind: string; mode: string }>;
+}
+
+/**
+ * Turn the subtitles on. A `default` track is not enough everywhere: WebKit (Safari) leaves it off when the person's
+ * caption setting is "Automatic", and the point of this trailer is to show the accepted subtitles.
+ */
+function showSubtitles(video: TrailerVideo): void {
+  const tracks = video.textTracks ? Array.from(video.textTracks) : [];
+  const t = tracks.find((x) => x.kind === 'subtitles');
+  if (t) t.mode = 'showing';
 }
 
 /** The Play button over the video. */
@@ -35,6 +46,7 @@ export function armTrailer(video: TrailerVideo, play: PlayButton, url: string): 
   if (started.has(video)) {
     video.controls = true;
     play.hidden = true;
+    showSubtitles(video); // the new track of a refilled screen
     return;
   }
   video.preload = 'none';
@@ -46,6 +58,7 @@ export function armTrailer(video: TrailerVideo, play: PlayButton, url: string): 
     play.hidden = true;
     video.controls = true;
     video.src = url;
+    showSubtitles(video);
     // called inside the click, so the browser (iPhone too) lets it play with sound; if it still refuses, the controls are there
     try {
       void Promise.resolve(video.play()).catch(() => undefined);

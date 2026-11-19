@@ -94,6 +94,23 @@ describe('the trailer loads only on Play', () => {
     expect(v.src).toBe(URL_);
   });
 
+  it('Play turns the subtitles on (a default track alone stays off in Safari with captions on "Automatic")', () => {
+    const v = video();
+    const subs = { kind: 'subtitles', mode: 'disabled' };
+    v.textTracks = [{ kind: 'metadata', mode: 'hidden' }, subs];
+    const p: PlayButton = { hidden: true, onclick: null };
+    armTrailer(v, p, URL_);
+    expect(subs.mode).toBe('disabled'); // nothing before Play
+    p.onclick!();
+    expect(subs.mode).toBe('showing');
+    expect(v.textTracks[0]!.mode).toBe('hidden');
+    // the screen fills again with a new track: it is shown too
+    const subs2 = { kind: 'subtitles', mode: 'disabled' };
+    v.textTracks = [subs2];
+    armTrailer(v, { hidden: false, onclick: null }, URL_);
+    expect(subs2.mode).toBe('showing');
+  });
+
   it('a play() that throws or is refused does not break the button', () => {
     const v = video();
     v.play = () => { throw new Error('NotAllowedError'); };
