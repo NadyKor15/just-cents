@@ -1,6 +1,9 @@
-// Order.pay: a retry after a network failure must send the SAME signed transaction (never ask the wallet again,
+// Order.pay (v2): a retry after a network failure must send the SAME signed transaction (never ask the wallet again,
 // never pick other coins), the txid comes from the signed bytes, and a wallet that changes the transaction is refused.
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+// The payment puts each accepted specialist's money into its own contract (price + 500 sat for its claim), and it is
+// built only after the page holds every sealed file and has checked it against the signed offer.
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
 import { binToHex, decodeTransaction, encodeCashAddress, hash160, hexToBin, secp256k1, sha256, utf8ToBin } from '@bitauth/libauth';
 
 const sent: string[] = [];
@@ -10,11 +13,21 @@ vi.mock('../src/core/chain', () => ({
     sent.push(hex);
     return answers.shift() ?? { ok: true, txid: '' };
   }),
+  getRawTx: vi.fn(async () => {
+    throw new Error('not in this test');
+  }),
+}));
+const REFUND_TIME = 1_795_100_000;
+vi.mock('../src/core/htlc-chain', () => ({
+  refundTimeFromNow: vi.fn(async () => REFUND_TIME),
+  chainTime: vi.fn(async () => REFUND_TIME - 3600),
+  contractState: vi.fn(async () => ({ state: 'open' })),
 }));
 
 import { Order } from '../src/app/order';
 import { OFFERS } from '../src/data/offers';
 import { lockingFor, type BuiltPayment, type Utxo } from '../src/core/tx';
+import { contractLocking, FEE_SATS, parseNote2 } from '../src/core/htlc';
 import { txidOf } from '../src/core/release';
 import { signLocally } from './helpers/signer';
 
@@ -45,10 +58,22 @@ function wallet(opts: { coins: Utxo[][]; tamper?: boolean }) {
 
 const coin = (sats: bigint, n: number): Utxo => ({ txid: n.toString(16).padStart(64, '0'), vout: 0, sats, lockingBytecode: lockingFor(addr), path: 'receive', index: 0 });
 
+/** The site, for the sealed files: served from public/ as the static site would; `tamper` changes one byte of one. */
+let tamper = '';
+const fetched: string[] = [];
 beforeEach(() => {
   sent.length = 0;
   answers = [];
+  tamper = '';
+  fetched.length = 0;
+  vi.stubGlobal('fetch', async (url: string) => {
+    fetched.push(url);
+    const bytes = new Uint8Array(readFileSync(`public${url}`));
+    if (url === tamper) bytes[bytes.length - 1]! ^= 1;
+    return new Response(bytes);
+  });
 });
+afterEach(() => vi.unstubAllGlobals());
 
 describe('paying once, even when sending fails', () => {
   it('a retry sends the same signed transaction and does not ask the wallet again', async () => {
@@ -65,15 +90,38 @@ describe('paying once, even when sending fails', () => {
     expect(r.txid).toMatch(/^[0-9a-f]{64}$/);
   });
 
-  it('pays the three accepted specialists and the service in one transaction', async () => {
+  it('pays the three accepted specialists into their contracts and the service, in one transaction', async () => {
     const o = readyOrder();
     const w = wallet({ coins: [[coin(200_000n, 3)]] });
     await o.pay(w.link, () => {});
     const tx = decodeTransaction(hexToBin(sent[0]!));
     if (typeof tx === 'string') throw new Error(tx);
-    const outs = tx.outputs.map((x) => binToHex(x.lockingBytecode));
-    for (const k of ['cover', 'lena:good', 'logo']) expect(outs).toContain(binToHex(lockingFor(OFFERS.chipnet[k]!.signed.offer.payTo)));
-    expect(outs).not.toContain(binToHex(lockingFor(OFFERS.chipnet['sam:careless']!.signed.offer.payTo))); // the rejected one gets nothing
+    const outs = tx.outputs.map((x) => [binToHex(x.lockingBytecode), x.valueSatoshis] as const);
+    for (const k of ['cover', 'lena:good', 'logo']) {
+      const v2 = OFFERS.chipnet[k]!.v2!.signed.offer;
+      const want = binToHex(contractLocking({ cipherSha256: v2.cipherSha256, keyHash: v2.keyHash, sellerPubkey: v2.claimPubkey, buyerLockingHex: binToHex(lockingFor(addr)), refundTime: REFUND_TIME }));
+      expect(outs).toContainEqual([want, BigInt(v2.priceSats) + FEE_SATS]);
+      expect(o.contracts[k]?.lockingHex).toBe(want);
+      // the money no longer goes straight to the specialist's address
+      expect(outs.map((x) => x[0])).not.toContain(binToHex(lockingFor(v2.payTo)));
+    }
+    expect(outs).toContainEqual([binToHex(lockingFor('bchtest:qqczcf6dcqm62u0prm2qnre4655w5236qytf8scfkf')), 4756n]);
+    // the rejected one gets nothing; the note names this order, the refund time, the buyer and the three v2 offers
+    const note = tx.outputs.map((x) => parseNote2(x.lockingBytecode)).find((n) => n)!;
+    expect(note).toMatchObject({ orderIdHex: o.id, refundTime: REFUND_TIME, buyerLockingHex: binToHex(lockingFor(addr)) });
+    expect(note.offerPrefixes).toEqual(['cover', 'lena:good', 'logo'].map((k) => OFFERS.chipnet[k]!.v2!.offerHashHex.slice(0, 32)));
+    expect(note.offerPrefixes).not.toContain(OFFERS.chipnet['sam:careless']!.v2!.offerHashHex.slice(0, 32));
+    // the sealed files were fetched (and checked) before the wallet was asked
+    expect(fetched.sort()).toEqual(['cover', 'lena:good', 'logo'].map((k) => OFFERS.chipnet[k]!.v2!.sealed).sort());
+  });
+
+  it('a sealed file that is not the one the offer names: no payment is built, the wallet is never asked', async () => {
+    const o = readyOrder();
+    const w = wallet({ coins: [[coin(200_000n, 5)]] });
+    tamper = OFFERS.chipnet['logo']!.v2!.sealed;
+    await expect(o.pay(w.link, () => {})).rejects.toThrow(/not the one the offer names/);
+    expect(w.counts()).toEqual({ coinCalls: 0, signCalls: 0 });
+    expect(sent).toHaveLength(0);
   });
 
   it('a wallet that returns a different transaction is refused and nothing is sent', async () => {
@@ -83,4 +131,3 @@ describe('paying once, even when sending fails', () => {
     expect(sent).toHaveLength(0);
   });
 });
-

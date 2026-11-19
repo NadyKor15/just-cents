@@ -3,7 +3,7 @@
 // The scene's element names are older than this example: .t-icon holds the cover choice, .t-desc the subtitles,
 // .t-voice the logo (gate names likewise: icon → cover, descBad/descGood → subtitles, voice → logo).
 import qrcode from 'qrcode-generator';
-import { Order, subsKey, SERVICE, COVER_KEY, type Checked, type Who } from './order';
+import { Order, subsKey, SERVICE, COVER_KEY, type Checked, type Who, type Contract, type Delivered } from './order';
 import { EXAMPLE, pairName } from '../data/example';
 import { readOrderId } from '../core/orderid';
 import { offerHashHex } from '../core/offer';
@@ -13,9 +13,10 @@ import { copyText } from './copy';
 import { armTrailer } from './trailer';
 import { WalletLink, type WalletState } from '../core/wallet';
 import { explorerTx, getRawTx, type Net } from '../core/chain';
-import { parseNote } from '../core/tx';
+import { parseNote, type BuiltPayment2 } from '../core/tx';
 import { checkPaid } from '../core/release';
-import { decodeTransaction, hexToBin } from '@bitauth/libauth';
+import { contractsInPayment, FEE_SATS, parseNote2, unhex } from '../core/htlc';
+import { decodeTransaction, hexToBin, lockingBytecodeToCashAddress } from '@bitauth/libauth';
 import { OFFERS } from '../data/offers';
 import { PAYOUT } from '../config';
 
@@ -279,11 +280,28 @@ function closeModal() {
   modal = null;
 }
 
-function payTable(o: Order): HTMLElement {
+/** A contract's address as a wallet shows it (P2SH32: bitcoincash:p…). */
+function contractAddress(net: Net, lockingHex: string): string {
+  const r = lockingBytecodeToCashAddress({ bytecode: hexToBin(lockingHex), prefix: net === 'mainnet' ? 'bitcoincash' : 'bchtest' });
+  return typeof r === 'string' ? lockingHex : r.address;
+}
+
+/**
+ * The payment, line by line. Each accepted specialist's money goes into its own contract (until the payment is built,
+ * the row names who the contract pays; then the contract's address, as the wallet will show it). The last row: the
+ * network fees, the payment's own and what each specialist's claim will cost (added on top of each price).
+ */
+function payTable(o: Order, built?: BuiltPayment2): HTMLElement {
   const t = el('table', 'jc-paytable');
   // the 4th field is the row's kind: '' paid, 'taste' not chosen (grey, as in the receipt), 'rejected' broke a rule (pink)
-  const rows: [string, string, string, string][] = o.accepted().map((c) => [label(c), short(c.offer.offer.payTo), `${c.offer.offer.priceCents}¢`, '']);
+  const where = (c: Checked) => {
+    const k = built?.contracts.find((x) => x.label === c.key);
+    return k ? `contract ${short(contractAddress(o.net, k.lockingHex))}` : `contract for ${short(c.offer.offer.payTo)}`;
+  };
+  const rows: [string, string, string, string][] = o.accepted().map((c) => [label(c), where(c), `${c.offer.offer.priceCents}¢`, '']);
   rows.push(['Just Cents service', short(serviceAddr(o.net)), `${SERVICE.cents}¢`, '']);
+  const n = BigInt(o.accepted().length);
+  rows.push(['Network fees', `payment + ${n} claim${n === 1n ? '' : 's'}`, built ? `${built.fee + FEE_SATS * n} sat` : `≈${700n + FEE_SATS * n} sat`, 'fee']);
   const rej = o.results[o.careless];
   if (rej && !rej.verdict.ok) rows.splice(1, 0, [`${EXAMPLE.pair.label} (${pairName(o.careless)}) rejected`, 'not paid', '0¢', 'rejected']);
   const other = o.notChosenCover();
@@ -345,7 +363,14 @@ export async function pay(onPaid: () => void): Promise<void> {
   const status = el('p', 'jc-status', 'Connecting…');
   const close = el('button', 'jc-x', '×');
   close.setAttribute('aria-label', 'Close');
-  card.append(close, h, sub, payTable(o), qr, linkRow, wallets, status);
+  let table = payTable(o);
+  // once built, the rows show the contracts' addresses, so they can be compared with the wallet's window line by line
+  o.onBuilt = (p) => {
+    const t2 = payTable(o, p);
+    table.replaceWith(t2);
+    table = t2;
+  };
+  card.append(close, h, sub, table, qr, linkRow, wallets, status);
   modal.appendChild(card);
   document.body.appendChild(modal);
   close.onclick = () => {
@@ -382,7 +407,7 @@ export async function pay(onPaid: () => void): Promise<void> {
     try {
       const r = await o.pay(link!, (step) => (status.textContent = step));
       paid = true;
-      status.textContent = 'Paid. Specialists are handing over the files.';
+      status.textContent = 'Paid. Each specialist now opens its contract by putting its key on chain.';
       setTx(o.net, r.txid);
       // tell the order API, so an assistant waiting on this order can fetch the kit (the server checks the note on chain)
       const reported = reportPaid(o.id, r.txid);
@@ -499,13 +524,14 @@ async function deliver(o: Order) {
   btn.disabled = true;
   btn.textContent = 'Preparing the files…';
   const files: { name: string; data: Uint8Array }[] = [];
+  const claims: Record<string, string> = {};
   for (const c of o.accepted()) {
-    const li = el('li', 'pending', `${label(c)}: waiting for the specialist`);
+    const li = el('li', 'pending', `${label(c)}: waiting for the specialist to open its contract`);
     list.appendChild(li);
     try {
-      const f = await o.fetchFull(c);
-      li.className = f.match && f.verdict.ok ? 'ok' : 'bad';
-      li.textContent = `${label(c)}: ${f.match ? 'fingerprint matches the offer' : 'fingerprint does NOT match the offer'} · ${f.verdict.ok ? f.verdict.note : f.verdict.reason}`;
+      const f = await o.deliverFile(c);
+      if (f.claimTxid) claims[c.key] = f.claimTxid;
+      partLine(li, o.net, c, f);
       files.push({ name: KIT_NAME[f.name] ?? f.name, data: new Uint8Array(f.bytes) });
       if (f.match && f.verdict.ok) showReady(kit, c, f.bytes);
     } catch (e) {
@@ -513,6 +539,7 @@ async function deliver(o: Order) {
       li.textContent = `${label(c)}: ${e instanceof Error ? e.message : e}`;
     }
   }
+  void offerRefund(o, kit);
   const otherCover = o.notChosenCover();
   if (otherCover) list.appendChild(el('li', 'taste', `${label(otherCover)}: not chosen (taste, not a rule: it passed the rules, you picked the other one), nothing paid`));
   const rej = o.results[o.careless];
@@ -535,6 +562,7 @@ async function deliver(o: Order) {
     service: { cents: SERVICE.cents, sats: SERVICE.sats.toString() },
     networkFeeSats: o.payment ? o.payment.fee.toString() : null,
     outputs: o.payment ? o.payment.transaction.outputs.map((x) => x.valueSatoshis.toString()) : null,
+    contracts: contractsReceipt(o, claims),
     rejected: rej && !rej.verdict.ok ? { part: EXAMPLE.pair.apiPart, specialist: o.careless, cents: 0, reason: rej.verdict.reason } : null,
     note: o.payment?.noteHex,
   };
@@ -596,10 +624,11 @@ async function deliverPaid(o: Order) {
   const cover = acc.find((c) => c.key.startsWith('cover'));
   const coverFig = kit.querySelector<HTMLElement>('.ready-cover')!;
   let coverChecked = false;
+  // v2: the light copy is sealed under the cover's key too, so it opens once that key is read from the chain
   const lightIn: Promise<void> = !cover
     ? Promise.resolve()
-    : fetch(`/full/${encodeURIComponent(cover.key)}?net=${o.net}&txid=${o.txid}&view=light`)
-        .then((r) => (r.ok ? r.blob() : Promise.reject(new Error(String(r.status)))))
+    : o
+        .lightCopy(cover)
         .then((b) => {
           if (coverChecked) return;
           const img = coverFig.querySelector('img')!;
@@ -613,10 +642,11 @@ async function deliverPaid(o: Order) {
   posterGate = cover ? new Promise<void>((r) => (frameIn = r)) : Promise.resolve();
   if (acc.some((c) => c.key === 'logo')) void lightIn.then(() => { new Image().src = EXAMPLE.single.sketch; });
   const lines = acc.map((c) => {
-    const li = el('li', 'pending', `${label(c)}: checking the fingerprint…`);
+    const li = el('li', 'pending', `${label(c)}: ${o.legacy ? 'checking the fingerprint…' : 'reading its key from the chain…'}`);
     list.appendChild(li);
     return li;
   });
+  const claims: Record<string, string> = {};
   const got = await Promise.all(
     acc.map(async (c, i) => {
       const li = lines[i]!;
@@ -627,10 +657,10 @@ async function deliverPaid(o: Order) {
           frame.onload = () => frameIn(); // only a frame that arrived; on an error the trailer simply has no picture
           frame.src = c.key === COVER_KEY.b ? EXAMPLE.choice.frames.b : EXAMPLE.choice.frames.a;
         }
-        const f = await o.fetchFull(c);
+        const f = await o.deliverFile(c, true);
         const ok = f.match && f.verdict.ok;
-        li.className = ok ? 'ok' : 'bad';
-        li.textContent = `${label(c)}: ${f.match ? 'fingerprint matches the offer' : 'fingerprint does NOT match the offer'} · ${f.verdict.ok ? f.verdict.note : f.verdict.reason}`;
+        if (f.claimTxid) claims[c.key] = f.claimTxid;
+        partLine(li, o.net, c, f);
         if (c === cover) {
           coverChecked = true;
           if (!ok) coverFig.hidden = true; // never leave the light copy up for a file that failed
@@ -656,6 +686,7 @@ async function deliverPaid(o: Order) {
   );
   const files: { name: string; data: Uint8Array }[] = [];
   for (const f of got) if (f) files.push(f);
+  void offerRefund(o, kit);
   const otherCover = o.notChosenCover();
   if (otherCover) list.appendChild(el('li', 'taste', `${label(otherCover)}: not chosen (taste, not a rule: it passed the rules, you picked the other one), nothing paid`));
   const rej = o.results[o.careless];
@@ -677,6 +708,7 @@ async function deliverPaid(o: Order) {
     service: { cents: SERVICE.cents, sats: SERVICE.sats.toString() },
     networkFeeSats: null,
     outputs: null,
+    contracts: o.legacy ? null : contractsReceipt(o, claims),
     rejected: rej && !rej.verdict.ok ? { part: EXAMPLE.pair.apiPart, specialist: o.careless, cents: 0, reason: rej.verdict.reason } : null,
     note: undefined,
   };
@@ -728,6 +760,84 @@ function showReady(kit: HTMLElement, c: Checked, bytes: ArrayBuffer) {
  */
 let posterGate: Promise<unknown> = Promise.resolve();
 
+/**
+ * One delivered part on the ready screen: the fingerprint and rule result, and for a v2 order the claim it came from
+ * (the transaction in which the specialist took its money and, in the same step, put the file's key on chain).
+ */
+function partLine(li: HTMLElement, net: Net, c: Checked, f: Delivered) {
+  const ok = f.match && f.verdict.ok;
+  li.className = ok ? 'ok' : 'bad';
+  li.innerHTML = '';
+  li.append(`${label(c)}: ${f.match ? 'fingerprint matches the offer' : 'fingerprint does NOT match the offer'} · ${f.verdict.ok ? f.verdict.note : f.verdict.reason}`);
+  if (f.claimTxid) {
+    li.append(' · key from the chain, ');
+    const a = el('a', '', `claim ${f.claimTxid.slice(0, 8)}…`);
+    a.href = explorerTx(net, f.claimTxid);
+    a.target = '_blank';
+    a.rel = 'noopener';
+    li.append(a);
+  }
+}
+
+/** The contracts of a v2 order for receipt.json: where each part's money sat, until when, and the claim that opened it. */
+function contractsReceipt(o: Order, claims: Record<string, string>) {
+  const list = Object.values(o.contracts);
+  if (!list.length) return null;
+  return list.map((k) => ({
+    part: k.key,
+    vout: k.vout,
+    sats: k.sats.toString(),
+    address: contractAddress(o.net, k.lockingHex),
+    keyLock: k.params.keyHash,
+    sealedFileSha256: k.params.cipherSha256,
+    refundAfter: new Date(k.params.refundTime * 1000).toISOString(),
+    claim: claims[k.key] ?? null,
+  }));
+}
+
+/**
+ * If a specialist did not open its contract (did not reveal its key), its money is still in the contract. After the
+ * refund time, the page can send it back to the buyer's own address: no signature, anyone can do it. The button
+ * stays until the network's time allows it.
+ */
+async function offerRefund(o: Order, kit: HTMLElement) {
+  if (o.legacy || !Object.keys(o.contracts).length) return;
+  const open = await o.openContracts();
+  if (!open.length) return;
+  kit.querySelector('.kit-refund')?.remove();
+  const box = el('div', 'kit-refund');
+  const names = open.map((k) => label(o.results[resultSlot(k.key)] ?? ({ key: k.key } as Checked))).join(', ');
+  const when = Math.max(...open.map((k) => k.params.refundTime));
+  const p = el('p', '', `${names}: the money is still in its contract, because the specialist has not put its key on chain. After ${new Date(when * 1000).toLocaleString()} (network time), it can go back to your address; nobody else has to sign.`);
+  const btn = el('button', 'jc-btn', 'Get my money back');
+  const out = el('p', 'kit-refund-out');
+  btn.type = 'button';
+  box.append(p, btn, out);
+  kit.querySelector('.kit-files')?.after(box);
+  const tryNow = async () => {
+    btn.disabled = true;
+    const r = await o.refund(open).catch((e: unknown) => ({ ok: false as const, reason: e instanceof Error ? e.message : String(e) }));
+    if (r.ok) {
+      out.innerHTML = '';
+      const a = el('a', '', `${r.txid.slice(0, 8)}…${r.txid.slice(-6)}`);
+      a.href = explorerTx(o.net, r.txid);
+      a.target = '_blank';
+      a.rel = 'noopener';
+      out.append(`Sent back: ${r.sats} sat to your address · `, a);
+      btn.remove();
+      return;
+    }
+    out.textContent = r.reason === 'not yet' ? 'Not yet: the network has not reached that time. The button works once it has.' : `The network did not take the refund: ${r.reason}`;
+    btn.disabled = false;
+  };
+  btn.onclick = () => void tryNow();
+}
+
+/** The results slot of an offer key (cover keys are their own slots; subtitles live under who). */
+function resultSlot(key: string): string {
+  return key.startsWith('cover') || key === 'logo' ? key : key.split(':')[0]!;
+}
+
 function label(c: Checked): string {
   if (c.key.startsWith('cover')) return `${EXAMPLE.choice.label} (${c.key === COVER_KEY.a ? 'A' : 'B'})`;
   return c.key === 'logo' ? EXAMPLE.single.label : `${EXAMPLE.pair.label} (${pairName(c.who ?? 'sam')})`;
@@ -751,16 +861,34 @@ export async function openPaidOrder(txid: string, net: Net): Promise<void> {
     const raw = await getRawTx(net, txid);
     const tx = decodeTransaction(hexToBin(raw));
     if (typeof tx === 'string') throw new Error(tx);
+    // JC1: paid straight to the specialists (before contracts); JC2: paid into one contract per specialist
     const note = tx.outputs.map((x) => parseNote(x.lockingBytecode)).find((n) => n);
-    const meta = note ? readOrderId(note.orderIdHex) : null;
-    if (!note || !meta || meta.net !== net) throw new Error('this transaction is not a Just Cents order on this network');
+    const note2 = tx.outputs.map((x) => parseNote2(x.lockingBytecode)).find((n) => n);
+    const meta = readOrderId(note?.orderIdHex ?? note2?.orderIdHex ?? '');
+    if (!(note || note2) || !meta || meta.net !== net) throw new Error('this transaction is not a Just Cents order on this network');
     const o = new Order(net, meta.careless, meta.id);
-    for (const [key, e] of Object.entries(OFFERS[net])) {
-      const h = offerHashHex(e.signed.offer);
-      if (!note.offerPrefixes.includes(h.slice(0, 32))) continue;
-      if (!checkPaid(raw, { payTo: e.signed.offer.payTo, minSats: BigInt(e.signed.offer.priceSats), orderIdHex: meta.id, offerHashHex: h }).ok) continue;
-      const slot = key.startsWith('cover') ? key : key === 'logo' ? 'logo' : key.split(':')[0]!;
-      o.results[slot] = { key, who: key.startsWith('sam') ? 'sam' : key.startsWith('lena') ? 'lena' : undefined, verdict: { ok: true, note: '' }, offer: e.signed, detail: 'paid on chain' };
+    o.txid = txid;
+    const put = (key: string, signed: Checked['offer']) => {
+      o.results[resultSlot(key)] = { key, who: key.startsWith('sam') ? 'sam' : key.startsWith('lena') ? 'lena' : undefined, verdict: { ok: true, note: '' }, offer: signed, detail: 'paid on chain' };
+    };
+    if (note) {
+      o.legacy = true;
+      for (const [key, e] of Object.entries(OFFERS[net])) {
+        const h = offerHashHex(e.signed.offer);
+        if (!note.offerPrefixes.includes(h.slice(0, 32))) continue;
+        if (!checkPaid(raw, { payTo: e.signed.offer.payTo, minSats: BigInt(e.signed.offer.priceSats), orderIdHex: meta.id, offerHashHex: h }).ok) continue;
+        put(key, e.signed);
+      }
+    } else {
+      // every listed offer whose contract this payment really funds (price + the claim's fee), rebuilt from the chain alone
+      const v2 = Object.entries(OFFERS[net]).filter(([, e]) => e.v2);
+      const found = contractsInPayment(unhex(raw), v2.map(([, e]) => ({ offerHashHex: e.v2!.offerHashHex, lock: { cipherSha256: e.v2!.signed.offer.cipherSha256, keyHash: e.v2!.signed.offer.keyHash, sellerPubkey: e.v2!.signed.offer.claimPubkey } })));
+      for (const c of found?.contracts ?? []) {
+        const [key, e] = v2.find(([, x]) => x.v2!.offerHashHex === c.offerHashHex)!;
+        if (c.value < BigInt(e.v2!.signed.offer.priceSats) + FEE_SATS) continue;
+        put(key, e.signed);
+        o.contracts[key] = { key, vout: c.vout, sats: c.value, params: c.params, lockingHex: c.lockingHex } satisfies Contract;
+      }
     }
     if (o.results[COVER_KEY.b]) o.coverChoice = 'b';
     if (!o.accepted().length) throw new Error('this transaction pays none of the current offers');

@@ -1,14 +1,20 @@
 // One order, end to end: previews → checks against the published rules → one payment → full files.
-import { verifyOffer, offerHashHex, type SignedOffer } from '../core/offer';
+// v2 (hash-lock): the payment puts each accepted specialist's money into its own contract; the specialist opens it by
+// revealing its file key on chain; the page reads that key from the chain and opens the sealed file it fetched and
+// checked before paying. Orders paid before v2 (a JC1 note) are still read and delivered the v1 way (/full/).
+import { verifyOffer, verifyOffer2, offerHashHex, type SignedOffer } from '../core/offer';
 import { checkCoverDeclared, checkLogoDeclared, checkSubtitlesDeclared, type Verdict } from '../core/rules';
 import { checkSubtitles, parseSrt, type Speech } from '../core/subtitles';
 import { checkCover, measureCover } from '../core/cover';
 import { checkLogo } from '../core/logo';
 import { likeness } from '../core/image';
-import { buildPayment, noteText, type BuiltPayment } from '../core/tx';
-import { broadcast, type Net } from '../core/chain';
+import { buildPayment2, type BuiltPayment, type BuiltPayment2 } from '../core/tx';
+import { broadcast, getRawTx, type Net } from '../core/chain';
+import { buildRefund, canRefund, readSpend, unhex, type LockParams } from '../core/htlc';
+import { chainTime, contractState, refundTimeFromNow } from '../core/htlc-chain';
+import { openFile } from '../core/filebox';
 import type { WalletLink } from '../core/wallet';
-import { OFFERS, type OfferEntry } from '../data/offers';
+import { OFFERS, type OfferEntry, type OfferEntry2 } from '../data/offers';
 import { EXAMPLE } from '../data/example';
 import TRAILER_WORDS from '../data/trailer-words.json';
 import { PAYOUT } from '../config';
@@ -16,6 +22,14 @@ import { drawing, pixels, sha256Hex } from './measure';
 import { newOrderId } from '../core/orderid';
 import { txidOf } from '../core/release';
 import { binToHex, decodeTransaction, hexToBin } from '@bitauth/libauth';
+
+/** One accepted specialist's contract in a v2 payment: where the money sits until the key is on chain. */
+export type Contract = { key: string; vout: number; sats: bigint; params: LockParams; lockingHex: string };
+
+/** What a delivered file comes with. */
+export type Delivered = { bytes: ArrayBuffer; name: string; match: boolean; verdict: Verdict; claimTxid?: string };
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export type Who = 'sam' | 'lena';
 export type CoverChoice = 'a' | 'b';
@@ -123,18 +137,74 @@ export class Order {
 
   /** The transaction the wallet signed; kept so a retry sends THIS one again instead of paying twice. */
   signedHex = '';
+  /** v2: the contracts of this order's payment, by offer key (from the payment built here, or read from the chain). */
+  contracts: Record<string, Contract> = {};
+  /** v1: an order paid before contracts (JC1 note), read from the chain; its files come through /full/. */
+  legacy = false;
+  private sealedFiles = new Map<string, Promise<Uint8Array>>();
+
+  v2(key: string): OfferEntry2 {
+    const e = this.entry(key).v2;
+    if (!e) throw new Error(`${key}: no v2 offer on ${this.net}`);
+    return e;
+  }
+
+  /**
+   * The sealed full file, fetched from the site and checked against the signed v2 offer. The page holds it before it
+   * pays: after the payment the specialist can only reveal the key, it cannot swap the file.
+   */
+  sealedFile(key: string): Promise<Uint8Array> {
+    let p = this.sealedFiles.get(key);
+    if (!p) {
+      const e = this.v2(key);
+      p = (async () => {
+        const r = await fetch(e.sealed);
+        if (!r.ok) throw new Error(`${key}: the sealed file did not load (${r.status})`);
+        const bytes = await r.arrayBuffer();
+        if ((await sha256Hex(bytes)) !== e.signed.offer.cipherSha256) throw new Error(`${key}: the sealed file is not the one the offer names`);
+        return new Uint8Array(bytes);
+      })();
+      p.catch(() => this.sealedFiles.delete(key));
+      this.sealedFiles.set(key, p);
+    }
+    return p;
+  }
+
+  /** The v2 offer must promise the same as the v1 offer the checks ran on, and be signed by the same key. */
+  private checkV2(c: Checked): void {
+    const e = this.v2(c.key);
+    const v = verifyOffer2(e.signed, { orderId: this.id, nowSec: nowSec(), pubkey: c.offer.offer.pubkey });
+    if (!v.ok) throw new Error(`${c.key}: ${v.reason}`);
+    const a = c.offer.offer, b = e.signed.offer;
+    if (a.fileSha256 !== b.fileSha256 || a.priceSats !== b.priceSats || a.payTo !== b.payTo || a.facts !== b.facts) throw new Error(`${c.key}: the v2 offer promises something else than the checked offer`);
+  }
 
   async pay(link: WalletLink, step: (s: string) => void): Promise<{ txid: string; payment: BuiltPayment }> {
     if (!this.signedHex) {
       const acc = this.accepted();
       if (!acc.length) throw new Error('nothing was accepted, nothing to pay');
+      for (const c of acc) this.checkV2(c);
+      step('Fetching the sealed files');
+      await Promise.all(acc.map((c) => this.sealedFile(c.key)));
       step('Looking for coins in your wallet');
       const coins = await link.coins(this.net);
       if (!coins.length) throw new Error('Your wallet has no coins on the addresses it shared.');
-      const payouts = acc.map((c) => ({ label: c.key, address: c.offer.offer.payTo, sats: BigInt(c.offer.offer.priceSats) }));
-      payouts.push({ label: 'service', address: PAYOUT.service[this.net], sats: SERVICE.sats });
-      const p = buildPayment({ utxos: coins, payouts, note: noteText(this.id, acc.map((c) => offerHashHex(c.offer.offer))) });
+      step('Reading the network time');
+      const refundTime = await refundTimeFromNow(this.net);
+      const p: BuiltPayment2 = buildPayment2({
+        utxos: coins,
+        contracts: acc.map((c) => {
+          const o = this.v2(c.key).signed.offer;
+          return { label: c.key, priceSats: BigInt(o.priceSats), lock: { cipherSha256: o.cipherSha256, keyHash: o.keyHash, sellerPubkey: o.claimPubkey } };
+        }),
+        payouts: [{ label: 'service', address: PAYOUT.service[this.net], sats: SERVICE.sats }],
+        orderIdHex: this.id,
+        offerHashesHex: acc.map((c) => this.v2(c.key).offerHashHex),
+        refundTime,
+      });
       this.payment = p;
+      this.contracts = Object.fromEntries(p.contracts.map((c) => [c.label, { key: c.label, vout: c.vout, sats: c.sats, params: c.params, lockingHex: c.lockingHex }]));
+      this.onBuilt?.(p);
       step('Confirm in your wallet');
       const signed = await link.sign(p, `Just Cents: pay ${acc.length} specialist${acc.length > 1 ? 's' : ''} + service`);
       if (!signed.ok) throw new Error(`Wallet: ${signed.error}`);
@@ -154,6 +224,125 @@ export class Order {
     if (!b.ok) throw new Error(`Network: ${b.nodeError}`);
     this.txid = txid;
     return { txid, payment: this.payment! };
+  }
+
+  /** Called once the v2 payment is built, before the wallet signs: the page shows the contract addresses to compare. */
+  onBuilt?: (p: BuiltPayment2) => void;
+
+  /** The accepted file, delivered and checked: v2 (key from the chain, sealed file) or, for an older order, v1 (/full/). */
+  async deliverFile(c: Checked, chainFirst = false): Promise<Delivered> {
+    if (this.legacy) return this.fetchFull(c);
+    const { key, claimTxid } = await this.obtainKey(c.key, chainFirst);
+    const plain = await openFile(key, await this.sealedFile(c.key));
+    const bytes = plain.buffer.slice(plain.byteOffset, plain.byteOffset + plain.byteLength) as ArrayBuffer;
+    const match = (await sha256Hex(bytes)) === c.offer.offer.fileSha256;
+    return { bytes, name: this.entry(c.key).file, match, verdict: await checkFull(c.key, bytes), claimTxid };
+  }
+
+  /** The cover's light copy, for display while the full file is checked: v2 opens it with the cover's key. */
+  async lightCopy(c: Checked): Promise<Blob> {
+    if (this.legacy) {
+      const r = await fetch(`/full/${encodeURIComponent(c.key)}?net=${this.net}&txid=${this.txid}&view=light`);
+      if (!r.ok) throw new Error(String(r.status));
+      return r.blob();
+    }
+    const path = this.v2(c.key).sealedLight;
+    if (!path) throw new Error('no light copy');
+    const [{ key }, r] = await Promise.all([this.obtainKey(c.key, true), fetch(path)]);
+    if (!r.ok) throw new Error(String(r.status));
+    return new Blob([(await openFile(key, new Uint8Array(await r.arrayBuffer()))) as BlobPart], { type: 'image/jpeg' });
+  }
+
+  private keys = new Map<string, Promise<{ key: Uint8Array; claimTxid: string }>>();
+
+  /**
+   * The file key of one accepted part, always taken from the chain: the input of the claim that spent this part's
+   * contract, checked against the contract's lock. The specialist is asked to claim (POST /claim/…, the same request
+   * gives the same claim, so asking again is safe); its answer only names the claim, the key is read from the network.
+   * chainFirst: look on the chain before asking (an order paid earlier, perhaps on another device).
+   */
+  obtainKey(key: string, chainFirst = false): Promise<{ key: Uint8Array; claimTxid: string }> {
+    let p = this.keys.get(key);
+    if (!p) {
+      p = this.findKey(key, chainFirst);
+      p.catch(() => this.keys.delete(key));
+      this.keys.set(key, p);
+    }
+    return p;
+  }
+
+  /** Why a part's key is not there yet (shown, and used to offer a refund). */
+  stalled: Record<string, string> = {};
+
+  private async findKey(key: string, chainFirst: boolean): Promise<{ key: Uint8Array; claimTxid: string }> {
+    const k = this.contracts[key];
+    if (!k) throw new Error(`${key}: no contract for this part in the payment`);
+    const outpoint = { txid: this.txid, vout: k.vout };
+    const fromChain = async (): Promise<{ key: Uint8Array; claimTxid: string } | null> => {
+      const st = await contractState(this.net, unhex(k.lockingHex), outpoint);
+      if (st.state === 'claimed' && st.kind === 'claim') return { key: st.key, claimTxid: st.txid };
+      if (st.state === 'refunded') throw new Error('the money went back to the buyer; the specialist did not open its contract');
+      return null;
+    };
+    if (chainFirst) {
+      const got = await fromChain().catch((e: Error) => (/went back/.test(e.message) ? Promise.reject(e) : null));
+      if (got) return got;
+    }
+    let lastReason = '';
+    for (let attempt = 0; attempt < 6; attempt++) {
+      let claimTxid = '';
+      try {
+        const r = await fetch(`/claim/${encodeURIComponent(key)}?net=${this.net}&txid=${this.txid}`, { method: 'POST' });
+        const j = (await r.json().catch(() => ({}))) as { ok?: boolean; claimTxid?: string; reason?: string };
+        if (r.ok && j.claimTxid) claimTxid = j.claimTxid;
+        else {
+          lastReason = j.reason ?? `the specialist answered ${r.status}`;
+          // too late to reveal the key, or the contract is already spent: asking again will not change it
+          if (r.status === 409) break;
+        }
+      } catch (e) {
+        lastReason = `the specialist did not answer (${e instanceof Error ? e.message : e})`;
+      }
+      if (claimTxid) {
+        // the key from the claim on the network, never from the answer
+        for (let i = 0; i < 6; i++) {
+          const raw = await getRawTx(this.net, claimTxid).catch(() => '');
+          const s = raw ? readSpend(unhex(raw), outpoint) : null;
+          if (s?.kind === 'claim') return { key: s.key, claimTxid };
+          if (raw) throw new Error(`${key}: the claim ${claimTxid.slice(0, 8)}… does not open this contract`);
+          await sleep(1500);
+        }
+        lastReason = 'the network does not show the claim yet';
+      }
+      await sleep(1500 * (attempt + 1));
+    }
+    // the specialist may still have claimed by itself: one last look on the chain
+    const got = await fromChain().catch(() => null);
+    if (got) return got;
+    this.stalled[key] = lastReason;
+    throw new Error(lastReason || 'the specialist has not opened its contract');
+  }
+
+  /** Contracts of this order still holding money (not claimed, not refunded), read from the chain. */
+  async openContracts(): Promise<Contract[]> {
+    const out: Contract[] = [];
+    for (const k of Object.values(this.contracts)) {
+      const st = await contractState(this.net, unhex(k.lockingHex), { txid: this.txid, vout: k.vout }).catch(() => null);
+      if (st?.state === 'open') out.push(k);
+    }
+    return out;
+  }
+
+  /** The refund of every open contract, once the network's time has passed their refund time. No signature. */
+  async refund(contracts: Contract[]): Promise<{ ok: true; txid: string; sats: bigint } | { ok: false; reason: string; refundTime?: number }> {
+    if (!contracts.length) return { ok: false, reason: 'nothing to refund' };
+    const when = Math.max(...contracts.map((c) => c.params.refundTime));
+    const mtp = await chainTime(this.net);
+    if (!canRefund(mtp, when)) return { ok: false, reason: 'not yet', refundTime: when };
+    const r = buildRefund({ contracts: contracts.map((c) => ({ txid: this.txid, vout: c.vout, value: c.sats, params: c.params })) });
+    const b = await broadcast(this.net, r.hex);
+    if (!b.ok) return { ok: false, reason: b.nodeError, refundTime: when };
+    return { ok: true, txid: r.txid, sats: r.tx.outputs.reduce((s, o) => s + o.value, 0n) };
   }
 
   /** Ask each accepted specialist for the full file, check its fingerprint, then check the rules on the full file. */
