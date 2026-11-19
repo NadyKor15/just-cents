@@ -17,7 +17,7 @@ export const EXAMPLE = {
   assistantAsk: 'Asking for: a kit to list my game.',
   /** MCP tool description for create_order. */
   mcpOrder:
-    'Order a kit to list a game in a store: subtitles for its trailer (SRT, every line on its spoken words), a big store cover from a game frame (at least 2560x1600, two variants, the person picks one), and its logo traced from a sketch into a clean SVG.',
+    'Order the files to list a game in a store: subtitles for its trailer (SRT, every line on its spoken words), a big store cover from a game frame (at least 2560x1600, two variants, the person picks one), and its logo traced from a sketch into a clean SVG.',
 
   choice: {
     /** label in receipt, kit and API, e.g. "Cover (A)" */

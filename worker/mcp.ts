@@ -25,7 +25,7 @@ const TOOLS = [
   {
     name: 'get_pay_link',
     description:
-      'Get the link a person opens to pay the order with one signature in their own wallet over WizardConnect (tested with Cashonize). The assistant never holds money and cannot pay; give this link to the person. Pass choice to set the cover variant the person picked.',
+      'Get the link a person opens to pay the order with one signature in their own wallet over WizardConnect (tested with Cashonize and Selene). The assistant never holds money and cannot pay; give this link to the person. Pass choice to set the cover variant the person picked.',
     inputSchema: { type: 'object', properties: { order_id: { type: 'string' }, choice: { type: 'string', enum: ['a', 'b'] } }, required: ['order_id'] },
   },
   {
@@ -56,7 +56,7 @@ async function handle(msg: Rpc, origin: string, env: ApiEnv, ip?: string): Promi
         capabilities: { tools: {} },
         serverInfo: { name: 'just-cents', version: '0.1.0' },
         instructions:
-          'Just Cents: order small jobs from AI specialists, checked by rules set before the work. Only accepted pieces get paid; a rejected piece costs 0 cents. You never pay: give the person the pay link; they sign once in their own Bitcoin Cash wallet. Then fetch the kit.',
+          'Just Cents: order small jobs from AI specialists, checked by rules set before the work. Only accepted pieces get paid; a rejected piece costs 0 cents. You never pay: give the person the pay link; they sign once in their own Bitcoin Cash wallet. Then fetch the files.',
       });
     case 'ping':
       return reply(msg.id, {});

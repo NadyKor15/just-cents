@@ -138,7 +138,7 @@ export type Orderer = 'you' | 'assistant';
 export let WHO: Orderer = FIXED || Q.get('who') === 'assistant' ? 'assistant' : 'you';
 export const ASSISTANT_ASK: string = EXAMPLE.assistantAsk;
 export const ASSISTANT_PAY = 'Your assistant asked for this; you sign once in your own wallet';
-export const ASSISTANT_KIT = 'Your assistant can now fetch the kit';
+export const ASSISTANT_KIT = 'Your assistant can now fetch the files';
 let youText = '';
 
 /** The switch above the order field. Locked once the order has started. */
@@ -451,7 +451,7 @@ async function showAssistantKit(id: string, recorded: boolean) {
     for (const f of j.files) ul.append(el('li', '', `${f.part}: ${f.name} · sha256 ${f.sha256.slice(0, 12)}…`));
     box.append(ul);
   } catch (e) {
-    box.append(el('p', 'kit-wait', `The kit call answered: ${e instanceof Error ? e.message : e}`));
+    box.append(el('p', 'kit-wait', `The files call answered: ${e instanceof Error ? e.message : e}`));
   }
 }
 
