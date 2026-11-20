@@ -139,16 +139,30 @@ describe('the trailer loads only on Play', () => {
 describe('the banner', () => {
   const html = readFileSync(resolve(ROOT, 'index.html'), 'utf8');
 
-  it('Slides points at the deck served by this site, and the file is there', () => {
-    expect(BANNER.slides).toBe('/just-cents-slides.pdf');
-    const f = resolve(ROOT, 'public', BANNER.slides.slice(1));
+  // the banner's links, as the page HTML has them (main.ts sets the same from BANNER)
+  const link = (key: string) => {
+    const m = html.match(new RegExp(`<a [^>]*data-banner="${key}"[^>]*>([^<]*)</a>`));
+    return { tag: m?.[0] ?? '', href: m?.[0].match(/href="([^"]*)"/)?.[1] ?? '', text: m?.[1] ?? '' };
+  };
+
+  it('Slides opens the Google Slides deck; the PDF deck stays on this site', () => {
+    expect(BANNER.slides).toBe('https://docs.google.com/presentation/d/1iy5GfTxaN05aO6pZPD9KZJh1KxygnOBR9O_AsPVu-oE/view');
+    expect(link('slides')).toMatchObject({ href: BANNER.slides, text: 'Slides' });
+    const f = resolve(ROOT, 'public', 'just-cents-slides.pdf');
     expect(existsSync(f)).toBe(true);
     expect(readFileSync(f).subarray(0, 5).toString()).toBe('%PDF-');
     expect(statSync(f).size).toBeGreaterThan(100_000);
   });
 
-  it('Code stays empty until the repository is public (no link to a page that does not exist)', () => {
-    expect(BANNER.repo).toBe('');
+  it('Code opens the public repository', () => {
+    expect(BANNER.repo).toBe('https://github.com/NadyKor15/just-cents');
+    expect(link('repo')).toMatchObject({ href: BANNER.repo, text: 'Code' });
+  });
+
+  it('"Nov 14: not started" links to the first commit (full sha), and every banner link opens in a new tab', () => {
+    expect(BANNER.firstCommit).toBe('https://github.com/NadyKor15/just-cents/commit/c42478e7b8430f2c3844a23963ffe688da564f8e');
+    expect(link('firstCommit')).toMatchObject({ href: BANNER.firstCommit, text: 'Nov 14: not started (first code Nov 16)' });
+    for (const k of ['slides', 'repo', 'firstCommit']) expect(link(k).tag).toMatch(/target="_blank" rel="noopener"/);
   });
 
   it('says where the project was on Nov 14, and has Copy next to the address', () => {

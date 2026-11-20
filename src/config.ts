@@ -37,8 +37,9 @@ export const EARLIER_PAID_EXAMPLES: { net: Net; txid: string }[] = [{ net: 'main
 
 /** BLAZE banner links. Empty until they exist; the banner then shows the link as not ready yet. */
 export const BANNER = {
-  slides: '/just-cents-slides.pdf', // the deck, served by this site
-  repo: '', // public repo, after the owner's go-ahead
+  slides: 'https://docs.google.com/presentation/d/1iy5GfTxaN05aO6pZPD9KZJh1KxygnOBR9O_AsPVu-oE/view', // Google Slides (BLAZE template); the PDF stays at /just-cents-slides.pdf
+  repo: 'https://github.com/NadyKor15/just-cents', // public repo
+  firstCommit: 'https://github.com/NadyKor15/just-cents/commit/c42478e7b8430f2c3844a23963ffe688da564f8e', // "Nov 14: not started (first code Nov 16)"
   readme: '',
 };
 
