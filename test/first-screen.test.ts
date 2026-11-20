@@ -1,4 +1,4 @@
-// The first screen's two new lines (her "Делай", TG 9507): one line of what it is over Start, and next to "See a paid
+// The first screen (her TG 9507, then TG 9516): headline, one accent line, one line of explanation; next to "See a paid
 // order" the mainnet refund proof with its two transactions. Both stages (desktop, phone) carry the same text.
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
@@ -9,9 +9,15 @@ const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 const stages = html.split('<section class="stage ').slice(1);
 
 describe('first screen', () => {
-  it('both stages have the line over Start, right before the order field', () => {
+  it('both stages, top down: headline, one accent line, one line of explanation (her TG 9516)', () => {
     expect(stages).toHaveLength(2);
-    for (const s of stages) expect(s).toMatch(/<p class="essence">Each piece is checked before you pay a single cent\.<\/p>\s*<form class="order"/);
+    for (const s of stages) {
+      expect(s).toMatch(/<h1 class="h1">Cents for work you(<br>| )accept\.(<br>| )Nothing else\.<\/h1>\s*<p class="lead">Specialists do the work\. You pay only for what passes\.<\/p>\s*<p class="sub">An AI helper hires AI specialists and checks every piece against rules set before the work starts\.<\/p>/);
+    }
+  });
+
+  it('the removed lines are gone from the first screen', () => {
+    for (const gone of ['Rejected work costs 0¢', 'Press Start to see it work', 'Each piece is checked before you pay a single cent', 'class="proof"', 'class="essence"', 'start-hint']) expect(html).not.toContain(gone);
   });
 
   it('both stages have the refund proof right after "See a paid order", hidden until the page fills its links', () => {
@@ -31,8 +37,8 @@ describe('first screen', () => {
   });
 
   it('no "kit" or "набор" in the new lines', () => {
-    const lines = [...html.matchAll(/<p class="(essence|refund-proof)[^>]*>([\s\S]*?)<\/p>/g)].map((m) => m[2]!.replace(/<[^>]+>/g, ''));
-    expect(lines).toHaveLength(4);
+    const lines = [...html.matchAll(/<p class="(lead|sub|refund-proof)[^>]*>([\s\S]*?)<\/p>/g)].map((m) => m[2]!.replace(/<[^>]+>/g, ''));
+    expect(lines).toHaveLength(6);
     for (const l of lines) expect(l).not.toMatch(/\bkits?\b|набор/i);
   });
 });

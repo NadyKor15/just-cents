@@ -194,7 +194,6 @@ function noteChangedRequest(): void {
 
 /** Start pressed: Just Cents splits the order and asks the specialists for previews; checks run as they arrive. */
 export function start(careless: Who = 'sam'): void {
-  all('.start-hint').forEach((h) => (h.hidden = true));
   noteChangedRequest();
   if (FIXED) careless = FIXED.careless;
   paid = false;
