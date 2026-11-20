@@ -11,8 +11,15 @@ import { PAID_EXAMPLE } from '../config';
 export const NO_WALLET_MS = 2000;
 
 export const NO_WALLET_TITLE = 'No wallet app opened on this device.';
-export const NO_WALLET_TEXT =
+/** On a phone: the QR on this same screen cannot be scanned by this phone, so a computer is needed for the QR. */
+export const NO_WALLET_TEXT_PHONE =
   'To pay, open this page on a computer and scan the QR with the wallet on your phone, or copy the link into your wallet.';
+/** On a computer: the QR is right here. */
+export const NO_WALLET_TEXT_COMPUTER = 'To pay, scan the QR with the wallet on your phone, or copy the link into your wallet.';
+/** Which of the two: a touch screen as the main pointer means a phone or a tablet. */
+export function noWalletText(touch: boolean): string {
+  return touch ? NO_WALLET_TEXT_PHONE : NO_WALLET_TEXT_COMPUTER;
+}
 export const NO_WALLET_PAID = 'See a paid order';
 export const NO_WALLET_CASHONIZE = 'Open in Cashonize web wallet';
 

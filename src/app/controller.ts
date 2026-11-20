@@ -12,7 +12,7 @@ import { zip } from './zip';
 import { copyText } from './copy';
 import { armTrailer } from './trailer';
 import { WalletLink, type WalletState } from '../core/wallet';
-import { walletFallback, paidExampleHref, cashonizeWebLink, NO_WALLET_TITLE, NO_WALLET_TEXT, NO_WALLET_PAID, NO_WALLET_CASHONIZE } from './nowallet';
+import { walletFallback, paidExampleHref, cashonizeWebLink, NO_WALLET_TITLE, noWalletText, NO_WALLET_PAID, NO_WALLET_CASHONIZE } from './nowallet';
 import { explorerTx, getRawTx, type Net } from '../core/chain';
 import { parseNote, type BuiltPayment2 } from '../core/tx';
 import { checkPaid } from '../core/release';
@@ -303,7 +303,7 @@ function noWalletHint(wizUri: string): HTMLElement {
   cz.rel = 'noopener';
   const row = el('div', 'jc-nowallet-row');
   row.append(paid, cz);
-  box.append(el('p', 'jc-nowallet-t', NO_WALLET_TITLE), el('p', '', NO_WALLET_TEXT), row);
+  box.append(el('p', 'jc-nowallet-t', NO_WALLET_TITLE), el('p', '', noWalletText(matchMedia('(pointer: coarse)').matches)), row);
   return box;
 }
 

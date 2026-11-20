@@ -6,7 +6,9 @@ import {
   paidExampleHref,
   NO_WALLET_MS,
   NO_WALLET_TITLE,
-  NO_WALLET_TEXT,
+  NO_WALLET_TEXT_PHONE,
+  NO_WALLET_TEXT_COMPUTER,
+  noWalletText,
   NO_WALLET_PAID,
   NO_WALLET_CASHONIZE,
   type PageSignals,
@@ -189,10 +191,16 @@ describe('hint links and text', () => {
   });
 
   it('short, plain English, no "kit"', () => {
-    const all = [NO_WALLET_TITLE, NO_WALLET_TEXT, NO_WALLET_PAID, NO_WALLET_CASHONIZE].join(' ');
+    const all = [NO_WALLET_TITLE, NO_WALLET_TEXT_PHONE, NO_WALLET_TEXT_COMPUTER, NO_WALLET_PAID, NO_WALLET_CASHONIZE].join(' ');
     expect(all).not.toMatch(/\bkits?\b|набор/i);
-    expect(NO_WALLET_TITLE.length + NO_WALLET_TEXT.length).toBeLessThan(180);
-    expect(NO_WALLET_TEXT).toMatch(/computer/);
-    expect(NO_WALLET_TEXT).toMatch(/copy the link/);
+    expect(NO_WALLET_TITLE.length + NO_WALLET_TEXT_PHONE.length).toBeLessThan(180);
+    for (const t of [NO_WALLET_TEXT_PHONE, NO_WALLET_TEXT_COMPUTER]) expect(t).toMatch(/scan the QR.*copy the link into your wallet/);
+  });
+
+  it('a phone is told to use a computer for the QR; a computer is not', () => {
+    expect(noWalletText(true)).toBe(NO_WALLET_TEXT_PHONE);
+    expect(noWalletText(false)).toBe(NO_WALLET_TEXT_COMPUTER);
+    expect(NO_WALLET_TEXT_PHONE).toMatch(/open this page on a computer/);
+    expect(NO_WALLET_TEXT_COMPUTER).not.toMatch(/computer/);
   });
 });
