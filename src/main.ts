@@ -1,6 +1,7 @@
 /// <reference types="vite/client" />
 import './ui/app.js';
-import { BANNER, PAID_EXAMPLE } from './config';
+import { BANNER, PAID_EXAMPLE, REFUND_PROOF } from './config';
+import { explorerTx } from './core/chain';
 import { EXAMPLE } from './data/example';
 import { copyAndConfirm, copyText } from './app/copy';
 import { paidExampleHref } from './app/nowallet';
@@ -21,6 +22,13 @@ if (PAID_EXAMPLE.txid) {
   document.querySelectorAll<HTMLAnchorElement>('[data-paid-example]').forEach((a) => {
     a.href = paidExampleHref();
     a.hidden = false;
+  });
+}
+// next to it, the refund proof: mainnet refused an early refund, then paid it back with no signature (two explorer links)
+if (REFUND_PROOF.payment && REFUND_PROOF.refund) {
+  document.querySelectorAll<HTMLElement>('[data-refund-proof]').forEach((p) => {
+    p.querySelectorAll<HTMLAnchorElement>('a[data-tx]').forEach((a) => (a.href = explorerTx(REFUND_PROOF.net, REFUND_PROOF[a.dataset.tx as 'payment' | 'refund'])));
+    p.hidden = false;
   });
 }
 const paidTx = new URLSearchParams(location.search).get('paid');

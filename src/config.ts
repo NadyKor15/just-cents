@@ -21,6 +21,17 @@ export const PAYOUT: Record<'cover' | 'sam' | 'lena' | 'logo' | 'service', ByNet
  */
 export const PAID_EXAMPLE: { net: Net; txid: string } = { net: 'mainnet', txid: '9896c765fa549d1cade82034efcc8b557f6edbc8d54c9a2fbb7de0f499a03998' }; // version 2: paid into contracts with Selene, 20.11.2026
 
+/**
+ * Proof next to "See a paid order" that the money really comes back: a payment into a contract on mainnet whose early
+ * refund the network refused (bad-txns-nonfinal), and the refund it then paid back with no signature once its time
+ * passed (5 016 sat to the buyer). Read back from two Fulcrum servers 20.11.2026. Empty = the line is not shown.
+ */
+export const REFUND_PROOF: { net: Net; payment: string; refund: string } = {
+  net: 'mainnet',
+  payment: '29c9b46fa5e5a67189c6e4bba685da1546d9c532f18f8ead8413f5e4742690dc',
+  refund: '2f0af2f2fc6c5d1b127cf78b4749a9249ff339c8787dbee90e84c0d8c26675b2',
+};
+
 /** Earlier paid examples (version 1, JC1 note), still opened from old links; their released files may stay at the edge too. */
 export const EARLIER_PAID_EXAMPLES: { net: Net; txid: string }[] = [{ net: 'mainnet', txid: '7c0d6eee018e53aa15c02b3111a26fe979dba7537a3b76abbce3b1382c8d0877' }];
 

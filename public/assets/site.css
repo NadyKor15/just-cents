@@ -71,12 +71,12 @@
 .demo-note[hidden]{display:none}
 .demo-note a{color:var(--orchid-lo);font-weight:800}
 .stage-d .demo-note{left:343px;top:470px;width:750px;font-size:15px;line-height:20px}
-.stage-m .demo-note{left:20px;top:222px;width:350px;font-size:9.5px;line-height:13px;margin-top:calc(var(--ex) * .14)}
+.stage-m .demo-note{left:20px;top:258px;width:350px;font-size:9.5px;line-height:13px;margin-top:calc(var(--ex) * .14)}
 /* before Start: a quiet hint in the same place; it never takes a click */
 .start-hint{position:absolute;z-index:4;margin:0;text-align:center;font-family:"Figtree",sans-serif;font-weight:600;color:var(--ink-2);opacity:.7;pointer-events:none;white-space:nowrap}
 .start-hint[hidden]{display:none}
 .stage-d .start-hint{left:343px;top:470px;width:750px;font-size:15px;line-height:20px}
-.stage-m .start-hint{left:20px;top:222px;width:350px;font-size:9.5px;line-height:13px;margin-top:calc(var(--ex) * .14)}
+.stage-m .start-hint{left:20px;top:258px;width:350px;font-size:9.5px;line-height:13px;margin-top:calc(var(--ex) * .14)}
 /* kit v3: the cover (16:10) in the choice tile, the logo in the single tile */
 .icon-art .cover-prev{display:block;width:100%;aspect-ratio:16/10;margin-top:12%;object-fit:cover;border-radius:10px}
 .stage-m .icon-art .cover-prev{border-radius:4px}
@@ -152,9 +152,21 @@
 .btn-paid span{font-weight:600;opacity:.85}
 .stage-d .btn-paid{left:1121px;top:384px;width:264px;height:56px;border-radius:14px;flex-direction:column;gap:1px;font-size:21px;line-height:23px}
 .stage-d .btn-paid span{font-size:15px;line-height:17px}
-.stage-m .btn-paid{left:184px;top:194px;width:176px;height:22px;border-radius:7px;border-width:1.5px;gap:3px;font-size:10px;line-height:12px;
+.stage-m .btn-paid{left:184px;top:208px;width:176px;height:22px;border-radius:7px;border-width:1.5px;gap:3px;font-size:10px;line-height:12px;
   margin-top:calc(var(--ex) * .14)}
 .stage-m .btn-paid span{font-size:10px}
+/* one line of what it is, over Start (her "Делай", TG 9507) */
+.essence{position:absolute;z-index:5;margin:0;font-family:"Figtree",sans-serif;font-weight:700;color:var(--ink);white-space:nowrap}
+.stage-d .essence{left:520px;top:356px;width:573px;text-align:right;font-size:16px;line-height:22px}
+.stage-m .essence{left:30px;top:153px;width:330px;text-align:center;font-size:10px;line-height:12px;margin-top:calc(var(--ex) * .12)}
+/* the refund proof next to "See a paid order": two explorer links */
+.refund-proof{position:absolute;z-index:5;margin:0;font-family:"Figtree",sans-serif;font-weight:500;color:var(--ink-2);text-align:center;text-wrap:balance}
+.refund-proof[hidden]{display:none}
+.refund-proof a{color:var(--orchid-lo);font-weight:800;text-decoration:underline;text-underline-offset:2px;padding:3px 1px}
+.stage-d .refund-proof{left:1103px;top:351px;width:300px;font-size:11.5px;line-height:14px}
+.stage-m .refund-proof{left:20px;top:234px;width:350px;font-size:8.6px;line-height:10.5px;margin-top:calc(var(--ex) * .14)}
+/* phone: the field and the row under it move down 14 units for the line over Start; the scene below starts at 288 + */
+.stage-m .order{top:170px}
 /* one line of proof under the headline */
 .proof{position:absolute;z-index:5;left:0;right:0;margin:0;text-align:center;font-family:"Figtree",sans-serif;font-weight:700;color:var(--orchid-lo);white-space:nowrap}
 .stage-d .h1{top:70px} /* up by 15 to make room for the proof line */
@@ -213,7 +225,7 @@
 .who button:disabled[aria-pressed="false"]{opacity:.45}
 .stage-d .who{left:343px;top:354px;padding:2px}
 .stage-d .who button{height:22px;padding:0 12px;font-size:13px}
-.stage-m .who{left:30px;top:195px;padding:2px;gap:3px;margin-top:calc(var(--ex) * .14)}
+.stage-m .who{left:30px;top:209px;padding:2px;gap:3px;margin-top:calc(var(--ex) * .14)}
 .stage-m .who button{height:18px;padding:0 9px;font-size:9.5px}
 .order-in[readonly]{color:#4b3f45;font-style:italic}
 .kit-assistant{margin:0 0 14px;padding:12px 14px;border-radius:12px;background:#fff;border:1.5px solid rgba(168,102,164,.35)}
