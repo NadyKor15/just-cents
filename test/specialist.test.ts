@@ -107,6 +107,10 @@ describe('open specialist, from an empty folder', () => {
     expect(site.status).toBe(503); // found the demo offer, then stopped for lack of keys
     const fn = await claim(new URL('https://x/claim/__proto__?net=chipnet&txid=' + 'ab'.repeat(32)), 'POST', {}, () => ({}));
     expect(fn.status).toBe(404);
+    // a book given per network is the one searched: the stranger's offer is found (then: no keys here → 503)
+    const { book } = await stranger();
+    const own = await claim(new URL('https://x/claim/ada?net=chipnet&txid=' + 'ab'.repeat(32)), 'POST', {}, (net) => claimBook(net, book as never));
+    expect(own.status).toBe(503);
   });
 });
 
