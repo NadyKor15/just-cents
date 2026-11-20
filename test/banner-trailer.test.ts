@@ -165,6 +165,12 @@ describe('the banner', () => {
     for (const k of ['slides', 'repo', 'firstCommit']) expect(link(k).tag).toMatch(/target="_blank" rel="noopener"/);
   });
 
+  it('"How it works, in the README" opens the README of the public repository (no greyed "Coming soon")', () => {
+    expect(BANNER.readme).toBe('https://github.com/NadyKor15/just-cents#readme');
+    expect(link('readme')).toMatchObject({ href: BANNER.readme, text: 'How it works, in the README' });
+    expect(link('readme').tag).toMatch(/target="_blank" rel="noopener"/);
+  });
+
   it('says where the project was on Nov 14, and has Copy next to the address', () => {
     expect(html).toContain('Nov 14: not started (first code Nov 16)');
     expect(html).toContain(`data-copy-btn="${ADDR}"`);

@@ -40,7 +40,7 @@ export const BANNER = {
   slides: 'https://docs.google.com/presentation/d/1iy5GfTxaN05aO6pZPD9KZJh1KxygnOBR9O_AsPVu-oE/view', // Google Slides (BLAZE template); the PDF stays at /just-cents-slides.pdf
   repo: 'https://github.com/NadyKor15/just-cents', // public repo
   firstCommit: 'https://github.com/NadyKor15/just-cents/commit/c42478e7b8430f2c3844a23963ffe688da564f8e', // "Nov 14: not started (first code Nov 16)"
-  readme: '',
+  readme: 'https://github.com/NadyKor15/just-cents#readme', // "How it works, in the README"
 };
 
 /**
