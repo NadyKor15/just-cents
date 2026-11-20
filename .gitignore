@@ -8,3 +8,9 @@ dist/
 .DS_Store
 .tmp-tools/
 specialists/trial-3d/
+.claude/
+secret/
+*.pem
+*.key
+AGENTS.md
+CLAUDE.md
