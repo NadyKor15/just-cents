@@ -6,7 +6,7 @@ const rpc = vi.fn();
 vi.mock('../worker/fulcrum', () => ({ rpc: (...a: unknown[]) => rpc(...a) }));
 
 import { release, isPaidExample, CACHE_PRIVATE } from '../worker/index';
-import { PAID_EXAMPLE } from '../src/config';
+import { EARLIER_PAID_EXAMPLES, PAID_EXAMPLE } from '../src/config';
 
 const ORIGIN = 'https://justcents.retailbox-automation.com';
 const OTHER = 'ab'.repeat(32);
@@ -28,6 +28,9 @@ describe('edge cache for the paid example', () => {
 
   it('knows the paid example and nothing else', () => {
     expect(isPaidExample(PAID_EXAMPLE.net, PAID_EXAMPLE.txid)).toBe(true);
+    // the earlier (version 1) example stays known: old links to it keep opening from the edge
+    expect(EARLIER_PAID_EXAMPLES.map((e) => isPaidExample(e.net, e.txid))).toEqual([true]);
+    expect(EARLIER_PAID_EXAMPLES[0]!.txid).toBe('7c0d6eee018e53aa15c02b3111a26fe979dba7537a3b76abbce3b1382c8d0877');
     expect(isPaidExample(PAID_EXAMPLE.net, OTHER)).toBe(false);
     expect(isPaidExample(PAID_EXAMPLE.net === 'mainnet' ? 'chipnet' : 'mainnet', PAID_EXAMPLE.txid)).toBe(false);
   });

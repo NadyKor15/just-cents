@@ -6,7 +6,7 @@
 import offers from '../src/data/offers.json';
 import { checkOfferPaid, type BookEntry } from './txparse';
 import { rpc, type Net } from './fulcrum';
-import { PAID_EXAMPLE } from '../src/config';
+import { EARLIER_PAID_EXAMPLES, PAID_EXAMPLE } from '../src/config';
 
 type OfferEntry = { signed: { offer: { priceSats: string } }; file: string; payToLockingHex: string; offerHashHex: string };
 const OFFERS = offers as unknown as Record<Net, Record<string, OfferEntry>>;
@@ -46,9 +46,12 @@ function edgeCache(): Cache | undefined {
   return (globalThis as unknown as { caches?: { default?: Cache } }).caches?.default;
 }
 
-/** The public paid example ("See a paid order"): one order everyone opens, so its released files may sit at the edge. */
+/**
+ * The public paid example ("See a paid order") and the earlier ones still linked from old places: orders everyone
+ * opens, so their released files may sit at the edge. (A version 2 example takes no /full: its files come sealed.)
+ */
 export function isPaidExample(net: Net, txid: string): boolean {
-  return net === PAID_EXAMPLE.net && txid === PAID_EXAMPLE.txid;
+  return [PAID_EXAMPLE, ...EARLIER_PAID_EXAMPLES].some((e) => net === e.net && txid === e.txid);
 }
 
 /** Cache headers of a released file: the paid example may be kept by any cache; every other order only by the payer's browser. */

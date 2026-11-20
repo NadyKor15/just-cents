@@ -19,7 +19,10 @@ export const PAYOUT: Record<'cover' | 'sam' | 'lena' | 'logo' | 'service', ByNet
  * A real order paid on chain, shown to anyone without a wallet ("See a paid order"). Empty txid = the link is not shown
  * at all. Set only to a payment of the current offers (the page reads it from the network and checks it).
  */
-export const PAID_EXAMPLE: { net: Net; txid: string } = { net: 'mainnet', txid: '7c0d6eee018e53aa15c02b3111a26fe979dba7537a3b76abbce3b1382c8d0877' };
+export const PAID_EXAMPLE: { net: Net; txid: string } = { net: 'mainnet', txid: '9896c765fa549d1cade82034efcc8b557f6edbc8d54c9a2fbb7de0f499a03998' }; // version 2: paid into contracts with Selene, 20.11.2026
+
+/** Earlier paid examples (version 1, JC1 note), still opened from old links; their released files may stay at the edge too. */
+export const EARLIER_PAID_EXAMPLES: { net: Net; txid: string }[] = [{ net: 'mainnet', txid: '7c0d6eee018e53aa15c02b3111a26fe979dba7537a3b76abbce3b1382c8d0877' }];
 
 /** BLAZE banner links. Empty until they exist; the banner then shows the link as not ready yet. */
 export const BANNER = {
