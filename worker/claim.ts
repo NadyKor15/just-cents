@@ -130,14 +130,22 @@ async function rawTx(net: Net, txid: string): Promise<string> {
 
 const ALREADY = /already|txn-already-known|transaction already in block chain/i;
 
-export async function claim(url: URL, method: string, env: ClaimEnv, book: Record<string, ClaimEntry> | null = null): Promise<Response> {
+/**
+ * Which offers this server claims: a fixed set, or a set per network. Left out, the site's own book (the demo
+ * specialists). An open specialist's endpoint passes its own book (specialists/template/worker.ts):
+ * `(net) => claimBook(net, myOffers)`.
+ */
+export type ClaimBookSource = Record<string, ClaimEntry> | ((net: Net) => Record<string, ClaimEntry>) | null;
+
+export async function claim(url: URL, method: string, env: ClaimEnv, book: ClaimBookSource = null): Promise<Response> {
   if (method !== 'POST') return json({ ok: false, reason: 'POST /claim/<offer>?net=…&txid=…' }, 405);
   const key = decodeURIComponent(url.pathname.slice('/claim/'.length));
   const net = url.searchParams.get('net') as Net | null;
   const txid = url.searchParams.get('txid') ?? '';
   if (net !== 'mainnet' && net !== 'chipnet') return json({ ok: false, reason: 'net must be mainnet or chipnet' }, 400);
   if (!/^[0-9a-f]{64}$/.test(txid)) return json({ ok: false, reason: 'txid must be 64 hex characters' }, 400);
-  const entry = (book ?? claimBook(net))[key];
+  const entries = typeof book === 'function' ? book(net) : (book ?? claimBook(net));
+  const entry = Object.hasOwn(entries, key) ? entries[key] : undefined;
   if (!entry) return json({ ok: false, reason: `no claimable offer: ${key}` }, 404);
   const keys = readKeys(env);
   if (!keys) return json({ ok: false, reason: 'the specialist keys are not set up on this server' }, 503);
