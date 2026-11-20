@@ -12,6 +12,7 @@ import { zip } from './zip';
 import { copyText } from './copy';
 import { armTrailer } from './trailer';
 import { WalletLink, type WalletState } from '../core/wallet';
+import { walletFallback, paidExampleHref, cashonizeWebLink, NO_WALLET_TITLE, NO_WALLET_TEXT, NO_WALLET_PAID, NO_WALLET_CASHONIZE } from './nowallet';
 import { explorerTx, getRawTx, type Net } from '../core/chain';
 import { parseNote, type BuiltPayment2 } from '../core/tx';
 import { checkPaid } from '../core/release';
@@ -280,8 +281,30 @@ function el<K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, text?: 
 }
 
 function closeModal() {
+  noWallet?.dispose();
+  noWallet = null;
   modal?.remove();
   modal = null;
+}
+
+/** "Open wallet app" watch of the open pay window (see nowallet.ts). */
+let noWallet: ReturnType<typeof walletFallback> | null = null;
+
+/** In the pay window, when "Open wallet app" opened nothing: how to pay anyway, or see a paid order. */
+function noWalletHint(wizUri: string): HTMLElement {
+  const box = el('div', 'jc-nowallet');
+  box.setAttribute('role', 'status');
+  const paid = el('a', 'jc-btn', NO_WALLET_PAID);
+  paid.append(' ', el('span', '', '(no wallet)'));
+  paid.href = paidExampleHref();
+  const cz = el('a', 'jc-nowallet-cz', NO_WALLET_CASHONIZE);
+  cz.href = cashonizeWebLink(wizUri);
+  cz.target = '_blank';
+  cz.rel = 'noopener';
+  const row = el('div', 'jc-nowallet-row');
+  row.append(paid, cz);
+  box.append(el('p', 'jc-nowallet-t', NO_WALLET_TITLE), el('p', '', NO_WALLET_TEXT), row);
+  return box;
 }
 
 /** A contract's address as a wallet shows it (P2SH32: bitcoincash:p…). */
@@ -387,6 +410,11 @@ export async function pay(onPaid: () => void): Promise<void> {
 
   let busy = false;
   const onState = async (s: WalletState) => {
+    if (s.kind === 'waiting-wallet' || s.kind === 'connected') {
+      // a wallet answered: it did open after all
+      noWallet?.dispose();
+      card.querySelector('.jc-nowallet')?.remove();
+    }
     if (s.kind === 'waiting-wallet') status.textContent = 'Approve the connection in your wallet';
     if (s.kind === 'closed') status.textContent = `The wallet disconnected${s.message ? `: ${s.message}` : ''}`;
     if (s.kind !== 'connected' || busy) return;
@@ -434,6 +462,15 @@ export async function pay(onPaid: () => void): Promise<void> {
   q.make();
   qr.innerHTML = q.createSvgTag({ cellSize: 4, margin: 2, scalable: true });
   open.href = uri;
+  // no wallet app on this device: the tap goes nowhere, silently. After 2 s still here → say so, in the window.
+  const watch = walletFallback({ win: window, doc: document }, () => {
+    if (!card.isConnected || card.querySelector('.jc-nowallet')) return;
+    const hint = noWalletHint(uri);
+    wallets.after(hint);
+    hint.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  });
+  noWallet = watch;
+  open.addEventListener('click', () => watch.tap());
   copy.onclick = async () => {
     copy.textContent = (await copyText(uri)) ? 'Copied' : 'Could not copy: press and hold the QR or use Open wallet app';
   };

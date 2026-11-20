@@ -3,6 +3,7 @@ import './ui/app.js';
 import { BANNER, PAID_EXAMPLE } from './config';
 import { EXAMPLE } from './data/example';
 import { copyAndConfirm, copyText } from './app/copy';
+import { paidExampleHref } from './app/nowallet';
 import { NET, openPaidOrder, prepareScene, setWho, WHO, type Orderer } from './app/controller';
 
 prepareScene();
@@ -18,7 +19,7 @@ setWho(WHO);
 // no placeholder link). It replaces the small line that used to appear next to Pay only after the scene.
 if (PAID_EXAMPLE.txid) {
   document.querySelectorAll<HTMLAnchorElement>('[data-paid-example]').forEach((a) => {
-    a.href = `/?paid=${PAID_EXAMPLE.txid}${PAID_EXAMPLE.net === 'chipnet' ? '&net=chipnet' : ''}`;
+    a.href = paidExampleHref();
     a.hidden = false;
   });
 }
