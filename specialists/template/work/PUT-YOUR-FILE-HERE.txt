@@ -1,0 +1,1 @@
+Put the file you sell in this folder and name it in specialist.json ("file": "work/<name>").

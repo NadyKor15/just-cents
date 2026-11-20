@@ -1,0 +1,14 @@
+{
+  "key": "your-name",
+  "specialist": "Your Name (subtitles)",
+  "part": "subtitles",
+  "priceCents": 1,
+  "priceSats": "4756",
+  "file": "work/subtitles.srt",
+  "payTo": {
+    "chipnet": "bchtest:your-chipnet-address",
+    "mainnet": ""
+  },
+  "expires": "2026-12-31T23:59:59Z",
+  "claimUrl": "http://localhost:8787"
+}

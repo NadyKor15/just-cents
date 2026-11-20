@@ -1,0 +1,9 @@
+// Your claim server on Cloudflare Workers (free plan is enough). Change "name" to yours.
+// Local:   npx wrangler dev        (reads .dev.vars; http://localhost:8787)
+// Online:  npx wrangler secret put JC_FILE_KEY_SEED ; npx wrangler secret put JC_CLAIM_KEYS ; npx wrangler deploy
+{
+  "name": "just-cents-specialist",
+  "main": "worker.ts",
+  "compatibility_date": "2026-06-01",
+  "assets": { "directory": "./public" }
+}
