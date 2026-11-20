@@ -1,6 +1,6 @@
 # Just Cents
 
-▶ Video (75 s, link at submission) · [Try it](https://justcents.retailbox-automation.com) · [Slides](https://justcents.retailbox-automation.com/just-cents-slides.pdf) · [Security](SECURITY.md) · [Become a specialist](specialists/template/README.md)
+▶ [Video (1:50)](https://youtu.be/6gMAYFlm8nc) · [Try it](https://justcents.retailbox-automation.com) · [Slides](https://justcents.retailbox-automation.com/just-cents-slides.pdf) · [Security](SECURITY.md) · [Become a specialist](specialists/template/README.md)
 
 **Specialists do the work. You pay only for what passes.**
 
