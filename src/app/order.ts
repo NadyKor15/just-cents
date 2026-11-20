@@ -212,6 +212,17 @@ export class Order {
     if (this.entry(key).v2) this.sealedFile(key).catch(() => undefined);
   }
 
+  /**
+   * The accepted parts' sealed files start loading only once every check has answered. The cover's check needs no
+   * network, so its 4.5 MB file used to start at Start and take a slow line from the checks' own small files (the
+   * subtitle previews): the scene waited at the subtitles and Pay never came up (measured 20.11.2026).
+   */
+  prefetchAccepted(checks: Promise<unknown>[]): Promise<void> {
+    return Promise.allSettled(checks).then(() => {
+      for (const c of this.accepted()) this.prefetch(c.key);
+    });
+  }
+
   /** The v2 offer must promise the same as the v1 offer the checks ran on, and be signed by the same key. */
   private checkV2(c: Checked): void {
     const e = this.v2(c.key);

@@ -180,9 +180,9 @@ function runChecks(o: Order, careless: Who) {
   descBad.then((c) => { showSubsPreview(c); if (!c.verdict.ok) setTagReason(careless, c.verdict.reason); }).catch((e) => fail(EXAMPLE.pair.label, e));
   descGood.catch((e) => fail(EXAMPLE.pair.label, e));
   voice.catch((e) => fail(EXAMPLE.single.label, e));
-  // each accepted part's sealed file loads in the background while the scene plays, so Pay does not wait for it
-  icon.then(() => o.prefetch(COVER_KEY[o.coverChoice])).catch(() => undefined);
-  for (const g of [descBad, descGood, voice]) g.then((c) => { if (c.verdict.ok) o.prefetch(c.key); }).catch(() => undefined);
+  // each accepted part's sealed file loads in the background while the scene plays, so Pay does not wait for it;
+  // it starts once every check has answered, so on a slow line the checks' small files are not stuck behind it
+  void o.prefetchAccepted([icon, descBad, descGood, voice]);
   return { icon, descBad, descGood, voice };
 }
 
