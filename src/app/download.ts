@@ -9,8 +9,11 @@ import { PART_BYTES, partCount, partLength, partPath } from '../core/parts';
 
 /** No new byte for this long = the download stalled. */
 export const STALL_MS = 15_000;
-/** Tries per part (or per whole file). */
-export const TRIES = 4;
+/**
+ * Tries per part (or per whole file). Measured on a slow Cloudflare evening (19–20.11.2026): 4 of 12 answers had a
+ * silence longer than 15 s inside them (up to 44 s), so cuts do happen; a cut costs only that part's bytes so far.
+ */
+export const TRIES = 6;
 /** Parts in flight at once. */
 export const PARALLEL = 3;
 

@@ -130,6 +130,13 @@ describe('a big file comes in parts; a cut costs one part', () => {
     await expect(download(URL_, { ...fast, tries: 3, size: data.length, fetchFn: s.fetchFn })).rejects.toThrow(/\.part1: stalled, no data for/);
     expect(s.calls[partPath(URL_, 1)]).toBe(3);
   });
+
+  it('by default a part is tried 6 times (silences over 15 s happen on a slow Cloudflare)', async () => {
+    const data = file(PART_BYTES + 1);
+    const s = site({ [URL_]: data }, { parts: true, way: (u, n) => (u === partPath(URL_, 0) && n <= 5 ? { kind: 'stuck-after', bytes: 0 } : { kind: 'ok' }) });
+    expect(await download(URL_, { ...fast, size: data.length, fetchFn: s.fetchFn })).toEqual(data);
+    expect(s.calls[partPath(URL_, 0)]).toBe(6);
+  });
 });
 
 describe('the stall rule', () => {
