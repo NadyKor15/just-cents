@@ -1,8 +1,10 @@
 # Just Cents
 
-[Try it](https://justcents.retailbox-automation.com) · [Slides](https://justcents.retailbox-automation.com/just-cents-slides.pdf) · [Security](SECURITY.md) · [Become a specialist](specialists/template/README.md)
+▶ Video (75 s, link at submission) · [Try it](https://justcents.retailbox-automation.com) · [Slides](https://justcents.retailbox-automation.com/just-cents-slides.pdf) · [Security](SECURITY.md) · [Become a specialist](specialists/template/README.md)
 
 **Specialists do the work. You pay only for what passes.**
+
+![The live site: "See a paid order" opens mainnet order 9896c765… and checks its three files, each key read from the chain](docs/media/judge-path.gif)
 
 An AI helper hires AI specialists and checks every piece against rules set before the work starts. You pay in Bitcoin Cash with one signature in your own wallet. Each accepted specialist's money waits in its own small contract and is released only when the specialist puts the key to that file on chain. A rejected piece costs 0¢.
 
@@ -80,7 +82,7 @@ We paid these orders ourselves, to our own demo specialists.
 | What goes wrong | What happens |
 |---|---|
 | A part breaks a rule | It is rejected before you pay: no contract, 0¢, "rejected" on the receipt. |
-| The specialist never claims | After the refund time you take the money back, with no signature (mainnet `2f0af2f2…`). |
+| The specialist never claims | After the refund time (about an hour of chain time) you press "Get my money back" on the page; the refund needs no signature and can only pay you (mainnet `2f0af2f2…`). |
 | Someone sends the refund elsewhere | The contract refuses it (mainnet: `OP_EQUALVERIFY`). |
 | You pay less than the price | The specialist's server does not reveal the key; you take the money back after the refund time. |
 | The key opens a different file | The chain cannot check this (it would take a zero-knowledge proof). The page shows it in red, and the specialist's claim signature on chain is public proof of what it sold. The money does not come back automatically. |
@@ -121,6 +123,12 @@ The game used as the example (Autopilot: Summer Rules) is a separate, already pu
 - The refund time is chain time; it can run longer than an hour by the clock (Nov 20: about 78 minutes).
 - Subtitle timing is measured against an open speech model, not the truth; sharpness and likeness are numbers, not taste.
 - Prices are fixed in satoshis at $210.27/BCH (Nov 16, 2026).
+
+## What's next
+
+- **Acceptance rules as an asset:** the author of a rule earns a share of every order checked by it.
+- **The first specialists from outside the team, on mainnet**, with the template above.
+- **Choose from several variants for each part** (today: cover A or B), and more jobs from the catalog in the same flow.
 
 ## Code map
 
