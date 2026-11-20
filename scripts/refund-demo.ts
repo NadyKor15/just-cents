@@ -8,7 +8,7 @@
 //   4. reads how the contract ended from the chain: "refunded"
 //
 //   node scripts/run.mjs scripts/refund-demo.ts --net chipnet --phrase-file <file> [--rm-phrase] [--offer logo]
-//        [--after 3600] [--max-sats 6000] [--log run.jsonl] [--send]
+//        [--after 3600] [--max-sats 6000] [--expect-sats <wallet balance>] [--log run.jsonl] [--send]
 // Without --send it only prints the plan (coins, outputs, fees, the total leaving the wallet) and signs nothing.
 // --max-sats stops before signing if the payment would take more than that from the wallet, fees included.
 // The phrase and keys are never printed; --rm-phrase deletes the phrase file right after reading it.
@@ -95,7 +95,11 @@ async function main(): Promise<void> {
   log('phrase read', { removedAt });
   const wallet = walletFromPhrase(phrase, net);
   const utxos = await walletCoins(wallet);
-  log('coins', { count: utxos.length, sats: utxos.reduce((s, u) => s + u.sats, 0n).toString() });
+  const balance = utxos.reduce((s, u) => s + u.sats, 0n);
+  log('coins', { count: utxos.length, sats: balance.toString() });
+  // --expect-sats: the wallet's balance as last read elsewhere; anything else means another wallet or a moved coin
+  const expectSats = arg('--expect-sats');
+  if (expectSats !== undefined && BigInt(expectSats) !== balance) throw new Error(`the wallet holds ${balance} sat, not the expected ${expectSats}: stopped, nothing signed`);
 
   const mtp0 = await chainTime(net);
   const refundTime = mtp0 + after;
