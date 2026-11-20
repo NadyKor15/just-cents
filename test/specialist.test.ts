@@ -46,7 +46,9 @@ describe('open specialist, from an empty folder', () => {
     const { dir, made } = await stranger();
     for (const f of ['.dev.vars', '.env.offer', '.env.payout']) expect(statSync(join(dir, f)).mode & 0o777).toBe(0o600);
     expect(made.offerPubkey).not.toBe(made.claimPubkey);
-    expect(() => makeKeys(dir)).toThrow(/already exists/);
+    const before = readFileSync(join(dir, '.dev.vars'), 'utf8');
+    expect(() => makeKeys(dir)).toThrow(/keys are made once/);
+    expect(readFileSync(join(dir, '.dev.vars'), 'utf8')).toBe(before);
     const gi = readFileSync('.gitignore', 'utf8');
     expect(gi).toMatch(/^\.dev\.vars$/m);
     expect(gi).toMatch(/^\.env\.\*$/m);

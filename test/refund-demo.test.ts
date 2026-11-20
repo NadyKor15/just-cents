@@ -80,6 +80,7 @@ describe('local wallet', () => {
     const main = walletFromPhrase(PHRASE, 'mainnet');
     expect(main.addresses[0]!.address).toBe('bitcoincash:qqyx49mu0kkn9ftfj6hje6g2wfer34yfnq5tahq3q6');
     expect(main.addresses).toHaveLength(40);
+    expect(new Set(main.addresses.map((a) => a.address)).size).toBe(40); // change addresses are their own (m/…/1/i)
     expect(main.addresses.filter((a) => a.path === 'change')).toHaveLength(20);
   });
 
